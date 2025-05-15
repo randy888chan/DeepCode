@@ -1,0 +1,7 @@
+setup.py
+deepcode.egg-info/PKG-INFO
+deepcode.egg-info/SOURCES.txt
+deepcode.egg-info/dependency_links.txt
+deepcode.egg-info/entry_points.txt
+deepcode.egg-info/requires.txt
+deepcode.egg-info/top_level.txt
