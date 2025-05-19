@@ -1,0 +1,8 @@
+Paper: UrbanGPT: Spatio-Temporal Large Language Models
+arXiv ID: 2403.00813
+Year: 2024
+Authors: Zhonghang Li, Lianghao Xia, Jiabin Tang, Yong Xu, Lei Shi, Long Xia, Dawei Yin, Chao Huang
+
+Note: The PDF file was successfully downloaded but could not be directly copied to the papers directory due to permission constraints. The PDF is temporarily available at /mnt/data/2403.00813.pdf.
+
+To download this paper again, use the arXiv ID 2403.00813 and visit: https://arxiv.org/pdf/2403.00813.pdf
