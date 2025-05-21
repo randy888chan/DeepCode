@@ -1,0 +1,65 @@
+$schema: ./schema/mcp-agent.config.schema.json
+
+execution_engine: asyncio
+logger:
+  transports: [console, file]
+  level: debug
+  progress_display: true
+  path_settings:
+    path_pattern: "logs/mcp-agent-{unique_id}.jsonl"
+    unique_id: "timestamp" # Options: "timestamp" or "session_id"
+    timestamp_format: "%Y%m%d_%H%M%S"
+
+
+mcp:
+  servers:
+    brave:
+      # On windows replace the command and args line to use `node` and the absolute path to the server.
+      # Use `npm i -g @modelcontextprotocol/server-brave-search` to install the server globally.
+      # Use `npm -g root` to find the global node_modules path.`
+      # command: "node"
+      # args: ["c:/Program Files/nodejs/node_modules/@modelcontextprotocol/server-brave-search/dist/index.js"]
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-brave-search"]
+      env:
+        # You can also place your BRAVE_API_KEY in the fastagent.secrets.yaml file.
+        BRAVE_API_KEY: "BSANqscKbm32rSDleDiDPK6uyFXOHrm"
+    filesystem:
+      # On windows update the command and arguments to use `node` and the absolute path to the server.
+      # Use `npm i -g @modelcontextprotocol/server-filesystem` to install the server globally.
+      # Use `npm -g root` to find the global node_modules path.`
+      # command: "node"
+      # args: ["c:/Program Files/nodejs/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js","./agent_folder"]
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "./agent_folders/"]
+    interpreter:
+      command: "docker"
+      args: [
+          "run",
+          "-i",
+          "--rm",
+          "--pull=always",
+          "-v",
+          "./agent_folders:/mnt/data/",
+          # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
+          # "./agent_folder:/mnt/data/",
+          "ghcr.io/evalstate/mcp-py-repl:latest",
+        ]
+      roots:
+        - uri: "file://./agent_folders/"
+          name: "agent_folders"
+          server_uri_alias: "file:///mnt/data/"
+    fetch:
+      command: "uvx"
+      args: ["mcp-server-fetch"]
+    sequential:
+      command: "npx"
+      args: ["-y","@modelcontextprotocol/server-sequential-thinking"]
+
+openai:
+  # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
+  #  default_model: "o3-mini"
+  default_model: "gpt-4o-mini"
+
+anthropic:
+  default_model: "claude-3-5-sonnet-20241022"
