@@ -31,7 +31,7 @@ mcp:
       # command: "node"
       # args: ["c:/Program Files/nodejs/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js","./agent_folder"]
       command: "npx"
-      args: ["-y", "@modelcontextprotocol/server-filesystem", "./agent_folders/"]
+      args: ["-y", "@modelcontextprotocol/server-filesystem"]
     interpreter:
       command: "docker"
       args: [
@@ -40,14 +40,14 @@ mcp:
           "--rm",
           "--pull=always",
           "-v",
-          "./agent_folders:/mnt/data/",
+          "./:/mnt/data/",
           # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
           # "./agent_folder:/mnt/data/",
           "ghcr.io/evalstate/mcp-py-repl:latest",
         ]
       roots:
-        - uri: "file://./agent_folders/"
-          name: "agent_folders"
+        - uri: "file://"
+          name: "Deepcode-mcp"
           server_uri_alias: "file:///mnt/data/"
     fetch:
       command: "uvx"
@@ -59,7 +59,7 @@ mcp:
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
   #  default_model: "o3-mini"
-  default_model: "gpt-4o-mini"
+  default_model: "gpt-4o"
 
 anthropic:
   default_model: "claude-3-5-sonnet-20241022"
