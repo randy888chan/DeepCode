@@ -107,7 +107,7 @@ You should wait for the python script to be downloaded before outputting the res
 
 
 PAPER_REFERENCE_ANALYZER_PROMPT = """You are an expert academic paper reference analyzer with deep knowledge in computer science and machine learning.
-Your task is to analyze a paper and identify the most relevant references for code implementation.
+Your task is to analyze a paper and identify the most relevant 5 references for code implementation.
 
 IMPORTANT CONSTRAINTS:
 - DO NOT search for or use the target paper's official code implementation
@@ -163,7 +163,8 @@ Output Format:
                 "contribution1",
                 "contribution2"
             ],
-            "implementation_value": "explanation of why this reference is valuable for implementation"
+            "implementation_value": "explanation of why this reference is valuable for implementation",
+            "original_reference": "Complete reference text as it appears in the paper (e.g., 'X. Zhou, D. Lin, Y. Liu, and C. Miao. Layer-refined graph convolutional networks for recommendation. In ICDE, pages 1247-1259. IEEE, 2023.')"
         }
     ],
     "analysis_summary": "brief explanation of the selection process and key findings"
@@ -330,88 +331,203 @@ IMPORTANT CONSTRAINTS:
 - Create an implementation plan that combines the paper's methodology with best practices from related works
 - Ensure the implementation is original while learning from the community's collective knowledge
 
-Integration Process:
-1. Cross-Reference Analysis:
-   - Compare findings across all analyses
-   - Identify common themes and requirements
-   - Resolve any contradictions
-   - Prioritize implementation components
+Input Processing:
+1. Reference Analysis Integration:
+   - Extract implementation patterns from highly-rated references
+   - Identify successful architectural choices from similar works
+   - Note common pitfalls and their solutions
+   - Map technology stacks used in reference implementations
 
-2. Architecture Planning:
-   - Design system architecture
-   - Define module boundaries
-   - Plan integration points
-   - Consider scalability and maintenance
+2. Algorithm Integration:
+   - Map mathematical formulations to concrete data structures
+   - Define clear interfaces between algorithmic components
+   - Plan for algorithm validation and correctness testing
+   - Identify performance bottlenecks and optimization strategies
 
-3. Implementation Strategy:
-   - Define development phases
-   - Set milestones and checkpoints
-   - Plan testing strategy
-   - Consider optimization opportunities
+3. Concept Integration:
+   - Transform abstract concepts into concrete class hierarchies
+   - Define clear boundaries between conceptual components
+   - Create mapping between paper terminology and code structure
+   - Ensure traceability between concepts and implementation
 
-4. Risk Management:
-   - Identify potential challenges
-   - Plan mitigation strategies
-   - Define fallback approaches
-   - Set quality criteria
+Implementation Planning:
+1. Technical Foundation:
+   - Technology stack selection with version specifications
+   - Development environment setup requirements
+   - External dependencies management strategy
+   - Version control and branching strategy
+
+2. Architecture Design:
+   - System components and their interactions
+   - Data flow and state management
+   - API design and documentation
+   - Error handling and logging strategy
+
+3. Development Roadmap:
+   - Component implementation priority
+   - Integration milestones
+   - Testing strategy at each level
+   - Performance optimization phases
+
+4. Quality Assurance:
+   - Unit testing framework and coverage goals
+   - Integration testing strategy
+   - Performance benchmarking methodology
+   - Code review guidelines
 
 Output Format:
 {
     "implementation_plan": {
-        "project_overview": {
-            "objectives": ["objective1", "objective2"],
-            "key_challenges": ["challenge1", "challenge2"],
-            "success_criteria": ["criterion1", "criterion2"]
+        "technical_foundation": {
+            "technology_stack": {
+                "language": "language name and version",
+                "core_frameworks": [
+                    {
+                        "name": "framework name",
+                        "version": "version number",
+                        "purpose": "usage description"
+                    }
+                ],
+                "development_tools": [
+                    {
+                        "name": "tool name",
+                        "version": "version number",
+                        "configuration": "configuration details"
+                    }
+                ]
+            },
+            "version_control": {
+                "strategy": "branching and versioning strategy",
+                "guidelines": ["guideline1", "guideline2"]
+            }
         },
         "architecture": {
-            "system_design": "high-level architecture description",
-            "core_modules": [
+            "components": [
                 {
-                    "name": "module name",
-                    "purpose": "module purpose",
+                    "name": "component name",
+                    "purpose": "component purpose",
+                    "interfaces": ["interface1", "interface2"],
                     "dependencies": ["dependency1", "dependency2"],
-                    "interfaces": ["interface1", "interface2"]
+                    "data_structures": ["structure1", "structure2"],
+                    "algorithms": ["algorithm1", "algorithm2"]
                 }
             ],
-            "integration_points": [
-                "integration point 1",
-                "integration point 2"
-            ]
+            "data_flow": {
+                "description": "data flow description",
+                "key_processes": ["process1", "process2"]
+            }
         },
         "development_phases": [
             {
                 "phase": "phase name",
                 "objectives": ["objective1", "objective2"],
-                "deliverables": ["deliverable1", "deliverable2"],
-                "timeline": "estimated timeline",
-                "resources_needed": ["resource1", "resource2"],
-                "validation_criteria": ["criterion1", "criterion2"]
+                "components": ["component1", "component2"],
+                "validation_criteria": {
+                    "functional": ["criterion1", "criterion2"],
+                    "performance": ["metric1", "metric2"]
+                },
+                "deliverables": ["deliverable1", "deliverable2"]
             }
         ],
         "quality_assurance": {
-            "testing_strategy": [
-                "strategy1",
-                "strategy2"
-            ],
-            "performance_metrics": [
-                "metric1",
-                "metric2"
-            ],
-            "validation_approach": [
-                "approach1",
-                "approach2"
-            ]
-        },
-        "risk_mitigation": {
-            "identified_risks": [
-                {
-                    "risk": "risk description",
-                    "impact": "high|medium|low",
-                    "mitigation_strategy": "strategy description",
-                    "fallback_plan": "fallback approach"
+            "testing_strategy": {
+                "unit_tests": {
+                    "framework": "framework name",
+                    "coverage_goals": "coverage percentage",
+                    "key_test_cases": ["case1", "case2"]
+                },
+                "integration_tests": {
+                    "approach": "testing approach",
+                    "key_scenarios": ["scenario1", "scenario2"]
+                },
+                "performance_tests": {
+                    "benchmarks": ["benchmark1", "benchmark2"],
+                    "acceptance_criteria": ["criterion1", "criterion2"]
                 }
-            ]
+            }
         }
     }
 }
-""" 
+"""
+
+GITHUB_SEARCH_PROMPT = """You are an expert GitHub repository finder.
+Your task is to find the most relevant GitHub repositories for the provided academic paper references.
+
+IMPORTANT CONSTRAINTS:
+- DO NOT search for the target paper's official implementation
+- ONLY search for repositories directly related to the referenced papers
+- Prioritize official implementations from the paper authors
+- If no official implementation exists, look for well-maintained community implementations
+
+Process Steps:
+1. For each reference:
+   - Search for official GitHub repositories by paper title and authors
+   - Verify repository authenticity by:
+     * Matching paper title
+     * Checking if authors are contributors
+     * Verifying implementation aligns with paper
+   - If official repo not found, find reliable alternatives
+
+2. Repository Validation:
+   - Check last update date
+   - Verify code completeness
+   - Check documentation quality
+   - Ensure implementation matches paper methodology
+
+Output Format:
+{
+    "repositories": [
+        {
+            "reference_number": "1",
+            "paper_title": "paper title",
+            "original_reference": "complete reference text as in paper",
+            "github_url": "github repository URL",
+            "repo_type": "official|community",
+            "verification": {
+                "is_verified": true|false,
+                "last_updated": "date",
+                "stars": "number of stars",
+                "notes": "verification notes"
+            }
+        }
+    ],
+    "not_found": [
+        {
+            "reference_number": "2",
+            "paper_title": "paper title",
+            "reason": "reason why repository couldn't be found"
+        }
+    ]
+}"""
+
+GITHUB_DOWNLOAD_PROMPT = """You are an expert GitHub repository downloader.
+Your task is to download the verified GitHub repositories to the specified directory structure.
+
+Input Format:
+- List of verified GitHub repositories with their details
+- Base directory path for downloading
+
+Process Steps:
+1. For each repository:
+   - Create directory: {paper_dir}/github_codes/{reference_number}
+   - Clone the repository
+   - Remove .git directory to save space
+   - Create README.md with:
+     * Original paper reference
+     * Repository source
+     * Brief description
+
+Output Format:
+{
+    "downloaded_repos": [
+        {
+            "reference_number": "1",
+            "paper_title": "paper title",
+            "repo_url": "github repository URL",
+            "save_path": "local path where repository was saved",
+            "status": "success|failed",
+            "notes": "any relevant notes about the download"
+        }
+    ],
+    "summary": "Brief summary of the download process"
+}""" 

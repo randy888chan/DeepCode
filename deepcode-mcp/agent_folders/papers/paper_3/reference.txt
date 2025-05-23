@@ -1,0 +1,82 @@
+I'll analyze this paper and identify the 5 most relevant references for code implementation based on the specified criteria. I'll focus on papers that provide key algorithmic insights and implementation details while avoiding the main paper's direct implementation.
+
+{
+    "selected_references": [
+        {
+            "rank": 1,
+            "title": "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation",
+            "authors": ["He, X.", "Deng, K.", "Wang, X.", "Li, Y.", "Zhang, Y.", "Wang, M."],
+            "year": "2020",
+            "relevance_score": 0.95,
+            "citation_context": "RecDiff uses a lightweight GCN similar to LightGCN as the base encoder for both user-item interactions and social relations",
+            "key_contributions": [
+                "Simplified GCN architecture without feature transformations",
+                "Efficient embedding propagation mechanism",
+                "Layer combination strategy"
+            ],
+            "implementation_value": "Provides the essential graph neural architecture that forms the backbone of RecDiff's encoder. The simplified GCN design is directly applicable for implementing both the user-item and social relation encoders.",
+            "original_reference": "[8] X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, and M. Wang. Lightgcn: Simplifying and powering graph convolution network for recommendation. In SIGIR, pages 639-648, 2020."
+        },
+        {
+            "rank": 2,
+            "title": "Denoising Diffusion Probabilistic Models",
+            "authors": ["Ho, J.", "Jain, A.", "Abbeel, P."],
+            "year": "2020",
+            "relevance_score": 0.90,
+            "citation_context": "Used as foundation for RecDiff's noise diffusion and removal process in the latent space",
+            "key_contributions": [
+                "Forward diffusion process design",
+                "Reverse denoising process",
+                "Loss function formulation"
+            ],
+            "implementation_value": "Critical for implementing the diffusion model components, including the forward noise addition process and the reverse denoising network architecture.",
+            "original_reference": "[9] J. Ho, A. Jain, and P. Abbeel. Denoising diffusion probabilistic models. NeurIPS, 33:6840-6851, 2020."
+        },
+        {
+            "rank": 3,
+            "title": "Improving Graph Collaborative Filtering with Neighborhood-Enriched Contrastive Learning",
+            "authors": ["Lin, Z.", "Tian, C.", "Hou, Y.", "Zhao, W. X."],
+            "year": "2022",
+            "relevance_score": 0.85,
+            "citation_context": "Referenced for handling noise in graph-based recommendation systems",
+            "key_contributions": [
+                "Neighborhood-enriched contrastive learning",
+                "Graph augmentation strategies",
+                "Loss function design for noisy data"
+            ],
+            "implementation_value": "Provides insights for implementing robust graph learning components and handling noisy connections in the social graph structure.",
+            "original_reference": "[15] Z. Lin, C. Tian, Y. Hou, and W. X. Zhao. Improving graph collaborative filtering with neighborhood-enriched contrastive learning. In WWW, pages 2320-2329, 2022."
+        },
+        {
+            "rank": 4,
+            "title": "Neural Graph Collaborative Filtering",
+            "authors": ["Wang, X.", "He, X.", "Wang, M.", "Feng, F.", "Chua, T-S."],
+            "year": "2019",
+            "relevance_score": 0.80,
+            "citation_context": "Foundational work for graph-based collaborative filtering that RecDiff builds upon",
+            "key_contributions": [
+                "High-order connectivity modeling",
+                "Embedding propagation mechanism",
+                "User-item interaction graph construction"
+            ],
+            "implementation_value": "Essential for implementing the base collaborative filtering components and user-item interaction modeling in the graph structure.",
+            "original_reference": "[30] X. Wang, X. He, M. Wang, F. Feng, and T.-S. Chua. Neural graph collaborative filtering. In SIGIR, pages 165-174, 2019."
+        },
+        {
+            "rank": 5,
+            "title": "BPR: Bayesian Personalized Ranking from Implicit Feedback",
+            "authors": ["Rendle, S.", "Freudenthaler, C.", "Gantner, Z.", "Schmidt-Thieme, L."],
+            "year": "2009",
+            "relevance_score": 0.75,
+            "citation_context": "Used for the basic ranking optimization in RecDiff",
+            "key_contributions": [
+                "Pairwise ranking optimization",
+                "Implicit feedback handling",
+                "Learning algorithm design"
+            ],
+            "implementation_value": "Critical for implementing the ranking loss and training procedure for the recommendation components of RecDiff.",
+            "original_reference": "[22] S. Rendle, C. Freudenthaler, Z. Gantner, and L. Schmidt-Thieme. Bpr: Bayesian personalized ranking from implicit feedback. In UAI, pages 452-461, 2009."
+        }
+    ],
+    "analysis_summary": "The selected references provide a comprehensive foundation for implementing RecDiff's key components: LightGCN [8] for the graph encoder architecture, DDPM [9] for the diffusion model design, NCL [15] for handling noisy connections, NGCF [30] for basic collaborative filtering, and BPR [22] for the ranking optimization. These papers collectively cover the essential algorithms and techniques needed for a successful implementation while avoiding direct use of RecDiff's code. The references were chosen based on their technical depth, implementation details, and relevance to core components, with a focus on papers that have proven implementations and strong community adoption."
+}
