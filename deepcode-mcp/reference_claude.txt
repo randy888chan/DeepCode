@@ -1,0 +1,102 @@
+I'll analyze the paper to identify the 5 most relevant references for code implementation of the RecDiff model, focusing on 
+technical depth and implementation value while avoiding the paper's own implementation.
+
+{
+    "selected_references": [
+        {
+            "rank": 1,
+            "title": "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation",
+            "authors": ["X. He", "K. Deng", "X. Wang", "Y. Li", "Y. Zhang", "M. Wang"],
+            "year": "2020",
+            "relevance_score": 0.95,
+            "citation_context": "Taking inspiration from the success of simplified Graph Neural Networks [8], we utilize a 
+lightweight Graph Convolutional Network (GCN) as the graph encoder in our social denoising framework.",
+            "key_contributions": [
+                "Simplified GCN architecture without feature transformations",
+                "Efficient message propagation framework",
+                "Layer combination strategy"
+            ],
+            "implementation_value": "Essential for implementing the base GCN encoder component of RecDiff. The paper directly 
+references this work for its graph encoder implementation, making it crucial for understanding the foundational architecture.",
+            "original_reference": "[8] X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, and M. Wang. Lightgcn: Simplifying and 
+powering graph convolution network for recommendation. In SIGIR, pages 639-648, 2020."
+        },
+        {
+            "rank": 2,
+            "title": "Denoising Diffusion Probabilistic Models",
+            "authors": ["J. Ho", "A. Jain", "P. Abbeel"],
+            "year": "2020",
+            "relevance_score": 0.90,
+            "citation_context": "The parameter βt controls the magnitude of the noise. It has been shown that by gradually 
+increasing βt for t = 1,...,T, the noised data Et converges to complete Gaussian noise as t increases [9].",
+            "key_contributions": [
+                "Core diffusion model architecture",
+                "Forward and reverse process implementations",
+                "Noise scheduling strategy"
+            ],
+            "implementation_value": "Critical for implementing the diffusion model component of RecDiff, including the forward 
+noise addition process and reverse denoising process. The paper heavily relies on this work's diffusion framework.",
+            "original_reference": "[9] J. Ho, A. Jain, and P. Abbeel. Denoising diffusion probabilistic models. NeurIPS, 
+33:6840-6851, 2020."
+        },
+        {
+            "rank": 3,
+            "title": "Neural Graph Collaborative Filtering",
+            "authors": ["X. Wang", "X. He", "M. Wang", "F. Feng", "T.-S. Chua"],
+            "year": "2019",
+            "relevance_score": 0.85,
+            "citation_context": "State-of-the-art social recommendation methods typically utilize GNN-based encoding functions 
+on collaborative graphs and social graphs to learn representations for users and items.",
+            "key_contributions": [
+                "High-order connectivity modeling",
+                "User-item interaction graph construction",
+                "Embedding propagation mechanism"
+            ],
+            "implementation_value": "Provides detailed implementation for graph-based collaborative filtering mechanisms needed
+for the interaction modeling component of RecDiff.",
+            "original_reference": "[30] X. Wang, X. He, M. Wang, F. Feng, and T.-S. Chua. Neural graph collaborative filtering.
+In SIGIR, pages 165-174, 2019."
+        },
+        {
+            "rank": 4,
+            "title": "BPR: Bayesian Personalized Ranking from Implicit Feedback",
+            "authors": ["S. Rendle", "C. Freudenthaler", "Z. Gantner", "L. Schmidt-Thieme"],
+            "year": "2009",
+            "relevance_score": 0.80,
+            "citation_context": "The embeddings are finally used by a predicting function Pred(·), such as the dot-product 
+operation, to output predictions r̂u,v for user-item interactions.",
+            "key_contributions": [
+                "Pairwise ranking optimization",
+                "Implicit feedback handling",
+                "Personalized ranking metric"
+            ],
+            "implementation_value": "Essential for implementing the training loss and ranking optimization components of 
+RecDiff's recommendation system.",
+            "original_reference": "[22] S. Rendle, C. Freudenthaler, Z. Gantner, and L. Schmidt-Thieme. Bpr: Bayesian 
+personalized ranking from implicit feedback. In UAI, pages 452-461, 2009."
+        },
+        {
+            "rank": 5,
+            "title": "DiffNet: A Neural Influence Diffusion Model for Social Recommendation",
+            "authors": ["L. Wu", "P. Sun", "Y. Fu", "R. Hong", "X. Wang", "M. Wang"],
+            "year": "2019",
+            "relevance_score": 0.75,
+            "citation_context": "Deep learning-based social recommender systems, such as DiffNet [37], RecoGCN [40], and KCGN 
+[10], leverage Graph Neural Networks to effectively model the connections between users and items.",
+            "key_contributions": [
+                "Social influence diffusion modeling",
+                "Layer-wise influence propagation",
+                "Dynamic user representation learning"
+            ],
+            "implementation_value": "Provides implementation insights for social influence modeling and propagation mechanisms 
+needed in RecDiff's social graph component.",
+            "original_reference": "[37] L. Wu, P. Sun, Y. Fu, R. Hong, X. Wang, and M. Wang. A neural influence diffusion model
+for social recommendation. In SIGIR, pages 235-244, 2019."
+        }
+    ],
+    "analysis_summary": "The selected references provide crucial implementation components for RecDiff: LightGCN and NGCF for 
+the graph encoder architecture, DDPM for the diffusion model framework, BPR for the ranking optimization, and DiffNet for 
+social influence modeling. These papers offer detailed technical implementations that are directly relevant to RecDiff's key 
+components while avoiding the paper's own implementation. The selection prioritizes papers with strong implementation value and
+technical depth, particularly focusing on the graph neural network, diffusion model, and recommendation system aspects."
+}

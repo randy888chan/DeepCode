@@ -1,0 +1,54 @@
+Below are the relevant GitHub repositories found for the selected references from the paper:
+
+```json
+{
+    "repositories": [
+        {
+            "reference_number": "1",
+            "paper_title": "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation",
+            "original_reference": "[8] X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, and M. Wang. Lightgcn: Simplifying and powering graph convolution network for recommendation. In SIGIR, pages 639-648, 2020.",
+            "github_url": "https://github.com/kuandeng/LightGCN",
+            "repo_type": "official",
+            "verification": {
+                "is_verified": true,
+                "last_updated": "recent",
+                "stars": "unknown",
+                "notes": "This is the official implementation by the authors of the LightGCN paper."
+            }
+        },
+        {
+            "reference_number": "3",
+            "paper_title": "Improving Graph Collaborative Filtering with Neighborhood-Enriched Contrastive Learning",
+            "original_reference": "[15] Z. Lin, C. Tian, Y. Hou, and W. X. Zhao. Improving graph collaborative filtering with neighborhood-enriched contrastive learning. In WWW, pages 2320-2329, 2022.",
+            "github_url": "https://github.com/RUCAIBox/NCL",
+            "repo_type": "official",
+            "verification": {
+                "is_verified": true,
+                "last_updated": "recent",
+                "stars": "unknown",
+                "notes": "Official PyTorch implementation for the NCL paper provided by the authors."
+            }
+        }
+    ],
+    "not_found": [
+        {
+            "reference_number": "2",
+            "paper_title": "Denoising Diffusion Probabilistic Models",
+            "reason": "Rate limit exceeded during search. Could not confirm repository in this instance."
+        },
+        {
+            "reference_number": "4",
+            "paper_title": "Neural Graph Collaborative Filtering",
+            "reason": "Rate limit exceeded during search. Could not confirm repository in this instance."
+        },
+        {
+            "reference_number": "5",
+            "paper_title": "BPR: Bayesian Personalized Ranking from Implicit Feedback",
+            "reason": "Rate limit exceeded during search. Could not confirm repository in this instance."
+        }
+    ]
+}
+```
+
+- The repositories for references 2, 4, and 5 could not be confirmed due to rate limits during the search process. You may need to retry or individually search these references again later.
+- The provided URLs link to official repositories, ensuring you have access to reliable implementations.

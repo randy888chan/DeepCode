@@ -1,0 +1,28 @@
+Let's proceed with downloading the verified GitHub repositories for the specified references and organize them accordingly under the given directory structure.
+
+### Steps to Perform:
+1. **Create directories** for each verified repository.
+2. **Clone the repositories** to the newly created directories.
+3. **Remove the `.git` directory** to save space.
+4. **Create a `README.md` file** in each directory with relevant information.
+
+### Base Directory Path:
+- Base: `{paper_dir}/github_codes/`
+
+Here's what we will accomplish for each verified repository:
+
+#### Repositories to Download:
+1. **LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation**
+   - **Reference Number**: 1
+   - **GitHub URL**: https://github.com/kuandeng/LightGCN
+   - **Directory**: `{paper_dir}/github_codes/1`
+
+2. **Improving Graph Collaborative Filtering with Neighborhood-Enriched Contrastive Learning**
+   - **Reference Number**: 3
+   - **GitHub URL**: https://github.com/RUCAIBox/NCL
+   - **Directory**: `{paper_dir}/github_codes/3`
+
+Let's start by creating the directories for these repositories. I'll proceed with this step first and then coordinate the cloning process.
+It looks like there's an issue with the provided base directory path. It appears the `{paper_dir}` part of the path hasn't been specified, resulting in an error when trying to create the directories. 
+
+Could you please provide the full base directory path where these repositories should be saved, or let me know how you'd like to proceed?
