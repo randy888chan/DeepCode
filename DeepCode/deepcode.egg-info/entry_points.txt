@@ -1,2 +1,0 @@
-[console_scripts]
-deepcode = deepcode_cli:cli_entry
