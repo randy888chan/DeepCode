@@ -40,7 +40,7 @@ mcp:
           "--rm",
           "--pull=always",
           "-v",
-          "./:/mnt/data/",
+          "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
           # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
           # "./agent_folder:/mnt/data/",
           "ghcr.io/evalstate/mcp-py-repl:latest",

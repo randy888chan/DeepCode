@@ -107,9 +107,10 @@ You should wait for the python script to be downloaded before outputting the res
 
 
 PAPER_REFERENCE_ANALYZER_PROMPT = """You are an expert academic paper reference analyzer with deep knowledge in computer science and machine learning.
-Your task is to analyze a paper and identify the most relevant 5 references for code implementation.
+Your task is to analyze a paper and identify the most relevant 5 references that have GitHub repositories.
 
 IMPORTANT CONSTRAINTS:
+- ONLY select references that have GitHub repositories
 - DO NOT search for or use the target paper's official code implementation
 - DO NOT refer to any repositories or implementations directly associated with the target paper
 - You CAN and SHOULD analyze code implementations from referenced papers
@@ -117,37 +118,38 @@ IMPORTANT CONSTRAINTS:
 - Focus on finding references with good code implementations that solve similar problems
 
 Analysis Criteria:
-1. Citation Impact Analysis:
-   - Number of citations (weighted: 20%)
-   - Recency of citations
-   - Citation context in the target paper
+1. GitHub Repository Quality (weighted: 40%):
+   - Number of GitHub stars
+   - Repository activity and maintenance
+   - Code documentation quality
+   - Community adoption and activity
+   - Last update date
 
-2. Implementation Relevance:
-   - References cited in methodology/implementation sections (weighted: 30%)
+2. Implementation Relevance (weighted: 30%):
+   - References cited in methodology/implementation sections
    - References containing algorithmic details
    - References cited when describing core components
+   - Code implementation quality
 
-3. Technical Depth:
-   - Algorithm/method similarity (weighted: 25%)
+3. Technical Depth (weighted: 20%):
+   - Algorithm/method similarity
    - Technical foundation relationship
    - Implementation details provided
+   - Code structure and organization
 
-4. Academic Influence:
-   - Publication venue quality (weighted: 15%)
+4. Academic Influence (weighted: 10%):
+   - Publication venue quality
    - Author expertise in the field
    - Research continuation/improvement
-
-5. Code Availability:
-   - Official implementation availability (weighted: 10%)
-   - Code quality and documentation
-   - Community adoption
+   - Citation impact
 
 Analysis Steps:
 1. Extract all references from the paper
-2. Analyze each reference based on the criteria above
-3. Calculate relevance scores
-4. Select and rank top 5 references
-5. Provide justification for each selection
+2. Filter references to only include those with GitHub repositories
+3. Analyze each GitHub repository based on the criteria above
+4. Calculate relevance scores
+5. Select and rank top 5 references
+6. Provide justification for each selection
 
 Output Format:
 {
@@ -164,10 +166,23 @@ Output Format:
                 "contribution2"
             ],
             "implementation_value": "explanation of why this reference is valuable for implementation",
+            "github_info": {
+                "repository_url": "GitHub repository URL",
+                "stars_count": "number of stars",
+                "last_updated": "last update date",
+                "repository_quality": "detailed assessment of repository quality",
+                "key_features": [
+                    "feature1",
+                    "feature2"
+                ],
+                "documentation_quality": "assessment of documentation quality",
+                "community_activity": "description of community engagement"
+            },
             "original_reference": "Complete reference text as it appears in the paper (e.g., 'X. Zhou, D. Lin, Y. Liu, and C. Miao. Layer-refined graph convolutional networks for recommendation. In ICDE, pages 1247-1259. IEEE, 2023.')"
         }
     ],
-    "analysis_summary": "brief explanation of the selection process and key findings"
+    "analysis_summary": "brief explanation of the selection process and key findings",
+    "github_repositories_found": "total number of references with GitHub repositories"
 }
 """
 
@@ -501,33 +516,38 @@ Output Format:
 }"""
 
 GITHUB_DOWNLOAD_PROMPT = """You are an expert GitHub repository downloader.
-Your task is to download the verified GitHub repositories to the specified directory structure.
-
-Input Format:
-- List of verified GitHub repositories with their details
-- Base directory path for downloading
-
+Your task is to download the GitHub repositories to the specified directory structure. 
 Process Steps:
 1. For each repository:
-   - Create directory: {paper_dir}/github_codes/{reference_number}
-   - Clone the repository
-   - Remove .git directory to save space
-   - Create README.md with:
-     * Original paper reference
-     * Repository source
-     * Brief description
+   - Create directory: {paper_dir}/code_base/{{reference_number}}
+   - Use the interpreter tool to execute the download script:
+     * Command: tools/github_downloader.py "{paper_dir}/code_base/{{reference_number}}"
+     * The interpreter tool will handle the script execution and file operations
+   - The script will:
+     * Clone the repository
+     * Remove .git directory to save space
+     * Create README.md with:
+       - Original paper reference
+       - Repository source
+       - Brief description
+
+Important Notes:
+- Always use the interpreter tool to execute the download script
+- The interpreter tool will handle all file system operations
+- Monitor the interpreter output for any errors or warnings
+- Verify the download status through the interpreter's response
 
 Output Format:
-{
+{{
     "downloaded_repos": [
-        {
+        {{
             "reference_number": "1",
             "paper_title": "paper title",
             "repo_url": "github repository URL",
-            "save_path": "local path where repository was saved",
+            "save_path": "{paper_dir}/code_base/{{reference_number}}",
             "status": "success|failed",
             "notes": "any relevant notes about the download"
-        }
+        }}
     ],
     "summary": "Brief summary of the download process"
-}""" 
+}}""" 

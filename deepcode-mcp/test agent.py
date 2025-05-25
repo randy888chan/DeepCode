@@ -27,9 +27,10 @@ async def main():
         context = agent_app.context
         context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
         
-        file_input_info = """https://github.com/kuandeng/LightGCN.git
+        file_input_info = """Start downloading the GitHub repositories.
                             """         
-        await github_repo_download(file_input_info, logger)
+        paper_dir = "./agent_folders/papers/paper_1"
+        await github_repo_download(file_input_info, paper_dir, logger)
 
 if __name__ == "__main__":
     start = time.time()

@@ -3,6 +3,8 @@ import json
 import subprocess
 import shutil
 from typing import Dict, List, Optional
+import sys
+import stat
 
 class GitHubDownloader:
     def __init__(self, base_dir: str):
@@ -81,6 +83,24 @@ class GitHubDownloader:
             
         return url
 
+    def set_directory_permissions(self, directory: str):
+        """
+        设置目录及其内容的权限
+        
+        Args:
+            directory (str): 目标目录路径
+        """
+        try:
+            for root, dirs, files in os.walk(directory):
+                # 设置目录权限
+                os.chmod(root, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                # 设置文件权限
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+        except Exception as e:
+            print(f"Error setting permissions: {str(e)}")
+
     def clone_repository(self, repo_url: str, target_dir: str) -> bool:
         """
         克隆 GitHub 仓库到指定目录
@@ -108,15 +128,10 @@ class GitHubDownloader:
                 text=True
             )
             
-            if result.returncode == 0:
-                # 删除 .git 目录
-                git_dir = os.path.join(target_dir, ".git")
-                if os.path.exists(git_dir):
-                    shutil.rmtree(git_dir)
-                return True
-            else:
-                print(f"Error cloning repository: {result.stderr}")
-                return False
+            # 设置目录权限
+            self.set_directory_permissions(target_dir)
+            
+            return True
         except Exception as e:
             print(f"Error during cloning: {str(e)}")
             return False
@@ -177,7 +192,7 @@ Note: This is a copy of the original repository with the .git directory removed.
                 target_dir = os.path.join(github_codes_dir, f"ref_{repo['ref_num']}")
                 
                 if self.clone_repository(repo['url'], target_dir):
-                    self.create_readme(target_dir, repo)
+                    # self.create_readme(target_dir, repo)
                     results["success"].append(repo['url'])
                 else:
                     results["failed"].append(repo['url'])
@@ -194,6 +209,7 @@ def main():
     """
     # 示例用法
     paper_dir = "./agent_folders/papers/paper_1"
+    # paper_dir = str(sys.argv[1])
     downloader = GitHubDownloader(paper_dir)
     
     search_result_path = os.path.join(paper_dir, "github_search.txt")

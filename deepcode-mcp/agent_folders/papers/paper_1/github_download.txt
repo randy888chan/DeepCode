@@ -1,28 +1,15 @@
-Let's proceed with downloading the verified GitHub repositories for the specified references and organize them accordingly under the given directory structure.
+I notice that no specific GitHub repositories or command details were provided in your request. To help you download GitHub repositories, I need:
 
-### Steps to Perform:
-1. **Create directories** for each verified repository.
-2. **Clone the repositories** to the newly created directories.
-3. **Remove the `.git` directory** to save space.
-4. **Create a `README.md` file** in each directory with relevant information.
+1. The GitHub repository URLs you want to download
+2. The reference numbers for each repository
+3. The paper titles associated with each repository
 
-### Base Directory Path:
-- Base: `{paper_dir}/github_codes/`
+Could you please provide these details? Once you share this information, I can help execute the downloads following the specified structure:
+```
+D:\Project_codes\Code-Agent\deepcode-mcp\agent_folders\papers\paper_1/code_base/{reference_number}
+```
 
-Here's what we will accomplish for each verified repository:
-
-#### Repositories to Download:
-1. **LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation**
-   - **Reference Number**: 1
-   - **GitHub URL**: https://github.com/kuandeng/LightGCN
-   - **Directory**: `{paper_dir}/github_codes/1`
-
-2. **Improving Graph Collaborative Filtering with Neighborhood-Enriched Contrastive Learning**
-   - **Reference Number**: 3
-   - **GitHub URL**: https://github.com/RUCAIBox/NCL
-   - **Directory**: `{paper_dir}/github_codes/3`
-
-Let's start by creating the directories for these repositories. I'll proceed with this step first and then coordinate the cloning process.
-It looks like there's an issue with the provided base directory path. It appears the `{paper_dir}` part of the path hasn't been specified, resulting in an error when trying to create the directories. 
-
-Could you please provide the full base directory path where these repositories should be saved, or let me know how you'd like to proceed?
+Please provide the information in this format:
+1. Repository URL:
+2. Reference Number:
+3. Paper Title:

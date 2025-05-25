@@ -59,3 +59,4 @@ if __name__ == "__main__":
     end = time.time()
     print(f"Total run time: {end - start:.2f}s")
     os.system('find . -type d -name "__pycache__" -exec rm -r {} +')
+    os.system('Get-ChildItem -Path . -Filter "__pycache__" -Recurse -Directory | Remove-Item -Recurse -Force')
