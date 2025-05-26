@@ -40,7 +40,8 @@ mcp:
           "--rm",
           "--pull=always",
           "-v",
-          "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
+          # "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
+          "./:/mnt/data/",
           # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
           # "./agent_folder:/mnt/data/",
           "ghcr.io/evalstate/mcp-py-repl:latest",
@@ -62,6 +63,11 @@ mcp:
         - "@modelcontextprotocol/server-github"
       env:
         GITHUB_TOKEN: "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"
+    github-downloader:
+      command: "python"
+      args: ["tools/git_command.py"]
+      env:
+        PYTHONPATH: "."
 
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored

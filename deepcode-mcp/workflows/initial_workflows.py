@@ -140,14 +140,14 @@ async def github_repo_download(search_result, paper_dir, logger):
     """
     github_download_agent = Agent(
         name="GithubDownloadAgent",
-        instruction=GITHUB_DOWNLOAD_PROMPT.format(paper_dir=paper_dir),
-        server_names=["interpreter"],
+        instruction="Download github repo to the directory {paper_dir}/code_base".format(paper_dir=paper_dir),
+        server_names=["filesystem", "github-downloader"],
     )
     
     async with github_download_agent:
         logger.info("GitHub downloader: Downloading repositories...")
         downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
-        return await downloader.generate_str(message="Download following the command in the prompt.")
+        return await downloader.generate_str(message=search_result)
 
 async def paper_reference_analyzer(analysis_result, logger):
     """
@@ -217,14 +217,14 @@ async def paper_code_preparation(file_input_info, logger):
             logger.info(f"GitHub search results have been saved to {search_path}")
         
         # 3. 下载GitHub仓库
-        # download_result = await github_repo_download(search_result, paper_dir, logger)
-        # download_path = os.path.join(paper_dir, 'github_download.txt')
-        # with open(download_path, 'w', encoding='utf-8') as f:
-        #     f.write(download_result)
-        # logger.info(f"GitHub download results have been saved to {download_path}")
-        downloader = GitHubDownloader(paper_dir)
-        results = downloader.process_file(search_path)
-        print(results)
+        download_result = await github_repo_download(search_result, paper_dir, logger)
+        download_path = os.path.join(paper_dir, 'github_download.txt')
+        with open(download_path, 'w', encoding='utf-8') as f:
+            f.write(download_result)
+        logger.info(f"GitHub download results have been saved to {download_path}")
+        # downloader = GitHubDownloader(paper_dir)
+        # results = downloader.process_file(search_path)
+        # print(results)
 
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")

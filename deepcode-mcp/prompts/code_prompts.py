@@ -519,17 +519,8 @@ GITHUB_DOWNLOAD_PROMPT = """You are an expert GitHub repository downloader.
 Your task is to download the GitHub repositories to the specified directory structure. 
 Process Steps:
 1. For each repository:
-   - Create directory: {paper_dir}/code_base/{{reference_number}}
-   - Use the interpreter tool to execute the download script:
-     * Command: tools/github_downloader.py "{paper_dir}/code_base/{{reference_number}}"
-     * The interpreter tool will handle the script execution and file operations
-   - The script will:
-     * Clone the repository
-     * Remove .git directory to save space
-     * Create README.md with:
-       - Original paper reference
-       - Repository source
-       - Brief description
+   - Create directory: {paper_dir}/code_base/
+   - Download the repository to the directory
 
 Important Notes:
 - Always use the interpreter tool to execute the download script
@@ -544,7 +535,7 @@ Output Format:
             "reference_number": "1",
             "paper_title": "paper title",
             "repo_url": "github repository URL",
-            "save_path": "{paper_dir}/code_base/{{reference_number}}",
+            "save_path": "{paper_dir}/code_base/name_of_repo",
             "status": "success|failed",
             "notes": "any relevant notes about the download"
         }}
