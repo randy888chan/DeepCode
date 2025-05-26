@@ -1,5 +1,0 @@
-{"level":"INFO","timestamp":"2025-05-25T22:35:25.561000","namespace":"mcp_agent.context","message":"Configuring logger with level: debug"}
-{"level":"INFO","timestamp":"2025-05-25T22:35:25.568543","namespace":"mcp_agent.paper_to_code","message":"MCPAgent initialized","data":{"data":{"progress_action":"Running","target":"paper_to_code","agent_name":"mcp_application_loop","session_id":"adb05801-b5e1-45cf-863e-e5eeaab101e9"}}}
-{"level":"INFO","timestamp":"2025-05-25T22:35:25.570871","namespace":"mcp_agent.paper_to_code","message":"Found existing reference analysis at D:\\Project_codes\\Code-Agent\\deepcode-mcp\\agent_folders\\papers\\paper_1\\reference.txt"}
-{"level":"INFO","timestamp":"2025-05-25T22:35:25.570871","namespace":"mcp_agent.paper_to_code","message":"Found existing GitHub search results at D:\\Project_codes\\Code-Agent\\deepcode-mcp\\agent_folders\\papers\\paper_1\\github_search.txt"}
-{"level":"INFO","timestamp":"2025-05-25T22:36:48.993457","namespace":"mcp_agent.paper_to_code","message":"MCPAgent cleanup","data":{"data":{"progress_action":"Finished","target":"paper_to_code","agent_name":"mcp_application_loop"}}}

@@ -40,8 +40,8 @@ mcp:
           "--rm",
           "--pull=always",
           "-v",
-          # "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
-          "./:/mnt/data/",
+          "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
+          # "./:/mnt/data/",
           # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
           # "./agent_folder:/mnt/data/",
           "ghcr.io/evalstate/mcp-py-repl:latest",
@@ -56,16 +56,21 @@ mcp:
     sequential:
       command: "npx"
       args: ["-y","@modelcontextprotocol/server-sequential-thinking"]
-    github:
-      command: "npx"
-      args:
-        - "-y"
-        - "@modelcontextprotocol/server-github"
-      env:
-        GITHUB_TOKEN: "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"
+    # github:
+    #   command: "npx"
+    #   args:
+    #     - "-y"
+    #     - "@modelcontextprotocol/server-github"
+    #   env:
+    #     GITHUB_TOKEN: "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"
     github-downloader:
       command: "python"
       args: ["tools/git_command.py"]
+      env:
+        PYTHONPATH: "."
+    file-downloader:
+      command: "python"
+      args: ["tools/pdf_downloader.py"]
       env:
         PYTHONPATH: "."
 

@@ -9,7 +9,7 @@ import os
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
 from prompts.code_prompts import (
     PAPER_INPUT_ANALYZER_PROMPT,
-    PAPER_DOWNLOADER_PROMPT,
+    PAPER_DOWNLOADER_PROMPT_2,
     PAPER_REFERENCE_ANALYZER_PROMPT,
     PAPER_ALGORITHM_ANALYZER_PROMPT,
     PAPER_CONCEPT_ANALYZER_PROMPT,
@@ -55,8 +55,8 @@ async def run_paper_downloader(analysis_result, logger):
     """
     downloader_agent = Agent(
         name="PaperDownloaderAgent",
-        instruction=PAPER_DOWNLOADER_PROMPT,
-        server_names=["filesystem", "interpreter"],
+        instruction=PAPER_DOWNLOADER_PROMPT_2,
+        server_names=["filesystem", "file-downloader"],
     )
     
     async with downloader_agent:
