@@ -148,6 +148,17 @@ class URLExtractor:
         # 文件路径形式的URL（如 www.example.com/file.pdf）
         r'(?<!\S)(?:www\.)?[-\w]+(?:\.[-\w]+)+/(?:[-\w._~!$&\'()*+,;=:@/]|%[\da-fA-F]{2})+',
     ]
+
+    @staticmethod
+    def convert_arxiv_url(url: str) -> str:
+        """将arXiv网页链接转换为PDF下载链接"""
+        # 匹配arXiv论文ID的正则表达式
+        arxiv_pattern = r'arxiv\.org/abs/(\d+\.\d+)(?:v\d+)?'
+        match = re.search(arxiv_pattern, url, re.IGNORECASE)
+        if match:
+            paper_id = match.group(1)
+            return f'https://arxiv.org/pdf/{paper_id}.pdf'
+        return url
     
     @classmethod
     def extract_urls(cls, text: str) -> List[str]:
@@ -158,7 +169,9 @@ class URLExtractor:
         at_url_pattern = r'@(https?://[^\s]+)'
         at_matches = re.findall(at_url_pattern, text, re.IGNORECASE)
         for match in at_matches:
-            urls.append(match.rstrip('/'))
+            # 处理arXiv链接
+            url = cls.convert_arxiv_url(match.rstrip('/'))
+            urls.append(url)
         
         # 然后使用原有的正则模式
         for pattern in cls.URL_PATTERNS:
@@ -173,8 +186,8 @@ class URLExtractor:
                         # 其他情况也添加 https
                         match = 'https://' + match
                 
-                # 清理URL
-                url = match.rstrip('/')
+                # 处理arXiv链接
+                url = cls.convert_arxiv_url(match.rstrip('/'))
                 urls.append(url)
         
         # 去重并保持顺序

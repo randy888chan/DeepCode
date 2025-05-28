@@ -1,0 +1,3 @@
+{"level":"INFO","timestamp":"2025-05-28T17:50:01.345038","namespace":"mcp_agent.context","message":"Configuring logger with level: debug"}
+{"level":"INFO","timestamp":"2025-05-28T17:50:01.346931","namespace":"mcp_agent.paper_to_code","message":"MCPAgent initialized","data":{"data":{"progress_action":"Running","target":"paper_to_code","agent_name":"mcp_application_loop","session_id":"6b74ade2-a14a-4f9e-8a12-d66c350354f7"}}}
+{"level":"INFO","timestamp":"2025-05-28T18:01:24.120099","namespace":"mcp_agent.paper_to_code","message":"MCPAgent cleanup","data":{"data":{"progress_action":"Finished","target":"paper_to_code","agent_name":"mcp_application_loop"}}}

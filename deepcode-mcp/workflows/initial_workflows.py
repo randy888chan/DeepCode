@@ -6,6 +6,7 @@ from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 from utils.file_processor import FileProcessor
 from tools.github_downloader import GitHubDownloader
 import os
+import asyncio
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
 from prompts.code_prompts import (
     PAPER_INPUT_ANALYZER_PROMPT,
@@ -64,19 +65,19 @@ async def run_paper_downloader(analysis_result, logger):
         tools = await downloader_agent.list_tools()
         logger.info("Tools available:", data=tools.model_dump())
         
-        downloader = await downloader_agent.attach_llm(OpenAIAugmentedLLM)
+        downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
         return await downloader.generate_str(message=analysis_result)
 
 async def paper_code_analyzer(document, logger):
     """
-    Run the paper download workflow using PaperDownloaderAgent.
+    Run the paper code analysis workflow using multiple agents.
     
     Args:
-        analysis_result (str): The result from the paper analyzer
+        document (str): The document to analyze
         logger: The logger instance for logging information
         
     Returns:
-        str: The download result from the agent
+        str: The analysis result from the agents
     """
     concept_analysis_agent = Agent(
         name="ConceptAnalysisAgent",
@@ -103,7 +104,8 @@ async def paper_code_analyzer(document, logger):
             llm_factory=AnthropicAugmentedLLM,
         )
     result = await code_aggregator_agent.generate_str(message=document)
-    logger.info(result)
+    logger.info(f"Code analysis result: {result}")
+    return result
     # async with code_validation_agent:
     #     logger.info("code_validation_agent: Connected to server, calling list_tools...")
     #     code_validation = await code_validation_agent.attach_llm(AnthropicAugmentedLLM)
@@ -192,6 +194,7 @@ async def paper_code_preparation(download_result, logger):
                 f.write(initial_plan_result)
             logger.info(f"Initial plan has been saved to {initial_plan_path}")
         # 2. 下载GitHub仓库
+        await asyncio.sleep(5) 
         download_result = await github_repo_download(reference_result, paper_dir, logger)
         download_path = os.path.join(paper_dir, 'github_download.txt')
         with open(download_path, 'w', encoding='utf-8') as f:

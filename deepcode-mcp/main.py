@@ -60,9 +60,9 @@ async def process_input(input_source: str, cli: CLIInterface, logger):
         cli.print_status("📊 Analyzing paper content...", "analysis")
         analysis_result = await run_paper_analyzer(input_source, logger)
         cli.print_status("Paper analysis completed", "success")
-        
         # Run paper downloader
         cli.print_status("📥 Processing downloads...", "download")
+        await asyncio.sleep(5)  # Add 5-second pause
         download_result = await run_paper_downloader(analysis_result, logger)
         cli.print_status("Download processing completed", "success")
         # Display results with beautiful formatting

@@ -56,26 +56,31 @@ class CLIInterface:
         os.system('cls' if os.name == 'nt' else 'clear')
         
     def print_logo(self):
-        """Print a beautiful ASCII logo with gradient colors"""
+        """Print a beautiful ASCII logo with gradient colors and tech elements"""
+        # 确保每行总共79个字符（不包括颜色代码），边框完美对齐
         logo = f"""
 {Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║  {Colors.MAGENTA}██████╗ ███████╗██████╗ ██████╗  ██████╗      █████╗ ██╗                 {Colors.CYAN}║
-║  {Colors.PURPLE}██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔═══██╗    ██╔══██╗██║                 {Colors.CYAN}║
-║  {Colors.BLUE}██████╔╝█████╗  ██████╔╝██████╔╝██║   ██║    ███████║██║                 {Colors.CYAN}║
-║  {Colors.OKBLUE}██╔══██╗██╔══╝  ██╔═══╝ ██╔══██╗██║   ██║    ██╔══██║██║                 {Colors.CYAN}║
-║  {Colors.OKCYAN}██║  ██║███████╗██║     ██║  ██║╚██████╔╝    ██║  ██║██║                 {Colors.CYAN}║
-║  {Colors.GREEN}╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝     ╚═╝  ╚═╝╚═╝                 {Colors.CYAN}║
+║  {Colors.BOLD}{Colors.MAGENTA}██████╗  ███████╗██████╗ ██████╗  ██████╗     █████╗ ██╗{Colors.CYAN}                ║
+║  {Colors.BOLD}{Colors.PURPLE}██╔══██╗ ██╔════╝██╔══██╗██╔══██╗██╔═══██╗   ██╔══██╗██║{Colors.CYAN}                ║
+║  {Colors.BOLD}{Colors.BLUE}██████╔╝ █████╗  ██████╔╝██████╔╝██║   ██║   ███████║██║{Colors.CYAN}                ║
+║  {Colors.BOLD}{Colors.OKBLUE}██╔══██╗ ██╔══╝  ██╔═══╝ ██╔══██╗██║   ██║   ██╔══██║██║{Colors.CYAN}                ║
+║  {Colors.BOLD}{Colors.OKCYAN}██║  ██║ ███████╗██║     ██║  ██║╚██████╔╝   ██║  ██║██║{Colors.CYAN}                ║
+║  {Colors.BOLD}{Colors.GREEN}╚═╝  ╚═╝ ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝  ╚═╝╚═╝{Colors.CYAN}                ║
 ║                                                                               ║
+║  {Colors.BOLD}{Colors.YELLOW}┌─────────────────────────────────────────────────────────────────────────┐{Colors.CYAN}   ║
+║  {Colors.BOLD}{Colors.YELLOW}│  🤖 AI-POWERED RESEARCH PAPER REPRODUCTION ENGINE 🚀                  │{Colors.CYAN}   ║
+║  {Colors.BOLD}{Colors.YELLOW}│  ⚡ INTELLIGENT • AUTOMATED • CUTTING-EDGE ⚡                        │{Colors.CYAN}   ║
+║  {Colors.BOLD}{Colors.YELLOW}└─────────────────────────────────────────────────────────────────────────┘{Colors.CYAN}   ║
 ║                                                                               ║
-║  {Colors.BOLD}{Colors.YELLOW}🚀 AI-Powered Research Paper Reproduction Engine 🚀{Colors.ENDC}{Colors.CYAN}                    ║
+║  {Colors.BOLD}{Colors.GREEN}💎 CORE CAPABILITIES:{Colors.ENDC}                                                        {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Neural PDF Analysis & Code Extraction                                 {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Advanced Document Processing Engine                                   {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Multi-Format Support (PDF•DOCX•PPTX•HTML)                           {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Smart File Upload Interface                                          {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Automated Repository Management                                      {Colors.CYAN}║
 ║                                                                               ║
-║  {Colors.GREEN}✨ Features:{Colors.ENDC}                                                              {Colors.CYAN}║
-║     {Colors.OKCYAN}• Intelligent PDF Analysis & Code Extraction                              {Colors.CYAN}║
-║     {Colors.OKCYAN}• Advanced Document Processing with Docling                              {Colors.CYAN}║
-║     {Colors.OKCYAN}• Multi-format Support (PDF, DOCX, PPTX, HTML)                          {Colors.CYAN}║
-║     {Colors.OKCYAN}• Smart File Upload Interface                                           {Colors.CYAN}║
-║     {Colors.OKCYAN}• Automated GitHub Repository Management                                 {Colors.CYAN}║
+║  {Colors.BOLD}{Colors.PURPLE}🔬 TECH STACK: Python•AI•MCP•Docling•LLM                                   {Colors.CYAN}║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
 """
