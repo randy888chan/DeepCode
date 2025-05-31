@@ -200,6 +200,7 @@ async def paper_code_preparation(download_result, logger):
         with open(download_path, 'w', encoding='utf-8') as f:
             f.write(download_result)
         logger.info(f"GitHub download results have been saved to {download_path}")
+        return download_result
 
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")

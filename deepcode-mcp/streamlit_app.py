@@ -509,16 +509,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 初始化session state
-if 'app_initialized' not in st.session_state:
-    st.session_state.app_initialized = False
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 if 'results' not in st.session_state:
     st.session_state.results = []
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 0
-if 'mcp_app' not in st.session_state:
-    st.session_state.mcp_app = None
+if 'task_counter' not in st.session_state:
+    st.session_state.task_counter = 0
+if 'show_results' not in st.session_state:
+    st.session_state.show_results = False
+if 'last_result' not in st.session_state:
+    st.session_state.last_result = None
+if 'last_error' not in st.session_state:
+    st.session_state.last_error = None
 
 def display_header():
     """显示应用头部"""
@@ -591,82 +595,36 @@ def display_status(message: str, status_type: str = "info"):
     </div>
     """, unsafe_allow_html=True)
 
-@st.cache_resource
-def get_mcp_app():
-    """获取MCP应用实例（使用缓存）"""
-    return MCPApp(name="paper_to_code")
-
-async def initialize_app():
-    """初始化MCP应用"""
-    if not st.session_state.app_initialized:
-        try:
-            # 创建MCP应用实例
-            st.session_state.mcp_app = get_mcp_app()
-            st.session_state.app_initialized = True
-            return True
-        except Exception as e:
-            st.error(f"Failed to initialize application: {str(e)}")
-            st.error(f"Traceback: {traceback.format_exc()}")
-            return False
-    return True
-
 async def process_input_async(input_source: str, input_type: str):
-    """异步处理输入"""
-    progress_container = st.container()
+    """异步处理输入 - 在同一个异步上下文中初始化和使用 MCP"""
     
     try:
-        # 获取MCP应用实例
-        app = st.session_state.mcp_app
+        # 在同一个异步上下文中创建和使用 MCP 应用
+        app = MCPApp(name="paper_to_code")
         
         async with app.run() as agent_app:
             logger = agent_app.logger
             context = agent_app.context
             context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
             
-            with progress_container:
-                st.markdown('<div class="progress-container">', unsafe_allow_html=True)
-                
-                # 创建进度条和状态文本
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                # 步骤1: 论文分析
-                status_text.markdown("**📊 Step 1/3: Analyzing paper content...**")
-                progress_bar.progress(10)
-                
-                # 处理输入源路径
-                if input_source.startswith("file://"):
-                    file_path = input_source[7:]
-                    if os.name == 'nt' and file_path.startswith('/'):
-                        file_path = file_path.lstrip('/')
-                    input_source = file_path
-                
-                progress_bar.progress(20)
-                analysis_result = await run_paper_analyzer(input_source, logger)
-                progress_bar.progress(35) 
-                
-                # 添加5秒停顿
-                await asyncio.sleep(5)
-                
-                # 步骤2: 下载处理
-                status_text.markdown("**📥 Step 2/3: Processing downloads...**")
-                progress_bar.progress(40)
-                
-                download_result = await run_paper_downloader(analysis_result, logger)
-                progress_bar.progress(65)
-                
-                # 步骤3: 代码准备
-                status_text.markdown("**🔧 Step 3/3: Preparing code repository...**")
-                progress_bar.progress(70)
-                
-                repo_result = await paper_code_preparation(download_result, logger)
-                progress_bar.progress(95)
-                
-                # 完成
-                status_text.markdown("**✅ Processing completed successfully!**")
-                progress_bar.progress(100)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+            # 处理输入源路径
+            if input_source.startswith("file://"):
+                file_path = input_source[7:]
+                if os.name == 'nt' and file_path.startswith('/'):
+                    file_path = file_path.lstrip('/')
+                input_source = file_path
+            
+            # 步骤1: 论文分析
+            analysis_result = await run_paper_analyzer(input_source, logger)
+            
+            # 添加5秒停顿
+            await asyncio.sleep(5)
+            
+            # 步骤2: 下载处理
+            download_result = await run_paper_downloader(analysis_result, logger)
+            
+            # 步骤3: 代码准备
+            repo_result = await paper_code_preparation(download_result, logger)
             
             return {
                 "analysis_result": analysis_result,
@@ -679,11 +637,6 @@ async def process_input_async(input_source: str, input_type: str):
         error_msg = str(e)
         traceback_msg = traceback.format_exc()
         
-        with progress_container:
-            st.error(f"❌ Processing failed: {error_msg}")
-            with st.expander("🔍 View detailed error information"):
-                st.code(traceback_msg, language="python")
-        
         return {
             "error": error_msg,
             "traceback": traceback_msg,
@@ -691,18 +644,28 @@ async def process_input_async(input_source: str, input_type: str):
         }
 
 def run_async_task(coro):
-    """运行异步任务的辅助函数"""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # 如果事件循环正在运行，创建新的任务
-            import nest_asyncio
-            nest_asyncio.apply()
-    except RuntimeError:
+    """运行异步任务的辅助函数 - 适配 Streamlit 环境"""
+    import nest_asyncio
+    import concurrent.futures
+    import threading
+    
+    # 应用 nest_asyncio 来支持嵌套的事件循环
+    nest_asyncio.apply()
+    
+    def run_in_new_loop():
+        """在新的事件循环中运行协程"""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
     
-    return loop.run_until_complete(coro)
+    # 使用线程池来运行异步任务，避免事件循环冲突
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(run_in_new_loop)
+        return future.result()
 
 def format_file_size(size_bytes):
     """格式化文件大小"""
@@ -724,10 +687,10 @@ def main():
         st.markdown("### 🎛️ Control Panel")
         
         # 应用状态
-        if st.session_state.app_initialized:
-            st.success("🟢 Engine Ready")
+        if st.session_state.processing:
+            st.warning("🟡 Engine Processing...")
         else:
-            st.warning("🟡 Engine Initializing...")
+            st.info("⚪ Engine Ready")
         
         # 系统信息
         st.markdown("### 📊 System Info")
@@ -739,9 +702,11 @@ def main():
         # 处理历史
         st.markdown("### 📊 Processing History")
         if st.session_state.results:
-            for i, result in enumerate(st.session_state.results):
+            # 只显示最近10条记录
+            recent_results = st.session_state.results[-10:]
+            for i, result in enumerate(reversed(recent_results)):
                 status_icon = "✅" if result.get('status') == 'success' else "❌"
-                with st.expander(f"{status_icon} Task {i+1} - {result.get('timestamp', 'Unknown')}"):
+                with st.expander(f"{status_icon} Task - {result.get('timestamp', 'Unknown')}"):
                     st.write(f"**Status:** {result.get('status', 'Unknown')}")
                     if result.get('input_type'):
                         st.write(f"**Type:** {result['input_type']}")
@@ -752,112 +717,176 @@ def main():
         
         # 清除历史按钮
         if st.session_state.results:
-            if st.button("🗑️ Clear History"):
-                st.session_state.results = []
-                st.rerun()
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🗑️ Clear History", use_container_width=True):
+                    st.session_state.results = []
+                    st.rerun()
+            with col2:
+                st.info(f"Total: {len(st.session_state.results)} tasks")
     
     # 主内容区域
     display_features()
     
     st.markdown("---")
-    st.markdown("""
-    <h3 style="color: var(--text-primary) !important; font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 1.5rem !important; margin-bottom: 1rem !important;">
-        🚀 Start Processing
-    </h3>
-    """, unsafe_allow_html=True)
     
-    # 输入选项
-    st.markdown("""
-    <p style="color: var(--text-secondary) !important; font-family: 'Inter', sans-serif !important; font-weight: 500 !important; margin-bottom: 1rem !important;">
-        Choose input method:
-    </p>
-    """, unsafe_allow_html=True)
+    # 如果有结果显示，先显示结果
+    if st.session_state.show_results and st.session_state.last_result:
+        st.markdown("### 📋 Results")
+        
+        result = st.session_state.last_result
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            with st.expander("📊 Analysis Result", expanded=True):
+                st.text_area("Analysis Output", result["analysis_result"], height=200, key=f"analysis_{st.session_state.task_counter}")
+        
+        with col2:
+            with st.expander("📥 Download Result"):
+                st.text_area("Download Output", result["download_result"], height=200, key=f"download_{st.session_state.task_counter}")
+        
+        with col3:
+            with st.expander("🔧 Repository Result"):
+                st.text_area("Repository Output", result.get("repo_result", ""), height=200, key=f"repo_{st.session_state.task_counter}")
+        
+        # 提供新任务按钮
+        if st.button("🔄 Start New Task", type="primary", use_container_width=True):
+            st.session_state.show_results = False
+            st.session_state.last_result = None
+            st.session_state.last_error = None
+            st.session_state.task_counter += 1
+            st.rerun()
+        
+        st.markdown("---")
     
-    input_method = st.radio(
-        "Choose your input method:",
-        ["📁 Upload File", "🌐 Enter URL"],
-        horizontal=True,
-        label_visibility="hidden"
-    )
-    
-    input_source = None
-    input_type = None
-    
-    if input_method == "📁 Upload File":
-        uploaded_file = st.file_uploader(
-            "Upload research paper file",
-            type=['pdf', 'docx', 'doc', 'html', 'htm', 'txt', 'md'],
-            help="Supported formats: PDF, Word, PowerPoint, HTML, Text"
+    # 只有在不显示结果时才显示输入界面
+    if not st.session_state.show_results:
+        st.markdown("""
+        <h3 style="color: var(--text-primary) !important; font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 1.5rem !important; margin-bottom: 1rem !important;">
+            🚀 Start Processing
+        </h3>
+        """, unsafe_allow_html=True)
+        
+        # 输入选项
+        st.markdown("""
+        <p style="color: var(--text-secondary) !important; font-family: 'Inter', sans-serif !important; font-weight: 500 !important; margin-bottom: 1rem !important;">
+            Choose input method:
+        </p>
+        """, unsafe_allow_html=True)
+        
+        input_method = st.radio(
+            "Choose your input method:",
+            ["📁 Upload File", "🌐 Enter URL"],
+            horizontal=True,
+            label_visibility="hidden",
+            key=f"input_method_{st.session_state.task_counter}"
         )
         
-        if uploaded_file is not None:
-            # 显示文件信息
-            file_size = len(uploaded_file.getvalue())
-            st.info(f"📄 **File:** {uploaded_file.name} ({format_file_size(file_size)})")
-            
-            # 保存上传的文件到临时目录
-            try:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
-                    input_source = tmp_file.name
-                    input_type = "file"
-                
-                st.success(f"✅ File uploaded successfully!")
-            except Exception as e:
-                st.error(f"❌ Failed to save uploaded file: {str(e)}")
-            
-    else:  # URL输入
-        url_input = st.text_input(
-            "Enter paper URL",
-            placeholder="https://arxiv.org/abs/..., https://ieeexplore.ieee.org/..., etc.",
-            help="Enter a direct link to a research paper (arXiv, IEEE, ACM, etc.)"
-        )
+        input_source = None
+        input_type = None
         
-        if url_input:
-            # 简单的URL验证
-            if url_input.startswith(('http://', 'https://')):
-                input_source = url_input
-                input_type = "url"
-                st.success(f"✅ URL entered: {url_input}")
-            else:
-                st.warning("⚠️ Please enter a valid URL starting with http:// or https://")
-    
-    # 处理按钮
-    if input_source and not st.session_state.processing:
-        if st.button("🚀 Start Processing", type="primary", use_container_width=True):
-            st.session_state.processing = True
+        if input_method == "📁 Upload File":
+            uploaded_file = st.file_uploader(
+                "Upload research paper file",
+                type=['pdf', 'docx', 'doc', 'html', 'htm', 'txt', 'md'],
+                help="Supported formats: PDF, Word, PowerPoint, HTML, Text",
+                key=f"file_uploader_{st.session_state.task_counter}"
+            )
             
-            # 初始化应用
-            with st.spinner("🚀 Initializing ReproAI Engine..."):
-                init_success = run_async_task(initialize_app())
-            
-            if init_success:
-                display_status("Engine initialized successfully", "success")
+            if uploaded_file is not None:
+                # 显示文件信息
+                file_size = len(uploaded_file.getvalue())
+                st.info(f"📄 **File:** {uploaded_file.name} ({format_file_size(file_size)})")
                 
-                # 处理输入
+                # 保存上传的文件到临时目录
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
+                        tmp_file.write(uploaded_file.getvalue())
+                        input_source = tmp_file.name
+                        input_type = "file"
+                    
+                    st.success(f"✅ File uploaded successfully!")
+                except Exception as e:
+                    st.error(f"❌ Failed to save uploaded file: {str(e)}")
+                
+        else:  # URL输入
+            url_input = st.text_input(
+                "Enter paper URL",
+                placeholder="https://arxiv.org/abs/..., https://ieeexplore.ieee.org/..., etc.",
+                help="Enter a direct link to a research paper (arXiv, IEEE, ACM, etc.)",
+                key=f"url_input_{st.session_state.task_counter}"
+            )
+            
+            if url_input:
+                # 简单的URL验证
+                if url_input.startswith(('http://', 'https://')):
+                    input_source = url_input
+                    input_type = "url"
+                    st.success(f"✅ URL entered: {url_input}")
+                else:
+                    st.warning("⚠️ Please enter a valid URL starting with http:// or https://")
+        
+        # 处理按钮
+        if input_source and not st.session_state.processing:
+            if st.button("🚀 Start Processing", type="primary", use_container_width=True):
+                st.session_state.processing = True
+                
+                # 显示处理进度标题
                 st.markdown("### 📊 Processing Progress")
                 
-                result = run_async_task(process_input_async(input_source, input_type))
+                # 创建进度容器
+                progress_container = st.container()
+                
+                with progress_container:
+                    st.markdown('<div class="progress-container">', unsafe_allow_html=True)
+                    
+                    # 创建进度条和状态文本
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    # 步骤1: 开始处理
+                    status_text.markdown("**🚀 Initializing AI engine...**")
+                    progress_bar.progress(5)
+                    time.sleep(0.5)
+                    
+                    # 步骤2: 分析论文
+                    status_text.markdown("**📊 Step 1/3: Analyzing paper content...**")
+                    progress_bar.progress(15)
+                    
+                    # 开始异步处理
+                    with st.spinner("Processing..."):
+                        result = run_async_task(process_input_async(input_source, input_type))
+                    
+                    # 根据结果模拟进度更新
+                    if result["status"] == "success":
+                        # 步骤3: 下载处理
+                        status_text.markdown("**📥 Step 2/3: Processing downloads...**")
+                        progress_bar.progress(50)
+                        time.sleep(0.5)
+                        
+                        # 步骤4: 代码准备
+                        status_text.markdown("**🔧 Step 3/3: Preparing code repository...**")
+                        progress_bar.progress(80)
+                        time.sleep(0.5)
+                        
+                        # 完成
+                        progress_bar.progress(100)
+                        status_text.markdown("**✅ Processing completed successfully!**")
+                    else:
+                        status_text.markdown("**❌ Processing failed**")
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # 等待一下让用户看到完成状态
+                time.sleep(1.5)
                 
                 if result["status"] == "success":
                     display_status("All operations completed successfully! 🎉", "success")
                     
-                    # 显示结果
-                    st.markdown("### 📋 Results")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        with st.expander("📊 Analysis Result", expanded=True):
-                            st.text_area("Analysis Output", result["analysis_result"], height=200, key="analysis")
-                    
-                    with col2:
-                        with st.expander("📥 Download Result"):
-                            st.text_area("Download Output", result["download_result"], height=200, key="download")
-                    
-                    with col3:
-                        with st.expander("🔧 Repository Result"):
-                            st.text_area("Repository Output", result.get("repo_result", ""), height=200, key="repo")
+                    # 保存结果到session state
+                    st.session_state.last_result = result
+                    st.session_state.show_results = True
                     
                     # 保存到历史记录
                     st.session_state.results.append({
@@ -867,8 +896,15 @@ def main():
                         "result": result
                     })
                     
+                    # 限制历史记录最多保存50条
+                    if len(st.session_state.results) > 50:
+                        st.session_state.results = st.session_state.results[-50:]
+                    
                 else:
                     display_status(f"Error during processing", "error")
+                    
+                    # 保存错误信息到session state用于显示
+                    st.session_state.last_error = result.get("error", "Unknown error")
                     
                     # 保存错误到历史记录
                     st.session_state.results.append({
@@ -877,24 +913,38 @@ def main():
                         "status": "error",
                         "error": result.get("error", "Unknown error")
                     })
-            else:
-                display_status("Failed to initialize engine", "error")
-            
-            st.session_state.processing = False
-            
-            # 清理临时文件
-            if input_type == "file" and input_source and os.path.exists(input_source):
-                try:
-                    os.unlink(input_source)
-                except:
-                    pass
+                    
+                    # 限制历史记录最多保存50条
+                    if len(st.session_state.results) > 50:
+                        st.session_state.results = st.session_state.results[-50:]
+                
+                # 处理完成后重置状态
+                st.session_state.processing = False
+                
+                # 清理临时文件
+                if input_type == "file" and input_source and os.path.exists(input_source):
+                    try:
+                        os.unlink(input_source)
+                    except:
+                        pass
+                
+                # 重新运行以显示结果或错误
+                st.rerun()
+        
+        elif st.session_state.processing:
+            st.info("🔄 Processing in progress... Please wait.")
+            st.warning("⚠️ Do not refresh the page or close the browser during processing.")
+        
+        elif not input_source:
+            st.info("👆 Please upload a file or enter a URL to start processing.")
     
-    elif st.session_state.processing:
-        st.info("🔄 Processing in progress... Please wait.")
-        st.warning("⚠️ Do not refresh the page or close the browser during processing.")
-    
-    elif not input_source:
-        st.info("👆 Please upload a file or enter a URL to start processing.")
+    # 显示错误信息（如果有）
+    if hasattr(st.session_state, 'last_error') and st.session_state.last_error:
+        st.error(f"❌ Error: {st.session_state.last_error}")
+        if st.button("🔄 Try Again", type="secondary", use_container_width=True):
+            st.session_state.last_error = None
+            st.session_state.task_counter += 1
+            st.rerun()
     
     # 页脚
     st.markdown("---")
