@@ -65,7 +65,7 @@ async def run_paper_downloader(analysis_result, logger):
         tools = await downloader_agent.list_tools()
         logger.info("Tools available:", data=tools.model_dump())
         
-        downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
+        downloader = await downloader_agent.attach_llm(OpenAIAugmentedLLM)
         return await downloader.generate_str(message=analysis_result)
 
 async def paper_code_analyzer(document, logger):
@@ -108,7 +108,7 @@ async def paper_code_analyzer(document, logger):
     return result
     # async with code_validation_agent:
     #     logger.info("code_validation_agent: Connected to server, calling list_tools...")
-    #     code_validation = await code_validation_agent.attach_llm(AnthropicAugmentedLLM)
+    #     code_validation = await code_validation_agent.attach_llm(OpenAIAugmentedLLM)
     #     return await code_validation.generate_str(message=result)
 
 async def github_repo_download(search_result, paper_dir, logger):
@@ -131,7 +131,7 @@ async def github_repo_download(search_result, paper_dir, logger):
     
     async with github_download_agent:
         logger.info("GitHub downloader: Downloading repositories...")
-        downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
+        downloader = await github_download_agent.attach_llm(OpenAIAugmentedLLM)
         return await downloader.generate_str(message=search_result)
 
 async def paper_reference_analyzer(analysis_result, logger):
@@ -154,7 +154,7 @@ async def paper_reference_analyzer(analysis_result, logger):
     
     async with reference_analysis_agent:
         logger.info("Reference analyzer: Connected to server, analyzing references...")
-        analyzer = await reference_analysis_agent.attach_llm(AnthropicAugmentedLLM)
+        analyzer = await reference_analysis_agent.attach_llm(OpenAIAugmentedLLM)
         reference_result = await analyzer.generate_str(message=analysis_result)
         return reference_result
 
