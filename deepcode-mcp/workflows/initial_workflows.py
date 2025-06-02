@@ -101,7 +101,7 @@ async def paper_code_analyzer(document, logger):
     code_aggregator_agent = ParallelLLM(
             fan_in_agent=code_planner_agent,
             fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
-            llm_factory=AnthropicAugmentedLLM,
+            llm_factory=OpenAIAugmentedLLM,
         )
     result = await code_aggregator_agent.generate_str(message=document)
     logger.info(f"Code analysis result: {result}")
