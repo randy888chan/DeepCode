@@ -5,6 +5,7 @@ from mcp_agent.workflows.orchestrator.orchestrator import Orchestrator
 from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 from utils.file_processor import FileProcessor
 from tools.github_downloader import GitHubDownloader
+from workflows.code_implementation_workflow import execute_code_implementation
 import os
 import asyncio
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
@@ -40,7 +41,7 @@ async def run_paper_analyzer(prompt_text, logger):
         tools = await analyzer_agent.list_tools()
         logger.info("Tools available:", data=tools.model_dump())
         
-        analyzer = await analyzer_agent.attach_llm(OpenAIAugmentedLLM)
+        analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
         return await analyzer.generate_str(message=prompt_text)
 
 async def run_paper_downloader(analysis_result, logger):
@@ -65,7 +66,7 @@ async def run_paper_downloader(analysis_result, logger):
         tools = await downloader_agent.list_tools()
         logger.info("Tools available:", data=tools.model_dump())
         
-        downloader = await downloader_agent.attach_llm(OpenAIAugmentedLLM)
+        downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
         return await downloader.generate_str(message=analysis_result)
 
 async def paper_code_analyzer(document, logger):
@@ -101,14 +102,14 @@ async def paper_code_analyzer(document, logger):
     code_aggregator_agent = ParallelLLM(
             fan_in_agent=code_planner_agent,
             fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
-            llm_factory=OpenAIAugmentedLLM,
+            llm_factory=AnthropicAugmentedLLM,
         )
     result = await code_aggregator_agent.generate_str(message=document)
     logger.info(f"Code analysis result: {result}")
     return result
     # async with code_validation_agent:
     #     logger.info("code_validation_agent: Connected to server, calling list_tools...")
-    #     code_validation = await code_validation_agent.attach_llm(OpenAIAugmentedLLM)
+    #     code_validation = await code_validation_agent.attach_llm(AnthropicAugmentedLLM)
     #     return await code_validation.generate_str(message=result)
 
 async def github_repo_download(search_result, paper_dir, logger):
@@ -131,7 +132,7 @@ async def github_repo_download(search_result, paper_dir, logger):
     
     async with github_download_agent:
         logger.info("GitHub downloader: Downloading repositories...")
-        downloader = await github_download_agent.attach_llm(OpenAIAugmentedLLM)
+        downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
         return await downloader.generate_str(message=search_result)
 
 async def paper_reference_analyzer(analysis_result, logger):
@@ -154,7 +155,7 @@ async def paper_reference_analyzer(analysis_result, logger):
     
     async with reference_analysis_agent:
         logger.info("Reference analyzer: Connected to server, analyzing references...")
-        analyzer = await reference_analysis_agent.attach_llm(OpenAIAugmentedLLM)
+        analyzer = await reference_analysis_agent.attach_llm(AnthropicAugmentedLLM)
         reference_result = await analyzer.generate_str(message=analysis_result)
         return reference_result
 
@@ -200,7 +201,26 @@ async def paper_code_preparation(download_result, logger):
         with open(download_path, 'w', encoding='utf-8') as f:
             f.write(download_result)
         logger.info(f"GitHub download results have been saved to {download_path}")
-        return download_result
+        
+        # 3. 执行代码复现
+        logger.info("Starting code implementation based on the initial plan...")
+        await asyncio.sleep(3)  # Brief pause before starting implementation
+        
+        # Check if initial plan exists before proceeding
+        if os.path.exists(initial_plan_path):
+            implementation_result = await execute_code_implementation(paper_dir, logger)
+            logger.info(f"Code implementation completed with status: {implementation_result.get('status')}")
+            
+            # Save implementation result
+            if implementation_result.get('status') == 'success':
+                logger.info(f"Code successfully generated in: {implementation_result.get('generate_code_dir')}")
+                return f"Code implementation completed successfully. Generated code is in: {implementation_result.get('generate_code_dir')}"
+            else:
+                logger.error(f"Code implementation failed: {implementation_result.get('error')}")
+                return f"Code implementation failed: {implementation_result.get('error')}"
+        else:
+            logger.warning(f"Initial plan not found at {initial_plan_path}, skipping code implementation")
+            return download_result
 
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")
