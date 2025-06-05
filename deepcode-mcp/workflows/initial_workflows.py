@@ -220,7 +220,7 @@ async def paper_code_preparation(download_result, logger):
                 return f"Code implementation failed: {implementation_result.get('error')}"
         else:
             logger.warning(f"Initial plan not found at {initial_plan_path}, skipping code implementation")
-            return download_result
+        return download_result
 
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")

@@ -14,7 +14,7 @@ from .initial_workflows import (
 from .code_implementation_workflow import (
     analyze_implementation_plan,
     create_universal_project_structure,
-    implement_dynamic_modules,
+    implement_hierarchical_codebase,
     integrate_universal_modules,
     create_universal_tests_and_documentation,
     optimize_and_validate_universal,
@@ -38,7 +38,7 @@ __all__ = [
     # Universal code implementation workflows
     'analyze_implementation_plan',
     'create_universal_project_structure',
-    'implement_dynamic_modules',
+    'implement_hierarchical_codebase',
     'integrate_universal_modules',
     'create_universal_tests_and_documentation',
     'optimize_and_validate_universal',
