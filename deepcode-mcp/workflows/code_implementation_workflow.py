@@ -122,7 +122,7 @@ async def analyze_implementation_plan(initial_plan_path: str, logger) -> Dict[st
         # Set higher max_tokens to avoid truncation
         analysis_result = await analyzer.generate_str(
             message=f"Analyze this implementation plan and extract structured information:\n\n{plan_content}",
-            request_params=RequestParams(max_tokens=4096)  # Increased from default 2048
+            request_params=RequestParams(max_tokens=16384)  # Significantly increased for complex analysis
         )
         
         # Parse the JSON response with improved error handling
@@ -404,7 +404,7 @@ async def create_universal_project_structure(analysis_data: Dict[str, Any], gene
         
         result = await generator.generate_str(
             message=context,
-            request_params=RequestParams(max_tokens=8192)  # Increased for structure generation
+            request_params=RequestParams(max_tokens=16384)  # Increased for structure generation
         )
         
         # Save structure generation result
@@ -619,7 +619,7 @@ async def implement_hierarchical_codebase(structure_info: Dict[str, str], logger
             # Sequential API call (one at a time) with increased tokens
             result = await implementer.generate_str(
                 message=layer_context,
-                request_params=RequestParams(max_tokens=8192)  # Increased for algorithm implementation
+                request_params=RequestParams(max_tokens=16384)  # Increased for algorithm implementation
             )
             
             results[layer['name']] = result
@@ -716,7 +716,7 @@ async def integrate_universal_modules(layer_results: Dict[str, str], structure_i
         
         result = await integrator.generate_str(
             message=integration_context,
-            request_params=RequestParams(max_tokens=4096)
+            request_params=RequestParams(max_tokens=16384)
         )
         
         # Save integration result
@@ -813,7 +813,7 @@ async def create_universal_tests_and_documentation(integration_result: str, stru
             
             Create comprehensive tests appropriate for this type of algorithm and implementation.
             """
-            result = await tester.generate_str(message=context)
+            result = await tester.generate_str(message=context, request_params=RequestParams(max_tokens=16384))
             
             # Save test result
             with open(test_result_path, 'w', encoding='utf-8') as f:
@@ -835,7 +835,7 @@ async def create_universal_tests_and_documentation(integration_result: str, stru
             
             Create comprehensive documentation for this research implementation.
             """
-            result = await writer.generate_str(message=context)
+            result = await writer.generate_str(message=context, request_params=RequestParams(max_tokens=16384))
             
             # Save documentation result
             with open(doc_result_path, 'w', encoding='utf-8') as f:
@@ -933,7 +933,7 @@ async def optimize_and_validate_universal(structure_info: Dict[str, str], logger
             
             Optimize this implementation considering the algorithm type and requirements.
             """
-            result = await optimizer.generate_str(message=context)
+            result = await optimizer.generate_str(message=context, request_params=RequestParams(max_tokens=16384))
             
             # Save optimization result
             with open(opt_result_path, 'w', encoding='utf-8') as f:
@@ -954,7 +954,7 @@ async def optimize_and_validate_universal(structure_info: Dict[str, str], logger
             
             Validate this implementation against the paper's specifications and best practices.
             """
-            result = await validator.generate_str(message=context)
+            result = await validator.generate_str(message=context, request_params=RequestParams(max_tokens=16384))
             
             # Save validation result
             with open(val_result_path, 'w', encoding='utf-8') as f:
