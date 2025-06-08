@@ -73,6 +73,11 @@ mcp:
       args: ["tools/pdf_downloader.py"]
       env:
         PYTHONPATH: "."
+    code-generator:
+      command: "python"
+      args: ["tools/code_generator.py"]
+      env:
+        PYTHONPATH: "."
 
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
@@ -80,4 +85,4 @@ openai:
   default_model: "gpt-4.1"
 
 anthropic:
-  default_model: "claude-3-5-sonnet-20241022"
+  default_model: "claude-sonnet-4-20250514"
