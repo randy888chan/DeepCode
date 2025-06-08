@@ -1,0 +1,268 @@
+Implementation Plan
+
+---
+
+1. Project Overview
+
+Scope and Objectives
+
+- Implement RecDiff: a social recommendation model using hidden-space diffusion for robust graph denoising, as per the referenced paper.
+- The system will preprocess user-item and user-user graphs, encode them with GCNs, perform latent-space denoising via diffusion (forward/reverse), fuse denoised and interaction embeddings, and optimize a composite loss (ranking + denoising).
+- Provide an extensible, well-tested codebase suitable for research reproduction and practical ablation.
+
+Key Challenges
+
+- Stability of multi-step diffusion and reverse denoising in embedding space.
+- Efficient and correct batch-wise GCN and diffusion computation.
+- Ensuring correct index alignment across multiple graph/embedding spaces.
+- Hyperparameter sensitivity (embedding size, diffusion steps, noise schedule).
+
+Risk Mitigation
+
+- Incremental testing (unit, integration) after each key module: GCN, forward diffusion, reverse denoising, fusion.
+- Default hyperparameters set to paper values, with clear config override.
+- Automated checks for divergence (NaNs, loss spikes).
+- Clear error messages and recovery for mismatched input dimensions or graph structures.
+
+---
+
+2. Technical Specification
+
+Technology Stack (with versions)
+
+- Programming Language: Python 3.8+
+  - Widely used in ML research; strong ecosystem.
+- Core Framework: PyTorch (≥1.9)
+  - GPU support, straightforward auto-diff, batch processing.
+- Data/Utils: numpy, scipy (sparse), networkx (optional graph ops)
+- Experiment Management: hydra or python-dotenv (for config), tqdm (progress bars)
+- Metrics: scikit-learn
+- Testing: pytest
+- Version Control: git
+- Optional: wandb or tensorboard for logging/experiment tracking
+
+Dependency Management Strategy
+
+- All dependencies specified in requirements.txt (or optionally pipenv/poetry), with minimum/compatible versions.
+- Environment isolation using venv or conda.
+- Prebuilt Dockerfile for full replicability (optional, for production or cloud).
+
+Project Structure
+
+- Main modules: data processing, GCN encoders, diffusion engine (forward/reverse), denoising net, fusion, predictor, loss/training loop, utilities.
+- Separate configs, experiments, and test modules for organization.
+
+Development Environment Setup
+
+- Python virtual environment (`python3 -m venv venv && source venv/bin/activate`)
+- Install requirements (`pip install -r requirements.txt`)
+- Optionally: Jupyter notebook support for exploratory validation.
+
+---
+
+3. Implementation Roadmap
+
+Phase 1: Data Pipeline & Graph Construction (Est. 2 Days)
+
+Objective: Efficiently load user-item/user-user interactions and build adjacency matrices in appropriate forms for downstream modules.
+Tasks:
+- Implement data loader (reading from CSV/TSV/JSON), constructing interaction matrix R and social matrix S (sparse preferred).
+- Functions to output normalized adjacency matrices.
+
+Deliverables: data.py module (with tests for shape and consistency).
+
+Dependencies: None.
+
+Success Criteria: Loader can output correct adjacency, feature, user/item index mapping for small test graph.
+
+Phase 2: GCN Encoder Modules (Est. 2 Days)
+
+Objective: Encode binary graphs using lightweight GCN as per paper.
+Tasks:
+- Implement GCN (adjacency normalization, multi-layer propagation), separately for both graphs.
+- Summation/aggregation of layer-wise embeddings.
+
+Deliverables: gcn.py and test coverage.
+
+Dependencies: Phase 1.
+
+Success Criteria: Passes gradient checks and shape tests on synthetic graphs.
+
+Phase 3: Diffusion Model—Forward Process (Est. 2 Days)
+
+Objective: Add Gaussian noise to social embeddings according to scheduled betas.
+Tasks:
+- Precompute α, β, α_bar arrays and implement noising routine.
+- Batch-wise forward_diffusion function.
+
+Deliverables: diffusion.py (forward pass) + unit tests.
+
+Dependencies: Phase 2.
+
+Success Criteria: Forward diffusion generates noisy embedding matching closed form (shape/variance).
+
+Phase 4: Diffusion Model—Reverse Denoising Network (Est. 3 Days)
+
+Objective: Implement denoising neural net and timestep encoder.
+Tasks:
+- Timestep embedding (learned or sinusoidal).
+- 2-layer MLP denoising head.
+- API for denoising step and iterative inference.
+
+Deliverables: denoiser.py, integration test with diffusion.py.
+
+Dependencies: Phase 3.
+
+Success Criteria: Can recover clean embedding on toy examples/noise schedule tests.
+
+Phase 5: Model Fusion & Prediction Pipeline (Est. 2 Days)
+
+Objective: Combine denoised social and collaborative embeddings, implement candidate scoring.
+Tasks:
+- Fusion layer and prediction function (score = dot/fusion).
+- Utilities for top-K recommendation, negative sampling.
+
+Deliverables: fusion.py, predictor.py, utils.py.
+
+Dependencies: Phase 4.
+
+Success Criteria: Produces fused embeddings, ranks positive over negative items for test batch.
+
+Phase 6: Loss Functions & Training Loop (Est. 2 Days)
+
+Objective: Full loss computation—BPR, denoising, regularization; orchestrate training batches.
+Tasks:
+- Implement loss.py for BPR, denoising, recon, regularization.
+- training routine, optimizer, checkpointing.
+
+Deliverables: loss.py, trainer.py, integration with test toy training.
+
+Dependencies: Phase 5.
+
+Success Criteria: Loss converges (decreases) on synthetic/test run.
+
+Phase 7: Inference Loop & Evaluation (Est. 1 Days)
+
+Objective: Iterative denoising for test-time; NDCG, Recall, ablation support.
+Tasks:
+- Implement inference (Algorithm 1) and evaluation metrics.
+
+Deliverables: test runner, evaluation module.
+
+Dependencies: Phase 6.
+
+Success Criteria: Outperforms baseline on test split; matches paper's metrics on benchmark data.
+
+Phase 8: Documentation, Extensibility, Reproducibility (Est. 1 Day)
+
+Objective: API docs, config templates, experiment scripts, readme.
+
+Total Timeline Estimate: ~15 Days
+
+---
+
+4. Code Organization (File Tree)
+
+project/
+├── src/
+│   ├── core/
+│   │   ├── gcn.py        # GCN encoder
+│   │   ├── diffusion.py  # forward/reverse processes
+│   │   ├── denoiser.py   # denoising MLP
+│   │   └── fusion.py     # fusion combiner
+│   ├── models/           # model wrapper classes
+│   │   └── recdiff.py
+│   ├── utils/
+│   │   ├── data.py       # loading & preprocessing
+│   │   ├── predictor.py  # scoring functions
+│   │   ├── loss.py       # loss functions
+│   │   ├── metrics.py    # NDCG, Recall etc.
+│   │   └── sched.py      # beta/alpha schedule utils
+│   └── configs/
+│       └── default.yaml  # hyperparameters, paths
+├── tests/
+│   ├── test_gcn.py
+│   ├── test_diffusion.py
+│   ├── test_denoiser.py
+│   ├── test_loss.py
+│   └── test_pipeline.py
+├── docs/
+│   ├── architecture.md
+│   ├── api_reference.md
+│   └── README.md
+├── experiments/
+│   ├── run_experiment.py
+│   └── notebooks/
+│       └── analysis.ipynb
+├── requirements.txt
+└── setup.py
+
+---
+
+5. Quality Standards
+
+Coding Conventions
+
+- PEP8 plus docstrings, type hints on all public APIs.
+- Consistent naming: snake_case for files/variables, CamelCase for classes.
+- Modular: Each key concept (GCN, diffusion, denoiser, etc.) in its own file/class.
+
+Testing Requirements
+
+- >95% code coverage on unit tests; edge cases (zero/degenerate graphs).
+- Integration test from pipeline input to scorer.
+- Random seed fix for reproducibility.
+
+Documentation Standards
+
+- API-level docstrings.
+- Markdown docs: method descriptions, config explanations, result reproduction scripts.
+- Sample Jupyter notebook for experiment replication.
+
+Performance Targets
+
+- Training time per epoch as per paper's Table 4.
+- Parity or better performance (NDCG, Recall@K) on reference datasets vs. published results (within ±2% tolerance).
+- Memory footprint: <12GB for med datasets; flag warning otherwise.
+
+---
+
+6. Execution Guidelines
+
+Step-by-Step Implementation
+
+1. Setup development environment, install dependencies.
+2. Implement data loading; validate graph/data shapes.
+3. Develop and unit-test GCN encoder.
+4. Code and validate diffusion (forward), then denoiser MLP with timestep embedding.
+5. Integrate GCN + diffusion + fusion; check forward pass end-to-end.
+6. Add loss functions; construct training loop and confirm loss declines.
+7. Implement inference loop; ensure outputs are comparable to paper metrics.
+8. Write/validate comprehensive unit and integration tests.
+9. Document code and API usage.
+10. Tune hyperparameters for stability (batch size, betas, embedding size) as per dataset.
+
+Integration Points
+
+- Data loader must match indexing for GCN and denoiser inputs.
+- Fusion and prediction layers interface with both clean and denoised embeddings.
+- Loss/training must combine all objectives (weighted sums).
+- Checkpointing at model, optimizer, and scheduler state.
+
+Debugging Strategies
+
+- Assert all tensor shapes at module boundaries.
+- Print/log sample input/outputs for diffusion steps.
+- Test loss and accuracy on toy/small graphs for sanity.
+- Use try/except blocks for graph/data loading; validate before train.
+
+Optimization Opportunities
+
+- Precompute and cache diffusion schedules (alpha, alpha_bar).
+- Sparse-GPU ops for large graph matrices.
+- Mixed precision training for GPU acceleration.
+- Profile major tensor ops, especially in GCN/diffusion modules.
+
+---
+
+This plan ensures a modular, reproducible, and maintainable implementation of RecDiff, closely matching the reference paper in both results and structure, and accommodates future extensions or ablations with minimal friction.
