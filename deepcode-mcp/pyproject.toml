@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paper2code"
+dynamic = ["version"]
+description = "A comprehensive tool for analyzing research papers and generating executable code implementations"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = [
+    "research", 
+    "paper", 
+    "code-generation", 
+    "automation", 
+    "academic", 
+    "machine-learning", 
+    "AI", 
+    "natural-language-processing"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10", 
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+    "mcp-agent>=0.1.0",
+    "streamlit>=1.28.0",
+    "pathlib2>=2.3.0",
+    "asyncio-mqtt>=0.11.0",
+    "tiktoken>=0.5.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "gitpython>=3.1.0",
+    "PyYAML>=6.0",
+    "json5>=0.9.0",
+    "setuptools>=65.0.0",
+    "wheel>=0.37.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/paper2code"
+Documentation = "https://github.com/yourusername/paper2code"
+Repository = "https://github.com/yourusername/paper2code.git"
+"Bug Tracker" = "https://github.com/yourusername/paper2code/issues"
+
+[project.scripts]
+paper2code = "paper2code.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "paper2code.__version__"}
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "docs*", "agent_folders*", "logs*", "test_files*", "schema*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.txt", "*.md"]
+"prompts" = ["*.py"]
+"schema" = ["*.json", "*.yaml"] 
