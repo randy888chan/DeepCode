@@ -3,9 +3,9 @@ Paper2Code: A tool for converting research papers to executable code
 """
 
 __version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
-__url__ = "https://github.com/yourusername/paper2code"
+__author__ = "Zongwei Li"
+__email__ = "zongwei9888@gmail.com"
+__url__ = "https://github.com/HKUDS/Code-Agent"
 __description__ = "A comprehensive tool for analyzing research papers and generating executable code implementations"
 
 from .utils import FileProcessor
