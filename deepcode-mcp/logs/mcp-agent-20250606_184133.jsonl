@@ -1,6 +1,0 @@
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.657577","namespace":"mcp_agent.context","message":"Configuring logger with level: debug"}
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.661571","namespace":"mcp_agent.paper_to_code","message":"MCPAgent initialized","data":{"data":{"progress_action":"Running","target":"paper_to_code","agent_name":"mcp_application_loop","session_id":"f559174f-1484-4fd2-be2c-e32e215b19b8"}}}
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.661827","namespace":"mcp_agent.paper_to_code","message":"Phase 0: Analyzing implementation plan..."}
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.662118","namespace":"mcp_agent.paper_to_code","message":"Plan Analyzer: Found existing analysis result, loading from cache..."}
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.662378","namespace":"mcp_agent.paper_to_code","message":"\u2705 Using cached plan analysis result"}
-{"level":"INFO","timestamp":"2025-06-06T18:41:33.662398","namespace":"mcp_agent.paper_to_code","message":"Phase 1: Creating universal project structure..."}
