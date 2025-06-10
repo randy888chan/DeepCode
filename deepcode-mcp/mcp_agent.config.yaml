@@ -78,6 +78,11 @@ mcp:
       args: ["tools/code_generator.py"]
       env:
         PYTHONPATH: "."
+    command-executor:
+      command: "python"
+      args: ["tools/command_executor.py"]
+      env:
+        PYTHONPATH: "."
 
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored

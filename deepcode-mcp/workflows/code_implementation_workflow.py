@@ -1,8 +1,18 @@
 """
-通用论文代码复现工作流 - 文件树创建模块
+通用论文代码复现工作流 - 基于MCP代理实现
+Universal Paper Code Implementation Workflow - MCP Agent Based
 
-这个模块实现了论文代码复现的第一步：文件树创建功能
-从实现计划中提取文件结构信息，并在目标目录创建完整的文件树
+这个模块实现了论文代码复现的完整工作流：
+1. 文件树创建 (File Tree Creation)
+2. 代码实现 (Code Implementation)
+3. 测试生成 (Test Generation) - 待实现
+4. 文档生成 (Documentation Generation) - 待实现
+
+This module implements the complete workflow for paper code reproduction:
+1. File Tree Creation
+2. Code Implementation
+3. Test Generation - To be implemented
+4. Documentation Generation - To be implemented
 """
 
 import asyncio
@@ -10,377 +20,518 @@ import yaml
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
-import openai
-from anthropic import Anthropic
+import logging
 
-# 导入提示词
+# 导入MCP代理相关模块 / Import MCP agent related modules
+from mcp_agent.agents.agent import Agent
+from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
+
+# 导入提示词 / Import prompts
 import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT, CODE_IMPLEMENTATION_PROMPT
 
-from prompts.code_prompts import (
-    FILE_TREE_EXTRACTOR_PROMPT,
-    FILE_TREE_CREATOR_PROMPT
-)
-
-# 导入简化的文件创建工具
-from tools.simple_file_creator import create_file_tree, parse_file_tree_to_list
 
 class CodeImplementationWorkflow:
-    """论文代码复现工作流管理器"""
+    """
+    论文代码复现工作流管理器 / Paper Code Implementation Workflow Manager
+    
+    基于MCP代理模式，负责完整的代码复现流程
+    Based on MCP agent pattern, responsible for complete code reproduction process
+    """
     
     def __init__(self, config_path: str = "mcp_agent.secrets.yaml"):
         """
-        初始化工作流
+        初始化工作流 / Initialize workflow
         
         Args:
-            config_path: API配置文件路径
+            config_path: API配置文件路径 / API configuration file path
         """
         self.config_path = config_path
         self.api_config = self._load_api_config()
-        self.openai_client = None
-        self.anthropic_client = None
-        self._setup_llm_clients()
     
     def _load_api_config(self) -> Dict[str, Any]:
-        """加载API配置"""
+        """
+        加载API配置 / Load API configuration
+        
+        Returns:
+            配置字典 / Configuration dictionary
+        """
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except Exception as e:
-            raise Exception(f"无法加载API配置文件: {e}")
-    
-    def _setup_llm_clients(self):
-        """设置LLM客户端"""
-        try:
-            # 设置OpenAI客户端
-            if 'openai' in self.api_config:
-                openai.api_key = self.api_config['openai']['api_key']
-                self.openai_client = openai.OpenAI(
-                    api_key=self.api_config['openai']['api_key']
-                )
-            
-            # 设置Anthropic客户端  
-            if 'anthropic' in self.api_config:
-                self.anthropic_client = Anthropic(
-                    api_key=self.api_config['anthropic']['api_key']
-                )
-                
-        except Exception as e:
-            print(f"警告: LLM客户端设置失败: {e}")
-    
-    async def extract_file_tree_from_plan(self, plan_content: str, use_anthropic: bool = True) -> str:
+            raise Exception(f"无法加载API配置文件 / Unable to load API configuration file: {e}")
+
+    def _create_logger(self, name: str = __name__) -> logging.Logger:
         """
-        从实现计划中提取文件树结构
+        创建日志记录器 / Create logger
         
         Args:
-            plan_content: 实现计划内容
-            use_anthropic: 是否使用Anthropic API
+            name: 日志记录器名称 / Logger name
             
         Returns:
-            提取的文件树结构
+            日志记录器 / Logger
         """
-        prompt = f"{FILE_TREE_EXTRACTOR_PROMPT}\n\n实现计划内容:\n{plan_content}"
-        
-        try:
-            if use_anthropic and self.anthropic_client:
-                response = self.anthropic_client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=2000,
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ]
-                )
-                return response.content[0].text
-            
-            elif self.openai_client:
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": "你是一个专业的文件结构分析专家。"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=2000
-                )
-                return response.choices[0].message.content
-                
-            else:
-                raise Exception("没有可用的LLM客户端")
-                
-        except Exception as e:
-            raise Exception(f"文件树提取失败: {e}")
-    
-    def create_file_tree_directly(self, file_tree: str, target_directory: str) -> str:
+        logger = logging.getLogger(name)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+        return logger
+
+    def _read_plan_file(self, plan_file_path: str) -> str:
         """
-        直接创建文件树，不使用MCP
+        读取计划文件 / Read plan file
         
         Args:
-            file_tree: 文件树结构描述
-            target_directory: 目标目录路径
+            plan_file_path: 计划文件路径 / Plan file path
             
         Returns:
-            创建结果
+            计划内容 / Plan content
         """
-        try:
-            # 创建generate_code目录路径
-            generate_code_path = os.path.join(target_directory, "generate_code")
+        plan_path = Path(plan_file_path)
+        if not plan_path.exists():
+            raise FileNotFoundError(f"实现计划文件不存在 / Implementation plan file does not exist: {plan_file_path}")
+        
+        with open(plan_path, 'r', encoding='utf-8') as f:
+            return f.read()
+
+    def _determine_target_directory(self, plan_file_path: str, target_directory: Optional[str] = None) -> str:
+        """
+        确定目标目录 / Determine target directory
+        
+        Args:
+            plan_file_path: 计划文件路径 / Plan file path
+            target_directory: 目标目录 / Target directory
             
-            # 使用简化的文件创建工具
-            result = create_file_tree(generate_code_path, file_tree)
+        Returns:
+            目标目录路径 / Target directory path
+        """
+        if target_directory is None:
+            return str(Path(plan_file_path).parent)
+        return target_directory
+
+    # ==================== 步骤1: 文件树创建 / Step 1: File Tree Creation ====================
+    
+    async def step1_create_file_structure(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
+        """
+        步骤1: 创建文件树结构 / Step 1: Create file tree structure
+        
+        Args:
+            plan_content: 实现计划内容 / Implementation plan content
+            target_directory: 目标目录路径 / Target directory path
+            logger: 日志记录器 / Logger
             
+        Returns:
+            创建结果 / Creation result
+        """
+        logger.info("步骤1开始: 文件树结构创建 / Step 1 Starting: File tree structure creation")
+        
+        # 创建文件结构生成代理 / Create file structure generation agent
+        structure_agent = Agent(
+            name="StructureGeneratorAgent",
+            instruction=STRUCTURE_GENERATOR_PROMPT,
+            server_names=["command-executor"],
+        )
+        
+        async with structure_agent:
+            # 连接LLM / Connect to LLM
+            creator = await structure_agent.attach_llm(AnthropicAugmentedLLM)
+            
+            # 构建分析消息 / Build analysis message
+            message = f"""Analyze the following implementation plan and generate shell commands to create the file tree structure.
+
+Target directory: {target_directory}/generate_code
+
+Implementation Plan:
+{plan_content}
+
+TASK:
+1. Find the file tree structure in the implementation plan
+2. Generate shell commands (mkdir -p, touch) to create that structure
+3. Use execute_commands tool to run the commands and create the files
+
+Requirements:
+- Create directories with mkdir -p
+- Create files with touch
+- Include __init__.py files for Python packages
+- Use relative paths from the target directory
+- Execute the commands to actually create the file structure
+
+Please generate and execute the commands to create the complete project structure."""
+            
+            # 生成并执行命令 / Generate and execute commands
+            result = await creator.generate_str(message=message)
+            
+            logger.info("步骤1完成: 文件树结构创建成功 / Step 1 Completed: File tree structure creation successful")
             return result
-                    
-        except Exception as e:
-            return f"文件树创建失败: {e}"
+
+    # ==================== 步骤2: 代码实现 / Step 2: Code Implementation ====================
     
-    async def generate_shell_commands_with_llm(self, file_tree: str, use_anthropic: bool = True) -> str:
+    async def step2_implement_code(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
         """
-        使用LLM生成shell命令
+        步骤2: 代码实现 / Step 2: Code implementation
         
         Args:
-            file_tree: 文件树结构
-            use_anthropic: 是否使用Anthropic API
+            plan_content: 实现计划内容 / Implementation plan content
+            target_directory: 目标目录路径 / Target directory path  
+            logger: 日志记录器 / Logger
             
         Returns:
-            shell命令字符串
+            代码实现结果 / Code implementation result
         """
-        prompt = f"{FILE_TREE_CREATOR_PROMPT}\n\n文件树结构:\n{file_tree}"
+        logger.info("步骤2开始: 代码实现 / Step 2 Starting: Code implementation")
         
-        try:
-            if use_anthropic and self.anthropic_client:
-                response = self.anthropic_client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=2000,
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ]
-                )
-                content = response.content[0].text
-            
-            elif self.openai_client:
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4", 
-                    messages=[
-                        {"role": "system", "content": "你是一个专业的文件系统操作专家。"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=2000
-                )
-                content = response.choices[0].message.content
-            else:
-                raise Exception("没有可用的LLM客户端")
-            
-            # 提取命令块
-            if "```commands" in content:
-                start = content.find("```commands") + len("```commands")
-                end = content.find("```", start)
-                commands = content[start:end].strip()
-            elif "```" in content:
-                # 备用解析
-                start = content.find("```") + 3
-                end = content.find("```", start)
-                commands = content[start:end].strip()
-            else:
-                # 直接使用内容
-                commands = content.strip()
-            
-            return commands
-            
-        except Exception as e:
-            raise Exception(f"命令生成失败: {e}")
-            
-    def execute_commands_directly(self, commands: str, target_directory: str) -> str:
-        """
-        直接执行shell命令，不使用MCP
+        # 检查文件树是否已存在 / Check if file tree exists
+        code_directory = os.path.join(target_directory, "generate_code")
+        if not os.path.exists(code_directory):
+            raise FileNotFoundError("文件树结构不存在，请先运行文件树创建 / File tree structure doesn't exist, please run file tree creation first")
         
-        Args:
-            commands: shell命令字符串
-            target_directory: 目标目录
+        # 创建代码实现代理 / Create code implementation agent
+        code_agent = Agent(
+            name="CodeImplementationAgent",
+            instruction=CODE_IMPLEMENTATION_PROMPT,
+            server_names=["command-executor"],
+        )
+        
+        async with code_agent:
+            # 连接LLM / Connect to LLM
+            creator = await code_agent.attach_llm(AnthropicAugmentedLLM)
             
-        Returns:
-            执行结果
-        """
-        try:
-            from tools.simple_shell_executor import execute_shell_commands
+            # 获取文件结构信息 / Get file structure information
+            file_structure = self._get_file_structure(code_directory)
             
-            # 修正命令中的路径 - 替换项目名为generate_code
-            corrected_commands = commands.replace('recdiff_project/', 'generate_code/')
-            corrected_commands = corrected_commands.replace('project/', 'generate_code/')
+            # 构建代码实现消息 / Build code implementation message
+            message = f"""Analyze the implementation plan and generate complete code implementations for ALL files in the existing project structure.
+
+Target directory: {code_directory}
+
+{file_structure}
+
+Implementation Plan:
+{plan_content}
+
+TASK:
+1. Read and understand the implementation plan thoroughly
+2. Analyze the existing file structure to understand the project organization
+3. Generate COMPLETE, WORKING code implementations for EVERY file in the structure
+4. Use heredoc syntax (cat > file << 'EOF') to write code to each file
+5. Ensure all code follows the plan's specifications and is production-ready
+
+CRITICAL REQUIREMENTS:
+- Generate code for ALL files in the structure (no empty files or placeholders)
+- Each file must have complete, working implementation
+- Follow the research paper's methodology exactly
+- Include proper imports, error handling, and documentation
+- Use proper Python coding standards with type hints
+- Ensure all modules work together as a cohesive system
+
+COMMAND FORMAT EXAMPLE:
+```bash
+cat > src/core/gcn.py << 'EOF'
+[Complete implementation here]
+EOF
+
+cat > src/core/diffusion.py << 'EOF'
+[Complete implementation here] 
+EOF
+```
+
+Please generate the complete implementation commands for ALL files in the project structure."""
             
-            result = execute_shell_commands(corrected_commands, target_directory)
+            # 生成代码实现 / Generate code implementation
+            result = await creator.generate_str(message=message)
+            
+            logger.info("步骤2完成: 代码实现成功 / Step 2 Completed: Code implementation successful")
             return result
-                    
-        except Exception as e:
-            return f"命令执行失败: {e}"
-    
-    def parse_file_tree_to_file_list(self, file_tree: str) -> list:
+
+    def _get_file_structure(self, code_directory: str) -> str:
         """
-        直接解析文件树为文件列表，不使用LLM
+        获取已生成的文件结构 / Get generated file structure
         
         Args:
-            file_tree: 文件树结构
+            code_directory: 代码目录 / Code directory
             
         Returns:
-            文件路径列表
+            文件结构字符串 / File structure string
         """
-        return parse_file_tree_to_list(file_tree)
+        try:
+            if not os.path.exists(code_directory):
+                return "No file structure found - please run file tree creation first"
+            
+            # 使用find命令获取文件结构 / Use find command to get file structure
+            import subprocess
+            result = subprocess.run(
+                ["find", ".", "-type", "f"], 
+                cwd=code_directory,
+                capture_output=True, 
+                text=True
+            )
+            
+            if result.returncode == 0:
+                files = result.stdout.strip().split('\n')
+                return f"Existing file structure:\n" + '\n'.join(sorted(files))
+            else:
+                return "Error reading file structure"
+                
+        except Exception as e:
+            return f"Error getting file structure: {str(e)}"
+
+    # ==================== 步骤3: 待实现功能 / Step 3: Future Features ====================
     
-    async def run_file_tree_creation(
+    async def step3_generate_tests(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
+        """
+        步骤3: 生成测试代码 (待实现) / Step 3: Generate test code (To be implemented)
+        
+        Args:
+            plan_content: 实现计划内容 / Implementation plan content
+            target_directory: 目标目录路径 / Target directory path
+            logger: 日志记录器 / Logger
+            
+        Returns:
+            测试生成结果 / Test generation result
+        """
+        logger.info("步骤3: 测试生成功能待实现 / Step 3: Test generation feature to be implemented")
+        return "Step 3: Test generation - Feature to be implemented"
+
+    async def step4_generate_documentation(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
+        """
+        步骤4: 生成文档 (待实现) / Step 4: Generate documentation (To be implemented)
+        
+        Args:
+            plan_content: 实现计划内容 / Implementation plan content
+            target_directory: 目标目录路径 / Target directory path
+            logger: 日志记录器 / Logger
+            
+        Returns:
+            文档生成结果 / Documentation generation result
+        """
+        logger.info("步骤4: 文档生成功能待实现 / Step 4: Documentation generation feature to be implemented")
+        return "Step 4: Documentation generation - Feature to be implemented"
+
+    # ==================== 主工作流 / Main Workflow ====================
+    
+    async def run_complete_workflow(
         self, 
         plan_file_path: str, 
         target_directory: Optional[str] = None,
-        use_anthropic: bool = True,
-        use_llm_for_extraction: bool = True
+        steps: Optional[list] = None,
+        logger: Optional[logging.Logger] = None
     ) -> Dict[str, Any]:
         """
-        运行文件树创建流程
+        运行完整的代码实现工作流 / Run complete code implementation workflow
         
         Args:
-            plan_file_path: 实现计划文件路径
-            target_directory: 目标目录，如果为None则从plan_file_path推导
-            use_anthropic: 是否使用Anthropic API
-            use_llm_for_extraction: 是否使用LLM提取文件树
+            plan_file_path: 实现计划文件路径 / Implementation plan file path
+            target_directory: 目标目录 / Target directory
+            steps: 要执行的步骤列表 / List of steps to execute ["structure", "code", "test", "docs"]
+            logger: 日志记录器 / Logger
             
         Returns:
-            运行结果
+            完整工作流执行结果 / Complete workflow execution result
         """
+        # 创建日志记录器（如果没有提供）/ Create logger (if not provided)
+        if logger is None:
+            logger = self._create_logger()
+        
+        # 默认执行步骤 / Default steps to execute
+        if steps is None:
+            steps = ["structure", "code"]  # 只执行已实现的步骤 / Only execute implemented steps
+        
         try:
-            # 读取实现计划
-            plan_path = Path(plan_file_path)
-            if not plan_path.exists():
-                return {"status": "error", "message": f"计划文件不存在: {plan_file_path}"}
+            # 读取实现计划 / Read implementation plan
+            plan_content = self._read_plan_file(plan_file_path)
             
-            with open(plan_path, 'r', encoding='utf-8') as f:
-                plan_content = f.read()
+            # 确定目标目录 / Determine target directory
+            target_directory = self._determine_target_directory(plan_file_path, target_directory)
             
-            # 确定目标目录
-            if target_directory is None:
-                target_directory = str(plan_path.parent)
+            logger.info(f"开始完整工作流 / Starting complete workflow: {plan_file_path}")
+            logger.info(f"目标目录 / Target directory: {target_directory}")
+            logger.info(f"执行步骤 / Executing steps: {steps}")
             
-            print(f"开始处理计划文件: {plan_file_path}")
-            print(f"目标目录: {target_directory}")
+            results = {}
             
-            # 步骤1: 提取文件树结构
-            print("步骤1: 提取文件树结构...")
-            if use_llm_for_extraction:
-                file_tree = await self.extract_file_tree_from_plan(plan_content, use_anthropic)
-            else:
-                # 从计划中直接提取文件树（查找4. Code Organization部分）
-                file_tree = self._extract_file_tree_from_text(plan_content)
-            print("文件树提取完成")
+            # 步骤1: 文件树创建 / Step 1: File tree creation
+            if "structure" in steps:
+                results["step1_structure"] = await self.step1_create_file_structure(
+                    plan_content, target_directory, logger
+                )
             
-            # 步骤2: LLM生成shell命令
-            print("步骤2: LLM生成创建命令...")
-            if use_llm_for_extraction:
-                commands = await self.generate_shell_commands_with_llm(file_tree, use_anthropic)
-            else:
-                # 简化版本：直接解析文件列表然后创建
-                file_list = self.parse_file_tree_to_file_list(file_tree)
-                creation_result = self.create_file_tree_directly(file_tree, target_directory)
-                print("文件结构创建完成")
-                
-                return {
-                    "status": "success",
-                    "plan_file": plan_file_path,
-                    "target_directory": target_directory,
-                    "file_tree": file_tree,
-                    "file_list": file_list,
-                    "creation_result": creation_result,
-                    "files_created": len(file_list),
-                    "commands": "直接创建（未使用LLM生成命令）"
-                }
+            # 步骤2: 代码实现 / Step 2: Code implementation  
+            if "code" in steps:
+                results["step2_code"] = await self.step2_implement_code(
+                    plan_content, target_directory, logger
+                )
             
-            print(f"LLM生成命令完成")
+            # 步骤3: 测试生成 (待实现) / Step 3: Test generation (To be implemented)
+            if "test" in steps:
+                results["step3_test"] = await self.step3_generate_tests(
+                    plan_content, target_directory, logger
+                )
             
-            # 步骤3: 执行shell命令
-            print("步骤3: 执行shell命令...")
-            creation_result = self.execute_commands_directly(commands, target_directory)
-            print("命令执行完成")
+            # 步骤4: 文档生成 (待实现) / Step 4: Documentation generation (To be implemented)
+            if "docs" in steps:
+                results["step4_docs"] = await self.step4_generate_documentation(
+                    plan_content, target_directory, logger
+                )
             
-            # 解析文件数量（用于显示）
-            file_count = commands.count('touch') + commands.count('mkdir')
+            logger.info("完整工作流执行成功 / Complete workflow execution successful")
             
             return {
                 "status": "success",
                 "plan_file": plan_file_path,
                 "target_directory": target_directory,
-                "file_tree": file_tree,
-                "commands": commands,
-                "creation_result": creation_result,
-                "files_created": file_count
+                "code_directory": os.path.join(target_directory, "generate_code"),
+                "executed_steps": steps,
+                "results": results,
+                "method": "mcp_complete_workflow"
             }
             
         except Exception as e:
+            logger.error(f"完整工作流执行失败 / Complete workflow execution failed: {e}")
             return {
                 "status": "error", 
                 "message": str(e),
                 "plan_file": plan_file_path
             }
-    
-    def _extract_file_tree_from_text(self, plan_content: str) -> str:
-        """
-        从计划文本中直接提取文件树结构
-        
-        Args:
-            plan_content: 计划内容
-            
-        Returns:
-            提取的文件树结构
-        """
-        lines = plan_content.split('\n')
-        file_tree_lines = []
-        in_file_tree = False
-        
-        for line in lines:
-            if 'Code Organization' in line or 'File Tree' in line or 'project/' in line:
-                in_file_tree = True
-                continue
-            
-            if in_file_tree:
-                if line.strip() == '---' or (line.startswith('5.') or line.startswith('Phase')):
-                    break
-                if ('├──' in line or '└──' in line or '│' in line or 
-                    line.strip().endswith('/') or line.strip().endswith('.py') or 
-                    line.strip().endswith('.txt') or line.strip().endswith('.md') or
-                    line.strip().endswith('.yaml')):
-                    file_tree_lines.append(line)
-        
-        return '\n'.join(file_tree_lines) if file_tree_lines else ""
 
-# 便捷函数
-async def create_project_structure(plan_file_path: str, target_directory: str = None) -> Dict[str, Any]:
-    """
-    便捷函数：创建项目结构
+    # ==================== 便捷接口 / Convenience Interfaces ====================
     
-    Args:
-        plan_file_path: 实现计划文件路径
-        target_directory: 目标目录
-        
-    Returns:
-        运行结果
+    async def run_file_tree_creation_only(
+        self, 
+        plan_file_path: str, 
+        target_directory: Optional[str] = None,
+        logger: Optional[logging.Logger] = None
+    ) -> Dict[str, Any]:
+        """
+        仅运行文件树创建 / Run file tree creation only
+        """
+        return await self.run_complete_workflow(
+            plan_file_path=plan_file_path,
+            target_directory=target_directory,
+            steps=["structure"],
+            logger=logger
+        )
+
+    async def run_code_implementation_only(
+        self, 
+        plan_file_path: str, 
+        target_directory: Optional[str] = None,
+        logger: Optional[logging.Logger] = None
+    ) -> Dict[str, Any]:
+        """
+        仅运行代码实现 / Run code implementation only
+        """
+        return await self.run_complete_workflow(
+            plan_file_path=plan_file_path,
+            target_directory=target_directory,
+            steps=["code"],
+            logger=logger
+        )
+
+
+# ==================== 便捷函数接口 / Convenience Function Interface ====================
+
+async def create_project_structure(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
     """
+    创建项目结构 - 便捷函数接口 / Create project structure - convenience function interface
+    """
+    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
     workflow = CodeImplementationWorkflow()
-    return await workflow.run_file_tree_creation(plan_file_path, target_directory, use_llm_for_extraction=False)
+    return await workflow.run_file_tree_creation_only(
+        plan_file_path=plan_file_path,
+        target_directory=paper_dir,
+        logger=logger
+    )
 
-# 主函数示例
+async def implement_project_code(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
+    """
+    实现项目代码 - 便捷函数接口 / Implement project code - convenience function interface
+    """
+    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
+    workflow = CodeImplementationWorkflow()
+    return await workflow.run_code_implementation_only(
+        plan_file_path=plan_file_path,
+        target_directory=paper_dir,
+        logger=logger
+    )
+
+async def run_full_implementation_workflow(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
+    """
+    运行完整实现工作流 - 便捷函数接口 / Run full implementation workflow - convenience function interface
+    """
+    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
+    workflow = CodeImplementationWorkflow()
+    return await workflow.run_complete_workflow(
+        plan_file_path=plan_file_path,
+        target_directory=paper_dir,
+        steps=["structure", "code"],  # 目前只执行已实现的步骤 / Currently only execute implemented steps
+        logger=logger
+    )
+
+
+# ==================== 主函数示例 / Main Function Example ====================
+
 async def main():
-    """主函数示例"""
-    # 示例用法
-    plan_file = r"agent_folders\papers\paper_3\initial_plan.txt"
+    """主函数示例 / Main function example"""
+    # 设置日志 / Setup logging
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+    logger = logging.getLogger(__name__)
+    
+    # 示例用法 / Example usage
+    plan_file = "agent_folders/papers/paper_3/initial_plan.txt"
     
     workflow = CodeImplementationWorkflow()
-    result = await workflow.run_file_tree_creation(plan_file, use_llm_for_extraction=False)
     
-    print("=" * 50)
-    print("文件树创建结果:")
-    print(f"状态: {result['status']}")
-    if result['status'] == 'success':
-        print(f"创建文件数: {result['files_created']}")
-        print(f"目标目录: {result['target_directory']}")
-        print("创建结果:")
-        print(result['creation_result'])
+    # 选择运行模式 / Choose run mode
+    import sys
+    if len(sys.argv) > 1:
+        mode = sys.argv[1]
+        
+        if mode == "structure":
+            # 仅文件树创建模式 / File tree creation only mode
+            logger.info("运行文件树创建工作流 / Running file tree creation workflow...")
+            result = await workflow.run_file_tree_creation_only(plan_file, logger=logger)
+        
+        elif mode == "code":
+            # 仅代码实现模式 / Code implementation only mode
+            logger.info("运行代码实现工作流 / Running code implementation workflow...")
+            result = await workflow.run_code_implementation_only(plan_file, logger=logger)
+        
+        elif mode == "full":
+            # 完整工作流模式 / Full workflow mode
+            logger.info("运行完整工作流 / Running complete workflow...")
+            result = await workflow.run_complete_workflow(plan_file, logger=logger)
+        
+        else:
+            print("无效模式 / Invalid mode. 使用 / Use: structure, code, full")
+            return
     else:
-        print(f"错误信息: {result['message']}")
+        # 默认运行完整工作流 / Default to run complete workflow
+        logger.info("运行完整工作流 / Running complete workflow...")
+        result = await workflow.run_complete_workflow(plan_file, logger=logger)
+    
+    # 显示结果 / Display results
+    print("=" * 80)
+    print("工作流执行结果 / Workflow Execution Result:")
+    print(f"状态 / Status: {result['status']}")
+    
+    if result['status'] == 'success':
+        print(f"执行步骤 / Executed Steps: {result['executed_steps']}")
+        print(f"代码目录 / Code Directory: {result['code_directory']}")
+        print(f"使用方法 / Method: {result['method']}")
+    else:
+        print(f"错误信息 / Error Message: {result['message']}")
+    
+    print("\n" + "=" * 80)
+    print("使用说明 / Usage Instructions:")
+    print("文件树创建 / File tree creation: python workflows/code_implementation_workflow.py structure")
+    print("代码实现 / Code implementation: python workflows/code_implementation_workflow.py code")
+    print("完整工作流 / Complete workflow: python workflows/code_implementation_workflow.py full")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

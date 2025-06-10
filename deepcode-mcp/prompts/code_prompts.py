@@ -389,106 +389,126 @@ Validation Report
    - Alternative approaches
 """
 
-# File Tree Creation Prompts
-FILE_TREE_EXTRACTOR_PROMPT = """You are an expert file structure analyzer for code implementation projects.
+# File Tree Creation Prompts / 文件树创建提示词
 
-Task: Analyze the implementation plan and extract a comprehensive file tree structure for the project.
+STRUCTURE_GENERATOR_PROMPT = """You are a shell command expert that analyzes implementation plans and generates shell commands to create file tree structures.
 
-Instructions:
+TASK: Analyze the implementation plan, extract the file tree structure, and generate shell commands to create the complete project structure.
+
+CRITICAL REQUIREMENTS:
+1. Find the "Code Organization" or "File Tree" section in the implementation plan
+2. Extract the EXACT file tree structure mentioned in the plan
+3. Generate shell commands (mkdir, touch) to create that structure
+4. Use the execute_commands tool to run the commands
+
+COMMAND GENERATION RULES:
+1. Use `mkdir -p` to create directories (including nested ones)
+2. Use `touch` to create files  
+3. Create directories before files
+4. One command per line
+5. Use relative paths from the target directory
+6. Include __init__.py files for Python packages
+
+EXAMPLE OUTPUT FORMAT:
+```
+mkdir -p project/src/core
+mkdir -p project/src/models  
+mkdir -p project/tests
+touch project/src/__init__.py
+touch project/src/core/__init__.py
+touch project/src/core/gcn.py
+touch project/src/models/__init__.py
+touch project/src/models/recdiff.py
+touch project/requirements.txt
+```
+
+WORKFLOW:
 1. Read the implementation plan carefully
-2. Identify all modules, files, and directories mentioned
-3. Create a complete file tree that covers:
-   - Source code modules (.py files)
-   - Configuration files (.yaml, .json, .txt)
-   - Test files (test_*.py)
-   - Documentation files (.md)
-   - Data directories
-   - Experiment directories
-   - Utility scripts
+2. Find the file tree section
+3. Generate mkdir commands for all directories
+4. Generate touch commands for all files
+5. Use execute_commands tool with the generated commands
 
-4. Ensure the file tree is:
-   - Complete and comprehensive
-   - Well-organized with proper directory structure
-   - Follows Python project best practices
-   - Includes all files mentioned in the plan
+Focus on creating the EXACT structure from the plan - nothing more, nothing less."""
 
-Output Format:
-Please provide the file tree in a clear hierarchical format like this:
+# Code Implementation Prompts / 代码实现提示词
 
-```
-project_name/
-├── src/
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── module1.py
-│   │   └── module2.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── helper.py
-│   └── __init__.py
-├── tests/
-│   ├── test_module1.py
-│   └── test_module2.py
-├── configs/
-│   └── config.yaml
-├── requirements.txt
-└── README.md
+CODE_IMPLEMENTATION_PROMPT = """You are an expert Python developer specializing in implementing research papers into production-ready code.
+
+TASK: Analyze the implementation plan and generate shell commands to write complete, working code implementations for each file in the project structure.
+
+CRITICAL REQUIREMENTS:
+1. Read the implementation plan thoroughly to understand the research paper and requirements
+2. Generate COMPLETE, WORKING code for each file in the existing file structure
+3. Output shell commands that write code to specific files using heredoc syntax
+4. Ensure all code follows the plan's specifications and requirements
+5. Include proper imports, documentation, type hints, and error handling
+
+COMMAND FORMAT:
+Use heredoc syntax to write multi-line code to files:
+```bash
+cat > path/to/file.py << 'EOF'
+# Complete Python code implementation here
+# Include all necessary imports, classes, functions
+# Add proper docstrings and type hints
+# Implement all functionality as specified in the plan
+EOF
 ```
 
-Important: 
-- Use consistent indentation (4 spaces per level)
-- Use proper tree characters (├──, └──, │)
-- Include __init__.py files for Python packages
-- Add file extensions for all files
-- Create a logical, nested directory structure
-"""
+CODE IMPLEMENTATION RULES:
+1. **Complete Implementation**: Every file must have full, working code - no placeholders or TODO comments
+2. **Follow Plan Specifications**: Implement exactly what's described in the implementation plan
+3. **Professional Quality**: Include proper error handling, logging, type hints, and documentation
+4. **Modular Design**: Ensure proper separation of concerns and clean interfaces between modules
+5. **Research Accuracy**: Implement algorithms and methods as described in the research paper
+6. **Production Ready**: Code should be immediately runnable and testable
 
-FILE_TREE_CREATOR_PROMPT = """You are a file system operations expert that creates project file structures.
+FILE-SPECIFIC REQUIREMENTS:
+- **Core modules** (gcn.py, diffusion.py, etc.): Implement the main algorithms from the paper
+- **Model files** (recdiff.py): Create complete model classes with training/inference methods
+- **Utility files** (data.py, loss.py, etc.): Implement supporting functions and utilities
+- **Test files**: Create comprehensive unit tests for all modules
+- **Config files**: Provide complete configuration with all necessary parameters
+- **Setup files**: Include proper dependencies and installation instructions
 
-Task: Generate specific shell commands to create the complete file tree structure in the target directory.
+WORKFLOW:
+1. Analyze the implementation plan to understand the paper's methodology
+2. Review the existing file structure to understand the project organization
+3. For each file, generate complete code implementation using heredoc commands
+4. Ensure all dependencies and imports are correctly specified
+5. Verify that the implementation follows the paper's specifications
 
-Instructions:
-1. Analyze the provided file tree structure
-2. Generate precise shell commands to create all directories and files
-3. Ensure commands are cross-platform compatible (use mkdir and touch commands)
-4. Create the 'generate_code' directory as the base directory
+EXAMPLE OUTPUT:
+```bash
+cat > src/core/gcn.py << 'EOF'
+# Graph Convolutional Network implementation for RecDiff model
 
-Available Commands:
-- mkdir -p <directory_path>  (create directories recursively)
-- touch <file_path>          (create empty files)
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Tuple, Optional
+import logging
 
-Process:
-1. Parse the file tree structure
-2. Generate mkdir commands for all directories
-3. Generate touch commands for all files
-4. Output commands in the correct order (directories first, then files)
+logger = logging.getLogger(__name__)
 
-Output Format:
-Provide shell commands in this exact format:
+class GCNLayer(nn.Module):
+    # Single Graph Convolutional Network layer
+    
+    def __init__(self, input_dim: int, output_dim: int, dropout: float = 0.1):
+        super(GCNLayer, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, x: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
+        # Forward pass of GCN layer
+        x = self.linear(x)
+        x = torch.sparse.mm(adj, x)
+        x = F.relu(x)
+        return self.dropout(x)
 
-```commands
-mkdir -p generate_code
-mkdir -p generate_code/src
-mkdir -p generate_code/src/core
-mkdir -p generate_code/src/utils
-mkdir -p generate_code/tests
-mkdir -p generate_code/docs
-touch generate_code/src/__init__.py
-touch generate_code/src/core/__init__.py
-touch generate_code/src/core/gcn.py
-touch generate_code/src/core/diffusion.py
-touch generate_code/src/utils/__init__.py
-touch generate_code/src/utils/data.py
-touch generate_code/tests/test_gcn.py
-touch generate_code/requirements.txt
-touch generate_code/setup.py
+# ... complete implementation continues
+EOF
 ```
 
-Important:
-- Only include actual file and directory names, ignore comments
-- Use forward slashes in paths
-- Create directories before files
-- Ensure all __init__.py files are included for Python packages
-"""
-
+Focus on creating COMPLETE, PRODUCTION-READY implementations that fully realize the research paper's methodology."""
 
