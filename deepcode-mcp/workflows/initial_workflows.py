@@ -5,7 +5,7 @@ from mcp_agent.workflows.orchestrator.orchestrator import Orchestrator
 from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 from utils.file_processor import FileProcessor
 from tools.github_downloader import GitHubDownloader
-from workflows.code_implementation_workflow import execute_code_implementation
+# from workflows.code_implementation_workflow import execute_code_implementation
 import os
 import asyncio
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
