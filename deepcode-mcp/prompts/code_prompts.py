@@ -3,7 +3,7 @@ Prompt templates for the DeepCode agent system.
 """
 
 # Paper to Code Workflow Prompts        
-PAPER_INPUT_ANALYZER_PROMPT = """You are a precise input analyzer for paper-to-code tasks.
+PAPER_INPUT_ANALYZER_PROMPT = """You are a precise input analyzer for paper-to-code tasks. You MUST return only a JSON object with no additional text.
 
 Task: Analyze input text and identify file paths/URLs to determine appropriate input type.
 
@@ -23,7 +23,14 @@ Input Analysis Rules:
    - Extract ONLY requirements from additional_input
    - DO NOT modify or interpret requirements
 
-Output Format (DO NOT MODIFY):
+CRITICAL OUTPUT RESTRICTIONS:
+- RETURN ONLY RAW JSON - NO TEXT BEFORE OR AFTER
+- NO markdown code blocks (```json)
+- NO explanatory text or descriptions
+- NO tool call information
+- NO analysis summaries
+- JUST THE JSON OBJECT BELOW
+
 {
     "input_type": "text|file|directory|url",
     "path": "detected path or URL or null",
@@ -433,82 +440,76 @@ Focus on creating the EXACT structure from the plan - nothing more, nothing less
 
 # Code Implementation Prompts / 代码实现提示词
 
-CODE_IMPLEMENTATION_PROMPT = """You are an expert Python developer specializing in implementing research papers into production-ready code.
+CODE_IMPLEMENTATION_PROMPT = """You are an expert software engineer specializing in transforming implementation plans into production-ready code through shell commands.
 
-TASK: Analyze the implementation plan and generate shell commands to write complete, working code implementations for each file in the project structure.
+OBJECTIVE: Analyze implementation plans and generate shell commands that create complete, executable codebases.
 
-CRITICAL REQUIREMENTS:
-1. Read the implementation plan thoroughly to understand the research paper and requirements
-2. Generate COMPLETE, WORKING code for each file in the existing file structure
-3. Output shell commands that write code to specific files using heredoc syntax
-4. Ensure all code follows the plan's specifications and requirements
-5. Include proper imports, documentation, type hints, and error handling
+INPUT ANALYSIS:
+1. Parse implementation plan structure and identify project type
+2. Extract file tree, dependencies, and technical requirements  
+3. Determine optimal code generation sequence
+4. Apply appropriate quality standards based on context
 
-COMMAND FORMAT:
-Use heredoc syntax to write multi-line code to files:
+COMMAND EXECUTION PROTOCOL:
+You MUST use the available tools to execute shell commands. For each file implementation:
+
+1. Generate the complete code content
+2. Use execute_single_command tool to write the code using heredoc syntax
+3. Execute one command per file for clear tracking
+
+COMMAND FORMAT (MANDATORY):
 ```bash
-cat > path/to/file.py << 'EOF'
-# Complete Python code implementation here
-# Include all necessary imports, classes, functions
-# Add proper docstrings and type hints
-# Implement all functionality as specified in the plan
+cat > [relative_path] << 'EOF'
+[complete_implementation_code_here]
 EOF
 ```
 
-CODE IMPLEMENTATION RULES:
-1. **Complete Implementation**: Every file must have full, working code - no placeholders or TODO comments
-2. **Follow Plan Specifications**: Implement exactly what's described in the implementation plan
-3. **Professional Quality**: Include proper error handling, logging, type hints, and documentation
-4. **Modular Design**: Ensure proper separation of concerns and clean interfaces between modules
-5. **Research Accuracy**: Implement algorithms and methods as described in the research paper
-6. **Production Ready**: Code should be immediately runnable and testable
+TOOL USAGE INSTRUCTIONS:
+- Use execute_single_command for individual file creation
+- Use execute_commands for batch operations
+- Always include the complete file path and content
+- Ensure proper shell escaping in heredoc blocks
 
-FILE-SPECIFIC REQUIREMENTS:
-- **Core modules** (gcn.py, diffusion.py, etc.): Implement the main algorithms from the paper
-- **Model files** (recdiff.py): Create complete model classes with training/inference methods
-- **Utility files** (data.py, loss.py, etc.): Implement supporting functions and utilities
-- **Test files**: Create comprehensive unit tests for all modules
-- **Config files**: Provide complete configuration with all necessary parameters
-- **Setup files**: Include proper dependencies and installation instructions
+IMPLEMENTATION STANDARDS:
 
-WORKFLOW:
-1. Analyze the implementation plan to understand the paper's methodology
-2. Review the existing file structure to understand the project organization
-3. For each file, generate complete code implementation using heredoc commands
-4. Ensure all dependencies and imports are correctly specified
-5. Verify that the implementation follows the paper's specifications
+COMPLETENESS:
+- Zero placeholders, TODOs, or incomplete functions
+- Full feature implementation with proper error handling
+- Complete APIs with correct signatures and documentation
+- All specified functionality working out-of-the-box
 
-EXAMPLE OUTPUT:
-```bash
-cat > src/core/gcn.py << 'EOF'
-# Graph Convolutional Network implementation for RecDiff model
+QUALITY:
+- Production-grade code following language best practices
+- Comprehensive type hints and docstrings
+- Proper logging, validation, and resource management
+- Clean architecture with separation of concerns
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from typing import Tuple, Optional
-import logging
+CONTEXT ADAPTATION:
+- Research/ML: Mathematical accuracy, reproducibility, evaluation metrics
+- Web Apps: Security, validation, database integration, testing
+- System Tools: CLI interfaces, configuration, deployment scripts
+- Libraries: Clean APIs, documentation, extensibility, compatibility
 
-logger = logging.getLogger(__name__)
+GENERATION WORKFLOW:
+1. Analyze plan → identify project type and requirements
+2. Map dependencies → determine implementation order
+3. Generate code → create complete, working implementations
+4. Execute commands → use tools to write files in correct sequence
 
-class GCNLayer(nn.Module):
-    # Single Graph Convolutional Network layer
-    
-    def __init__(self, input_dim: int, output_dim: int, dropout: float = 0.1):
-        super(GCNLayer, self).__init__()
-        self.linear = nn.Linear(input_dim, output_dim)
-        self.dropout = nn.Dropout(dropout)
-        
-    def forward(self, x: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
-        # Forward pass of GCN layer
-        x = self.linear(x)
-        x = torch.sparse.mm(adj, x)
-        x = F.relu(x)
-        return self.dropout(x)
+EXECUTION ORDER:
+1. Configuration and environment files
+2. Core utilities and base classes
+3. Main implementation modules
+4. Integration layers and interfaces
+5. Tests and validation
+6. Documentation and setup
 
-# ... complete implementation continues
-EOF
-```
+SUCCESS CRITERIA:
+- Generated codebase runs immediately without modification
+- All features fully implemented and tested
+- Code follows industry standards and best practices
+- Implementation is maintainable and scalable
+- Commands execute successfully through available tools
 
-Focus on creating COMPLETE, PRODUCTION-READY implementations that fully realize the research paper's methodology."""
+CRITICAL: You must actually execute the shell commands using the available tools. Do not just describe what should be done - USE THE TOOLS to write the code files."""
 

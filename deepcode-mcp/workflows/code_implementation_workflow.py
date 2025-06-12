@@ -205,42 +205,12 @@ Please generate and execute the commands to create the complete project structur
             file_structure = self._get_file_structure(code_directory)
             
             # 构建代码实现消息 / Build code implementation message
-            message = f"""Analyze the implementation plan and generate complete code implementations for ALL files in the existing project structure.
-
-Target directory: {code_directory}
+            message = f"""Target directory: {code_directory}
 
 {file_structure}
 
 Implementation Plan:
-{plan_content}
-
-TASK:
-1. Read and understand the implementation plan thoroughly
-2. Analyze the existing file structure to understand the project organization
-3. Generate COMPLETE, WORKING code implementations for EVERY file in the structure
-4. Use heredoc syntax (cat > file << 'EOF') to write code to each file
-5. Ensure all code follows the plan's specifications and is production-ready
-
-CRITICAL REQUIREMENTS:
-- Generate code for ALL files in the structure (no empty files or placeholders)
-- Each file must have complete, working implementation
-- Follow the research paper's methodology exactly
-- Include proper imports, error handling, and documentation
-- Use proper Python coding standards with type hints
-- Ensure all modules work together as a cohesive system
-
-COMMAND FORMAT EXAMPLE:
-```bash
-cat > src/core/gcn.py << 'EOF'
-[Complete implementation here]
-EOF
-
-cat > src/core/diffusion.py << 'EOF'
-[Complete implementation here] 
-EOF
-```
-
-Please generate the complete implementation commands for ALL files in the project structure."""
+{plan_content}"""
             
             # 生成代码实现 / Generate code implementation
             result = await creator.generate_str(message=message)
@@ -482,7 +452,7 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # 示例用法 / Example usage
-    plan_file = "agent_folders/papers/paper_3/initial_plan.txt"
+    plan_file = "agent_folders/papers/1/initial_plan.txt"
     
     workflow = CodeImplementationWorkflow()
     

@@ -1,14 +1,19 @@
-$schema: ./schema/mcp-agent.config.schema.json
+$schema: ./schema/llm-logger.config.schema.json
 
 execution_engine: asyncio
-logger:
-  transports: [console, file]
-  level: debug
-  progress_display: true
-  path_settings:
-    path_pattern: "logs/mcp-agent-{unique_id}.jsonl"
-    unique_id: "timestamp" # Options: "timestamp" or "session_id"
-    timestamp_format: "%Y%m%d_%H%M%S"
+
+# 简化的LLM响应日志配置 - 专注于记录LLM回复内容
+llm_logger:
+  enabled: true
+  output_format: "json"  # json, text, markdown
+  log_level: "basic"     # basic: 只记录响应内容, detailed: 包含基本信息
+  log_directory: "logs/llm_responses"
+  filename_pattern: "llm_responses_{timestamp}.jsonl"
+  include_models:
+    - "claude-sonnet-4"
+    - "gpt-4"
+    - "o3-mini"
+  min_response_length: 50  # 只记录50字符以上的响应
 
 
 mcp:
@@ -32,24 +37,6 @@ mcp:
       # args: ["c:/Program Files/nodejs/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js","./agent_folder"]
       command: "npx"
       args: ["-y", "@modelcontextprotocol/server-filesystem"]
-    interpreter:
-      command: "docker"
-      args: [
-          "run",
-          "-i",
-          "--rm",
-          "--pull=always",
-          "-v",
-          # "D:/Project_codes/Code-Agent/deepcode-mcp/:/mnt/data/",
-          "./:/mnt/data/",
-          # Docker needs the absolute path on Windows (e.g. "x:/fastagent/agent_folder:/mnt/data/")
-          # "./agent_folder:/mnt/data/",
-          "ghcr.io/evalstate/mcp-py-repl:latest",
-        ]
-      roots:
-        - uri: "file://"
-          name: "Deepcode-mcp"
-          server_uri_alias: "file:///mnt/data/"
     fetch:
       command: "uvx"
       args: ["mcp-server-fetch"]

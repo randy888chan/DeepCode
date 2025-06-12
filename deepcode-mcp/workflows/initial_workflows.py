@@ -1,11 +1,18 @@
 from mcp_agent.agents.agent import Agent
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
+from mcp_agent.workflows.llm.augmented_llm import RequestParams
 from mcp_agent.workflows.orchestrator.orchestrator import Orchestrator
 from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 from utils.file_processor import FileProcessor
 from tools.github_downloader import GitHubDownloader
-# from workflows.code_implementation_workflow import execute_code_implementation
+# 导入代码实现工作流 / Import code implementation workflow
+from workflows.code_implementation_workflow import (
+    CodeImplementationWorkflow,
+    run_full_implementation_workflow,
+    create_project_structure,
+    implement_project_code
+)
 import os
 import asyncio
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
@@ -19,6 +26,76 @@ from prompts.code_prompts import (
     GITHUB_DOWNLOAD_PROMPT,
     INTEGRATION_VALIDATION_PROMPT
 )
+import json
+import re
+
+def extract_clean_json(llm_output: str) -> str:
+    """
+    从LLM输出中提取纯净的JSON，移除所有额外的文本和格式化
+    
+    Args:
+        llm_output: LLM的原始输出
+        
+    Returns:
+        纯净的JSON字符串
+    """
+    try:
+        # 1. 首先尝试直接解析整个输出为JSON
+        json.loads(llm_output.strip())
+        return llm_output.strip()
+    except json.JSONDecodeError:
+        pass
+    
+    # 2. 移除markdown代码块
+    if '```json' in llm_output:
+        pattern = r'```json\s*(.*?)\s*```'
+        match = re.search(pattern, llm_output, re.DOTALL)
+        if match:
+            json_text = match.group(1).strip()
+            try:
+                json.loads(json_text)
+                return json_text
+            except json.JSONDecodeError:
+                pass
+    
+    # 3. 查找以{开始的JSON对象
+    lines = llm_output.split('\n')
+    json_lines = []
+    in_json = False
+    brace_count = 0
+    
+    for line in lines:
+        stripped = line.strip()
+        if not in_json and stripped.startswith('{'):
+            in_json = True
+            json_lines = [line]
+            brace_count = stripped.count('{') - stripped.count('}')
+        elif in_json:
+            json_lines.append(line)
+            brace_count += stripped.count('{') - stripped.count('}')
+            if brace_count == 0:
+                break
+    
+    if json_lines:
+        json_text = '\n'.join(json_lines).strip()
+        try:
+            json.loads(json_text)
+            return json_text
+        except json.JSONDecodeError:
+            pass
+    
+    # 4. 最后的尝试：使用正则表达式查找JSON
+    pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+    matches = re.findall(pattern, llm_output, re.DOTALL)
+    for match in matches:
+        try:
+            json.loads(match)
+            return match
+        except json.JSONDecodeError:
+            continue
+    
+    # 如果所有方法都失败，返回原始输出
+    return llm_output
 
 async def run_paper_analyzer(prompt_text, logger):
     """
@@ -34,6 +111,7 @@ async def run_paper_analyzer(prompt_text, logger):
     analyzer_agent = Agent(
         name="PaperInputAnalyzerAgent",
         instruction=PAPER_INPUT_ANALYZER_PROMPT,
+        server_names=["brave"],
     )
     
     async with analyzer_agent:
@@ -41,8 +119,16 @@ async def run_paper_analyzer(prompt_text, logger):
         tools = await analyzer_agent.list_tools()
         logger.info("Tools available:", data=tools.model_dump())
         
+        
         analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
-        return await analyzer.generate_str(message=prompt_text)
+        raw_result = await analyzer.generate_str(message=prompt_text)
+        
+        # 清理LLM输出，确保只返回纯净的JSON
+        clean_result = extract_clean_json(raw_result)
+        logger.info(f"Raw LLM output: {raw_result}")
+        logger.info(f"Cleaned JSON output: {clean_result}")
+        
+        return clean_result
 
 async def run_paper_downloader(analysis_result, logger):
     """
@@ -178,6 +264,7 @@ async def paper_code_preparation(download_result, logger):
         paper_dir = result['paper_dir']  # 直接使用返回的paper_dir
         reference_path = os.path.join(paper_dir, 'reference.txt')
         initial_plan_path = os.path.join(paper_dir, 'initial_plan.txt')
+        
         # 1. 分析论文引用或读取已有结果
         if os.path.exists(reference_path):
             logger.info(f"Found existing reference analysis at {reference_path}")
@@ -194,6 +281,7 @@ async def paper_code_preparation(download_result, logger):
             with open(initial_plan_path, 'w', encoding='utf-8') as f:
                 f.write(initial_plan_result)
             logger.info(f"Initial plan has been saved to {initial_plan_path}")
+        
         # 2. 下载GitHub仓库
         await asyncio.sleep(5) 
         download_result = await github_repo_download(reference_result, paper_dir, logger)
@@ -206,22 +294,69 @@ async def paper_code_preparation(download_result, logger):
         logger.info("Starting code implementation based on the initial plan...")
         await asyncio.sleep(3)  # Brief pause before starting implementation
         
-        # Check if initial plan exists before proceeding
+        # 步骤4: 代码实现工作流 / Step 4: Code Implementation Workflow
+        logger.info("开始代码实现工作流 / Starting code implementation workflow")
+        
+        # 检查initial_plan文件是否存在 / Check if initial_plan file exists
+        initial_plan_path = os.path.join(paper_dir, 'initial_plan.txt')
         if os.path.exists(initial_plan_path):
-            implementation_result = await execute_code_implementation(paper_dir, logger)
-            logger.info(f"Code implementation completed with status: {implementation_result.get('status')}")
-            
-            # Save implementation result
-            if implementation_result.get('status') == 'success':
-                logger.info(f"Code successfully generated in: {implementation_result.get('generate_code_dir')}")
-                return f"Code implementation completed successfully. Generated code is in: {implementation_result.get('generate_code_dir')}"
-            else:
-                logger.error(f"Code implementation failed: {implementation_result.get('error')}")
-                return f"Code implementation failed: {implementation_result.get('error')}"
+            try:
+                # 执行完整的代码实现工作流 / Execute complete code implementation workflow
+                logger.info(f"执行代码实现工作流 - 计划文件: {initial_plan_path}")
+                
+                implementation_result = await run_full_implementation_workflow(
+                    paper_dir=paper_dir,
+                    logger=logger
+                )
+                
+                # 记录实现结果 / Log implementation result
+                if implementation_result.get('status') == 'success':
+                    code_directory = implementation_result.get('code_directory')
+                    executed_steps = implementation_result.get('executed_steps', [])
+                    
+                    logger.info(f"代码实现工作流成功完成!")
+                    logger.info(f"生成的代码目录: {code_directory}")
+                    logger.info(f"执行的步骤: {executed_steps}")
+                    
+                    # 将实现结果保存到文件 / Save implementation result to file
+                    implementation_result_path = os.path.join(paper_dir, 'code_implementation_result.txt')
+                    with open(implementation_result_path, 'w', encoding='utf-8') as f:
+                        f.write(f"代码实现工作流结果 / Code Implementation Workflow Result\n")
+                        f.write(f"状态 / Status: {implementation_result['status']}\n")
+                        f.write(f"代码目录 / Code Directory: {code_directory}\n")
+                        f.write(f"执行步骤 / Executed Steps: {executed_steps}\n")
+                        f.write(f"目标目录 / Target Directory: {implementation_result.get('target_directory')}\n")
+                        f.write(f"方法 / Method: {implementation_result.get('method')}\n")
+                    
+                    logger.info(f"实现结果已保存到: {implementation_result_path}")
+                    
+                else:
+                    logger.error(f"代码实现工作流失败: {implementation_result.get('message')}")
+                    # 即使失败也继续，不中断整个流程
+                    
+            except Exception as impl_error:
+                logger.error(f"代码实现工作流执行异常: {str(impl_error)}")
+                # 记录错误但不中断整个流程
+                error_log_path = os.path.join(paper_dir, 'code_implementation_error.txt')
+                with open(error_log_path, 'w', encoding='utf-8') as f:
+                    f.write(f"代码实现工作流错误 / Code Implementation Workflow Error\n")
+                    f.write(f"错误信息 / Error Message: {str(impl_error)}\n")
+                    f.write(f"计划文件路径 / Plan File Path: {initial_plan_path}\n")
+                
         else:
-            logger.warning(f"Initial plan not found at {initial_plan_path}, skipping code implementation")
-        return download_result
-
+            logger.warning(f"未找到initial_plan.txt文件: {initial_plan_path}，跳过代码实现步骤")
+            # 创建提示文件 / Create hint file
+            hint_path = os.path.join(paper_dir, 'code_implementation_skipped.txt')
+            with open(hint_path, 'w', encoding='utf-8') as f:
+                f.write("代码实现步骤被跳过 / Code implementation step was skipped\n")
+                f.write(f"原因: 未找到initial_plan.txt文件 / Reason: initial_plan.txt file not found\n")
+                f.write(f"期望路径 / Expected path: {initial_plan_path}\n")
+        
+        logger.info("代码实现工作流阶段完成 / Code implementation workflow stage completed")
+        
+        # 返回最终结果 / Return final result
+        return f"Paper code preparation completed successfully for {paper_dir}"
+        
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")
         raise e

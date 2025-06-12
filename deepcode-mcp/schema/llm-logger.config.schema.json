@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Agent Configuration Schema - LLM Focused",
+  "description": "简化版MCP Agent配置，专注于LLM响应日志记录",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "execution_engine": {
+      "default": "asyncio",
+      "enum": ["asyncio", "temporal"],
+      "title": "Execution Engine",
+      "type": "string",
+      "description": "执行引擎类型"
+    },
+    "llm_logger": {
+      "type": "object",
+      "description": "简化的LLM响应日志配置 - 专注于记录LLM回复内容",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用LLM响应日志"
+        },
+        "output_format": {
+          "type": "string",
+          "enum": ["json", "text", "markdown"],
+          "default": "json",
+          "description": "输出格式"
+        },
+        "log_level": {
+          "type": "string",
+          "enum": ["basic", "detailed"],
+          "default": "basic",
+          "description": "日志级别：basic只记录响应内容，detailed包含基本信息"
+        },
+        "log_directory": {
+          "type": "string",
+          "default": "logs/llm_responses",
+          "description": "日志存储目录"
+        },
+        "filename_pattern": {
+          "type": "string",
+          "default": "llm_responses_{timestamp}.jsonl",
+          "description": "文件命名模式"
+        },
+        "include_models": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["claude-sonnet-4", "gpt-4", "o3-mini"],
+          "description": "要记录的模型列表"
+        },
+        "min_response_length": {
+          "type": "integer",
+          "default": 50,
+          "description": "最小响应长度（字符数）"
+        }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "description": "MCP服务器配置",
+      "properties": {
+        "servers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "服务器启动命令"
+              },
+              "args": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "命令参数"
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "description": "环境变量"
+              }
+            }
+          }
+        }
+      }
+    },
+    "openai": {
+      "type": "object",
+      "description": "OpenAI模型配置",
+      "properties": {
+        "default_model": {
+          "type": "string",
+          "description": "默认OpenAI模型"
+        }
+      }
+    },
+    "anthropic": {
+      "type": "object", 
+      "description": "Anthropic模型配置",
+      "properties": {
+        "default_model": {
+          "type": "string",
+          "description": "默认Anthropic模型"
+        }
+      }
+    }
+  }
+} 
