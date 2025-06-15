@@ -11,10 +11,7 @@ from .initial_workflows import (
     paper_code_preparation
 )
 
-from .code_implementation_workflow import (
-    CodeImplementationWorkflow,
-    create_project_structure
-)
+from .code_implementation_workflow import CodeImplementationWorkflow
 
 __all__ = [
     # Initial workflows
@@ -25,6 +22,5 @@ __all__ = [
     'paper_reference_analyzer',
     'paper_code_preparation',
     # Code implementation workflows
-    'CodeImplementationWorkflow',
-    'create_project_structure'
+    'CodeImplementationWorkflow'
 ] 

@@ -1,79 +1,71 @@
 """
-通用论文代码复现工作流 - 基于MCP代理实现
-Universal Paper Code Implementation Workflow - MCP Agent Based
+论文代码复现工作流 - 基于MCP标准的迭代式开发
+Paper Code Implementation Workflow - MCP-compliant Iterative Development
 
-这个模块实现了论文代码复现的完整工作流：
+实现论文代码复现的完整工作流：
 1. 文件树创建 (File Tree Creation)
-2. 代码实现 (Code Implementation)
-3. 测试生成 (Test Generation) - 待实现
-4. 文档生成 (Documentation Generation) - 待实现
+2. 代码实现 (Code Implementation) - 基于aisi-basic-agent的迭代式开发
 
-This module implements the complete workflow for paper code reproduction:
-1. File Tree Creation
-2. Code Implementation
-3. Test Generation - To be implemented
-4. Documentation Generation - To be implemented
+使用标准MCP架构：
+- MCP服务器：tools/code_implementation_server.py
+- MCP客户端：通过mcp_agent框架调用
+- 配置文件：mcp_agent.config.yaml
 """
 
 import asyncio
 import yaml
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import logging
+import json
+import time
 
-# 导入MCP代理相关模块 / Import MCP agent related modules
+# 导入MCP代理相关模块
 from mcp_agent.agents.agent import Agent
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 
-# 导入提示词 / Import prompts
+# 导入提示词
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT, CODE_IMPLEMENTATION_PROMPT
+from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
+from prompts.iterative_code_prompts import (
+    ITERATIVE_CODE_SYSTEM_PROMPT, 
+    CONTINUE_CODE_MESSAGE,
+    INITIAL_ANALYSIS_PROMPT,
+    COMPLETION_CHECK_PROMPT,
+    ERROR_HANDLING_PROMPT,
+    TOOL_USAGE_EXAMPLES
+)
 
 
 class CodeImplementationWorkflow:
     """
-    论文代码复现工作流管理器 / Paper Code Implementation Workflow Manager
+    论文代码复现工作流管理器
     
-    基于MCP代理模式，负责完整的代码复现流程
-    Based on MCP agent pattern, responsible for complete code reproduction process
+    使用标准MCP架构：
+    1. 通过MCP客户端连接到code-implementation服务器
+    2. 使用MCP协议进行工具调用
+    3. 支持工作空间管理和操作历史追踪
     """
     
     def __init__(self, config_path: str = "mcp_agent.secrets.yaml"):
-        """
-        初始化工作流 / Initialize workflow
-        
-        Args:
-            config_path: API配置文件路径 / API configuration file path
-        """
         self.config_path = config_path
         self.api_config = self._load_api_config()
+        self.logger = self._create_logger()
+        self.mcp_agent = None
     
     def _load_api_config(self) -> Dict[str, Any]:
-        """
-        加载API配置 / Load API configuration
-        
-        Returns:
-            配置字典 / Configuration dictionary
-        """
+        """加载API配置"""
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except Exception as e:
-            raise Exception(f"无法加载API配置文件 / Unable to load API configuration file: {e}")
+            raise Exception(f"无法加载API配置文件: {e}")
 
-    def _create_logger(self, name: str = __name__) -> logging.Logger:
-        """
-        创建日志记录器 / Create logger
-        
-        Args:
-            name: 日志记录器名称 / Logger name
-            
-        Returns:
-            日志记录器 / Logger
-        """
-        logger = logging.getLogger(name)
+    def _create_logger(self) -> logging.Logger:
+        """创建日志记录器"""
+        logger = logging.getLogger(__name__)
         if not logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
@@ -83,54 +75,54 @@ class CodeImplementationWorkflow:
         return logger
 
     def _read_plan_file(self, plan_file_path: str) -> str:
-        """
-        读取计划文件 / Read plan file
-        
-        Args:
-            plan_file_path: 计划文件路径 / Plan file path
-            
-        Returns:
-            计划内容 / Plan content
-        """
+        """读取计划文件"""
         plan_path = Path(plan_file_path)
         if not plan_path.exists():
-            raise FileNotFoundError(f"实现计划文件不存在 / Implementation plan file does not exist: {plan_file_path}")
+            raise FileNotFoundError(f"实现计划文件不存在: {plan_file_path}")
         
         with open(plan_path, 'r', encoding='utf-8') as f:
             return f.read()
 
-    def _determine_target_directory(self, plan_file_path: str, target_directory: Optional[str] = None) -> str:
-        """
-        确定目标目录 / Determine target directory
-        
-        Args:
-            plan_file_path: 计划文件路径 / Plan file path
-            target_directory: 目标目录 / Target directory
-            
-        Returns:
-            目标目录路径 / Target directory path
-        """
-        if target_directory is None:
-            return str(Path(plan_file_path).parent)
-        return target_directory
+    def _check_file_tree_exists(self, target_directory: str) -> bool:
+        """检查文件树是否已存在"""
+        code_directory = os.path.join(target_directory, "generate_code")
+        return os.path.exists(code_directory) and len(os.listdir(code_directory)) > 0
 
-    # ==================== 步骤1: 文件树创建 / Step 1: File Tree Creation ====================
-    
-    async def step1_create_file_structure(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
-        """
-        步骤1: 创建文件树结构 / Step 1: Create file tree structure
-        
-        Args:
-            plan_content: 实现计划内容 / Implementation plan content
-            target_directory: 目标目录路径 / Target directory path
-            logger: 日志记录器 / Logger
+    async def _initialize_mcp_agent(self, code_directory: str):
+        """初始化MCP代理，连接到code-implementation服务器"""
+        try:
+            # 创建连接到code-implementation服务器的代理
+            self.mcp_agent = Agent(
+                name="CodeImplementationAgent",
+                instruction="你是一个代码实现助手，使用MCP工具来实现论文代码复现。",
+                server_names=["code-implementation"],  # 连接到我们的MCP服务器
+            )
             
-        Returns:
-            创建结果 / Creation result
-        """
-        logger.info("步骤1开始: 文件树结构创建 / Step 1 Starting: File tree structure creation")
+            # 设置工作空间
+            async with self.mcp_agent:
+                # 初始化LLM
+                llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+                
+                # 设置工作空间
+                workspace_result = await self.mcp_agent.call_tool(
+                    "set_workspace", 
+                    {"workspace_path": code_directory}
+                )
+                self.logger.info(f"工作空间设置结果: {workspace_result}")
+                
+                return llm
+                
+        except Exception as e:
+            self.logger.error(f"初始化MCP代理失败: {e}")
+            raise
+
+    # ==================== 文件树创建流程 ====================
+    
+    async def create_file_structure(self, plan_content: str, target_directory: str) -> str:
+        """创建文件树结构"""
+        self.logger.info("开始创建文件树结构...")
         
-        # 创建文件结构生成代理 / Create file structure generation agent
+        # 创建文件结构生成代理
         structure_agent = Agent(
             name="StructureGeneratorAgent",
             instruction=STRUCTURE_GENERATOR_PROMPT,
@@ -138,369 +130,572 @@ class CodeImplementationWorkflow:
         )
         
         async with structure_agent:
-            # 连接LLM / Connect to LLM
             creator = await structure_agent.attach_llm(AnthropicAugmentedLLM)
             
-            # 构建分析消息 / Build analysis message
-            message = f"""Analyze the following implementation plan and generate shell commands to create the file tree structure.
+            message = f"""分析以下实现计划并生成shell命令来创建文件树结构。
 
-Target directory: {target_directory}/generate_code
+目标目录: {target_directory}/generate_code
 
-Implementation Plan:
+实现计划:
 {plan_content}
 
-TASK:
-1. Find the file tree structure in the implementation plan
-2. Generate shell commands (mkdir -p, touch) to create that structure
-3. Use execute_commands tool to run the commands and create the files
+任务:
+1. 在实现计划中找到文件树结构
+2. 生成shell命令 (mkdir -p, touch) 来创建该结构
+3. 使用execute_commands工具运行命令并创建文件
 
-Requirements:
-- Create directories with mkdir -p
-- Create files with touch
-- Include __init__.py files for Python packages
-- Use relative paths from the target directory
-- Execute the commands to actually create the file structure
-
-Please generate and execute the commands to create the complete project structure."""
+要求:
+- 使用mkdir -p创建目录
+- 使用touch创建文件
+- 为Python包包含__init__.py文件
+- 使用相对于目标目录的路径
+- 执行命令以实际创建文件结构"""
             
-            # 生成并执行命令 / Generate and execute commands
             result = await creator.generate_str(message=message)
-            
-            logger.info("步骤1完成: 文件树结构创建成功 / Step 1 Completed: File tree structure creation successful")
+            self.logger.info("文件树结构创建完成")
             return result
 
-    # ==================== 步骤2: 代码实现 / Step 2: Code Implementation ====================
+    # ==================== 代码实现流程 ====================
     
-    async def step2_implement_code(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
-        """
-        步骤2: 代码实现 / Step 2: Code implementation
+    async def implement_code(self, plan_content: str, target_directory: str) -> str:
+        """迭代式代码实现 - 使用MCP服务器"""
+        self.logger.info("开始迭代式代码实现...")
         
-        Args:
-            plan_content: 实现计划内容 / Implementation plan content
-            target_directory: 目标目录路径 / Target directory path  
-            logger: 日志记录器 / Logger
-            
-        Returns:
-            代码实现结果 / Code implementation result
-        """
-        logger.info("步骤2开始: 代码实现 / Step 2 Starting: Code implementation")
-        
-        # 检查文件树是否已存在 / Check if file tree exists
         code_directory = os.path.join(target_directory, "generate_code")
         if not os.path.exists(code_directory):
-            raise FileNotFoundError("文件树结构不存在，请先运行文件树创建 / File tree structure doesn't exist, please run file tree creation first")
+            raise FileNotFoundError("文件树结构不存在，请先运行文件树创建")
         
-        # 创建代码实现代理 / Create code implementation agent
-        code_agent = Agent(
-            name="CodeImplementationAgent",
-            instruction=CODE_IMPLEMENTATION_PROMPT,
-            server_names=["command-executor"],
-        )
+        # 初始化LLM客户端
+        client, client_type = await self._initialize_llm_client()
         
-        async with code_agent:
-            # 连接LLM / Connect to LLM
-            creator = await code_agent.attach_llm(AnthropicAugmentedLLM)
-            
-            # 获取文件结构信息 / Get file structure information
-            file_structure = self._get_file_structure(code_directory)
-            
-            # 构建代码实现消息 / Build code implementation message
-            message = f"""Target directory: {code_directory}
+        # 初始化MCP代理
+        await self._initialize_mcp_agent(code_directory)
+        
+        # 准备工具定义 (MCP标准格式)
+        tools = self._prepare_mcp_tool_definitions()
+        
+        # 初始化对话
+        system_message = ITERATIVE_CODE_SYSTEM_PROMPT + "\n\n" + TOOL_USAGE_EXAMPLES
+        messages = []
+        
+        # 获取当前文件结构
+        file_structure = await self._get_file_structure_via_mcp()
+        
+        # 初始分析消息
+        initial_message = f"""工作目录: {code_directory}
 
+当前文件结构:
 {file_structure}
 
-Implementation Plan:
-{plan_content}"""
-            
-            # 生成代码实现 / Generate code implementation
-            result = await creator.generate_str(message=message)
-            
-            logger.info("步骤2完成: 代码实现成功 / Step 2 Completed: Code implementation successful")
-            return result
+实现计划:
+{plan_content}
 
-    def _get_file_structure(self, code_directory: str) -> str:
-        """
-        获取已生成的文件结构 / Get generated file structure
+{INITIAL_ANALYSIS_PROMPT}"""
         
-        Args:
-            code_directory: 代码目录 / Code directory
-            
-        Returns:
-            文件结构字符串 / File structure string
-        """
+        messages.append({"role": "user", "content": initial_message})
+        
+        # 迭代开发循环
+        return await self._iterative_development_loop(
+            client, client_type, system_message, messages, tools
+        )
+
+    async def _get_file_structure_via_mcp(self) -> str:
+        """通过MCP获取文件结构"""
         try:
-            if not os.path.exists(code_directory):
-                return "No file structure found - please run file tree creation first"
+            if self.mcp_agent:
+                result = await self.mcp_agent.call_tool("get_file_structure", {"directory": ".", "max_depth": 5})
+                return f"文件结构:\n{result}"
+            else:
+                return "MCP代理未初始化"
+        except Exception as e:
+            self.logger.error(f"获取文件结构失败: {e}")
+            return f"获取文件结构出错: {str(e)}"
+
+    async def _initialize_llm_client(self):
+        """初始化LLM客户端"""
+        # 尝试Anthropic API
+        try:
+            anthropic_key = self.api_config.get('anthropic', {}).get('api_key')
+            if anthropic_key:
+                from anthropic import AsyncAnthropic
+                client = AsyncAnthropic(api_key=anthropic_key)
+                # 测试连接
+                await client.messages.create(
+                    model="claude-3-5-sonnet-20241022",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("使用Anthropic API")
+                return client, "anthropic"
+        except Exception as e:
+            self.logger.warning(f"Anthropic API不可用: {e}")
+        
+        # 尝试OpenAI API
+        try:
+            openai_key = self.api_config.get('openai', {}).get('api_key')
+            if openai_key:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=openai_key)
+                # 测试连接
+                await client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("使用OpenAI API")
+                return client, "openai"
+        except Exception as e:
+            self.logger.warning(f"OpenAI API不可用: {e}")
+        
+        raise ValueError("没有可用的LLM API")
+
+    async def _iterative_development_loop(self, client, client_type, system_message, messages, tools):
+        """迭代开发循环 - 使用MCP工具调用"""
+        max_iterations = 50
+        iteration = 0
+        start_time = time.time()
+        max_time = 3600  # 1小时
+        
+        while iteration < max_iterations:
+            iteration += 1
+            elapsed_time = time.time() - start_time
             
-            # 使用find命令获取文件结构 / Use find command to get file structure
-            import subprocess
-            result = subprocess.run(
-                ["find", ".", "-type", "f"], 
-                cwd=code_directory,
-                capture_output=True, 
-                text=True
+            if elapsed_time > max_time:
+                self.logger.warning(f"达到时间限制: {elapsed_time:.2f}s")
+                break
+            
+            if iteration % 5 == 0:
+                progress_msg = f"\n[进度更新] 迭代 {iteration}, 耗时: {elapsed_time:.2f}s / {max_time}s"
+                messages.append({"role": "user", "content": progress_msg})
+            
+            self.logger.info(f"迭代 {iteration}: 生成响应")
+            
+            # 调用LLM
+            response = await self._call_llm_with_tools(
+                client, client_type, system_message, messages, tools
             )
             
-            if result.returncode == 0:
-                files = result.stdout.strip().split('\n')
-                return f"Existing file structure:\n" + '\n'.join(sorted(files))
-            else:
-                return "Error reading file structure"
+            messages.append({"role": "assistant", "content": response["content"]})
+            
+            # 处理工具调用 - 使用MCP
+            if response.get("tool_calls"):
+                tool_results = await self._execute_mcp_tool_calls(response["tool_calls"])
                 
-        except Exception as e:
-            return f"Error getting file structure: {str(e)}"
-
-    # ==================== 步骤3: 待实现功能 / Step 3: Future Features ====================
+                for tool_result in tool_results:
+                    messages.append({
+                        "role": "user",
+                        "content": f"工具结果 {tool_result['tool_name']}:\n{tool_result['result']}"
+                    })
+                
+                if any("error" in result['result'] for result in tool_results):
+                    messages.append({"role": "user", "content": ERROR_HANDLING_PROMPT})
+            else:
+                messages.append({"role": "user", "content": CONTINUE_CODE_MESSAGE})
+            
+            # 检查完成
+            if "implementation is complete" in response["content"].lower():
+                self.logger.info("代码实现声明完成")
+                messages.append({"role": "user", "content": COMPLETION_CHECK_PROMPT})
+                final_response = await self._call_llm_with_tools(
+                    client, client_type, system_message, messages, tools
+                )
+                if "complete" in final_response["content"].lower():
+                    break
+            
+            # 防止消息历史过长
+            if len(messages) > 100:
+                messages = messages[:1] + messages[-50:]
+                self.logger.info("裁剪消息历史")
+        
+        return await self._generate_final_report_via_mcp(iteration, time.time() - start_time)
     
-    async def step3_generate_tests(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
+    def _prepare_mcp_tool_definitions(self) -> List[Dict[str, Any]]:
         """
-        步骤3: 生成测试代码 (待实现) / Step 3: Generate test code (To be implemented)
+        准备MCP标准格式的工具定义
         
-        Args:
-            plan_content: 实现计划内容 / Implementation plan content
-            target_directory: 目标目录路径 / Target directory path
-            logger: 日志记录器 / Logger
-            
-        Returns:
-            测试生成结果 / Test generation result
+        注意：这里使用MCP标准的 inputSchema 格式
+        符合官方MCP规范：https://modelcontextprotocol.io/docs/concepts/tools
         """
-        logger.info("步骤3: 测试生成功能待实现 / Step 3: Test generation feature to be implemented")
-        return "Step 3: Test generation - Feature to be implemented"
-
-    async def step4_generate_documentation(self, plan_content: str, target_directory: str, logger: logging.Logger) -> str:
-        """
-        步骤4: 生成文档 (待实现) / Step 4: Generate documentation (To be implemented)
-        
-        Args:
-            plan_content: 实现计划内容 / Implementation plan content
-            target_directory: 目标目录路径 / Target directory path
-            logger: 日志记录器 / Logger
-            
-        Returns:
-            文档生成结果 / Documentation generation result
-        """
-        logger.info("步骤4: 文档生成功能待实现 / Step 4: Documentation generation feature to be implemented")
-        return "Step 4: Documentation generation - Feature to be implemented"
-
-    # ==================== 主工作流 / Main Workflow ====================
+        return [
+            {
+                "name": "read_file",
+                "description": "读取文件内容，支持指定行号范围",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "file_path": {
+                            "type": "string", 
+                            "description": "文件路径，相对于工作空间"
+                        },
+                        "start_line": {
+                            "type": "integer", 
+                            "description": "起始行号（从1开始，可选）"
+                        },
+                        "end_line": {
+                            "type": "integer", 
+                            "description": "结束行号（从1开始，可选）"
+                        }
+                    },
+                    "required": ["file_path"]
+                }
+            },
+            {
+                "name": "write_file",
+                "description": "写入内容到文件",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "file_path": {
+                            "type": "string", 
+                            "description": "文件路径，相对于工作空间"
+                        },
+                        "content": {
+                            "type": "string", 
+                            "description": "要写入的文件内容"
+                        },
+                        "create_dirs": {
+                            "type": "boolean", 
+                            "description": "如果目录不存在是否创建",
+                            "default": True
+                        }
+                    },
+                    "required": ["file_path", "content"]
+                }
+            },
+            {
+                "name": "execute_python",
+                "description": "执行Python代码并返回输出",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string", 
+                            "description": "要执行的Python代码"
+                        },
+                        "timeout": {
+                            "type": "integer", 
+                            "description": "超时时间（秒）",
+                            "default": 30
+                        }
+                    },
+                    "required": ["code"]
+                }
+            },
+            {
+                "name": "execute_bash",
+                "description": "执行bash命令",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string", 
+                            "description": "要执行的bash命令"
+                        },
+                        "timeout": {
+                            "type": "integer", 
+                            "description": "超时时间（秒）",
+                            "default": 30
+                        }
+                    },
+                    "required": ["command"]
+                }
+            },
+            {
+                "name": "search_code",
+                "description": "在代码文件中搜索模式",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {
+                            "type": "string", 
+                            "description": "搜索模式"
+                        },
+                        "file_pattern": {
+                            "type": "string", 
+                            "description": "文件模式（如 '*.py'）",
+                            "default": "*.py"
+                        },
+                        "use_regex": {
+                            "type": "boolean", 
+                            "description": "是否使用正则表达式",
+                            "default": False
+                        }
+                    },
+                    "required": ["pattern"]
+                }
+            },
+            {
+                "name": "get_file_structure",
+                "description": "获取目录的文件结构",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "directory": {
+                            "type": "string", 
+                            "description": "目录路径，相对于工作空间",
+                            "default": "."
+                        },
+                        "max_depth": {
+                            "type": "integer", 
+                            "description": "最大遍历深度",
+                            "default": 5
+                        }
+                    }
+                }
+            }
+        ]
     
-    async def run_complete_workflow(
-        self, 
-        plan_file_path: str, 
-        target_directory: Optional[str] = None,
-        steps: Optional[list] = None,
-        logger: Optional[logging.Logger] = None
-    ) -> Dict[str, Any]:
-        """
-        运行完整的代码实现工作流 / Run complete code implementation workflow
-        
-        Args:
-            plan_file_path: 实现计划文件路径 / Implementation plan file path
-            target_directory: 目标目录 / Target directory
-            steps: 要执行的步骤列表 / List of steps to execute ["structure", "code", "test", "docs"]
-            logger: 日志记录器 / Logger
-            
-        Returns:
-            完整工作流执行结果 / Complete workflow execution result
-        """
-        # 创建日志记录器（如果没有提供）/ Create logger (if not provided)
-        if logger is None:
-            logger = self._create_logger()
-        
-        # 默认执行步骤 / Default steps to execute
-        if steps is None:
-            steps = ["structure", "code"]  # 只执行已实现的步骤 / Only execute implemented steps
-        
+    async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=4096):
+        """调用LLM"""
         try:
-            # 读取实现计划 / Read implementation plan
+            if client_type == "anthropic":
+                return await self._call_anthropic_with_tools(client, system_message, messages, tools, max_tokens)
+            elif client_type == "openai":
+                return await self._call_openai_with_tools(client, system_message, messages, tools, max_tokens)
+            else:
+                raise ValueError(f"不支持的客户端类型: {client_type}")
+        except Exception as e:
+            self.logger.error(f"LLM调用失败: {e}")
+            raise
+    
+    async def _call_anthropic_with_tools(self, client, system_message, messages, tools, max_tokens):
+        """调用Anthropic API"""
+        response = await client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            system=system_message,
+            messages=messages,
+            tools=tools,
+            max_tokens=max_tokens,
+            temperature=0.2
+        )
+        
+        content = ""
+        tool_calls = []
+        
+        for block in response.content:
+            if block.type == "text":
+                content += block.text
+            elif block.type == "tool_use":
+                tool_calls.append({
+                    "id": block.id,
+                    "name": block.name,
+                    "input": block.input
+                })
+        
+        return {"content": content, "tool_calls": tool_calls}
+    
+    async def _call_openai_with_tools(self, client, system_message, messages, tools, max_tokens):
+        """调用OpenAI API"""
+        # 转换MCP工具格式为OpenAI格式
+        openai_tools = []
+        for tool in tools:
+            openai_tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["inputSchema"]
+                }
+            })
+        
+        openai_messages = [{"role": "system", "content": system_message}]
+        openai_messages.extend(messages)
+        
+        response = await client.chat.completions.create(
+            model="gpt-4-1106-preview",
+            messages=openai_messages,
+            tools=openai_tools if openai_tools else None,
+            max_tokens=max_tokens,
+            temperature=0.2
+        )
+        
+        message = response.choices[0].message
+        content = message.content or ""
+        
+        tool_calls = []
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                tool_calls.append({
+                    "id": tool_call.id,
+                    "name": tool_call.function.name,
+                    "input": json.loads(tool_call.function.arguments)
+                })
+        
+        return {"content": content, "tool_calls": tool_calls}
+    
+    async def _execute_mcp_tool_calls(self, tool_calls):
+        """
+        通过MCP协议执行工具调用
+        
+        这是标准的MCP实现方式，通过MCP代理调用服务器工具
+        """
+        results = []
+        
+        for tool_call in tool_calls:
+            tool_name = tool_call["name"]
+            tool_input = tool_call["input"]
+            
+            self.logger.info(f"执行MCP工具: {tool_name}")
+            
+            try:
+                if self.mcp_agent:
+                    # 通过MCP协议调用工具
+                    result = await self.mcp_agent.call_tool(tool_name, tool_input)
+                    
+                    results.append({
+                        "tool_id": tool_call["id"],
+                        "tool_name": tool_name,
+                        "result": result
+                    })
+                else:
+                    results.append({
+                        "tool_id": tool_call["id"],
+                        "tool_name": tool_name,
+                        "result": json.dumps({
+                            "status": "error",
+                            "message": "MCP代理未初始化"
+                        }, ensure_ascii=False)
+                    })
+                
+            except Exception as e:
+                self.logger.error(f"MCP工具执行失败: {e}")
+                results.append({
+                    "tool_id": tool_call["id"],
+                    "tool_name": tool_name,
+                    "result": json.dumps({
+                        "status": "error",
+                        "message": str(e)
+                    }, ensure_ascii=False)
+                })
+        
+        return results
+    
+    async def _generate_final_report_via_mcp(self, iterations: int, elapsed_time: float):
+        """通过MCP生成最终报告"""
+        try:
+            # 获取操作历史
+            if self.mcp_agent:
+                history_result = await self.mcp_agent.call_tool("get_operation_history", {"last_n": 20})
+                history_data = json.loads(history_result) if isinstance(history_result, str) else history_result
+            else:
+                history_data = {"total_operations": 0, "history": []}
+            
+            # 统计操作
+            operation_counts = {}
+            if "history" in history_data:
+                for item in history_data["history"]:
+                    action = item.get("action", "unknown")
+                    operation_counts[action] = operation_counts.get(action, 0) + 1
+            
+            report = f"""
+# 代码实现完成报告 (MCP版本)
+
+## 执行摘要
+- 总迭代次数: {iterations}
+- 总耗时: {elapsed_time:.2f} 秒
+- 总操作数: {history_data.get('total_operations', 0)}
+
+## 操作统计
+"""
+            for action, count in operation_counts.items():
+                report += f"- {action}: {count} 次\n"
+            
+            report += """
+## 实施方法
+使用了基于aisi-basic-agent的迭代式开发方法：
+1. 分析实现计划和文件结构
+2. 识别核心组件并确定实现顺序  
+3. 迭代式实现每个组件
+4. 测试和验证代码
+5. 修复问题并优化
+
+## MCP架构说明
+✅ 使用标准MCP客户端/服务器架构
+✅ 通过MCP协议进行工具调用
+✅ 支持工作空间管理和操作历史追踪
+✅ 完全符合MCP规范
+"""
+            return report
+            
+        except Exception as e:
+            self.logger.error(f"生成最终报告失败: {e}")
+            return f"生成最终报告失败: {str(e)}"
+
+    # ==================== 主工作流 ====================
+    
+    async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None):
+        """运行完整工作流"""
+        try:
+            # 读取实现计划
             plan_content = self._read_plan_file(plan_file_path)
             
-            # 确定目标目录 / Determine target directory
-            target_directory = self._determine_target_directory(plan_file_path, target_directory)
+            # 确定目标目录
+            if target_directory is None:
+                target_directory = str(Path(plan_file_path).parent)
             
-            logger.info(f"开始完整工作流 / Starting complete workflow: {plan_file_path}")
-            logger.info(f"目标目录 / Target directory: {target_directory}")
-            logger.info(f"执行步骤 / Executing steps: {steps}")
+            self.logger.info(f"开始工作流: {plan_file_path}")
+            self.logger.info(f"目标目录: {target_directory}")
             
             results = {}
             
-            # 步骤1: 文件树创建 / Step 1: File tree creation
-            if "structure" in steps:
-                results["step1_structure"] = await self.step1_create_file_structure(
-                    plan_content, target_directory, logger
-                )
+            # 检查文件树是否已存在
+            if self._check_file_tree_exists(target_directory):
+                self.logger.info("文件树已存在，跳过创建步骤")
+                results["file_tree"] = "已存在，跳过创建"
+            else:
+                self.logger.info("创建文件树...")
+                results["file_tree"] = await self.create_file_structure(plan_content, target_directory)
             
-            # 步骤2: 代码实现 / Step 2: Code implementation  
-            if "code" in steps:
-                results["step2_code"] = await self.step2_implement_code(
-                    plan_content, target_directory, logger
-                )
+            # 代码实现
+            self.logger.info("开始代码实现...")
+            results["code_implementation"] = await self.implement_code(plan_content, target_directory)
             
-            # 步骤3: 测试生成 (待实现) / Step 3: Test generation (To be implemented)
-            if "test" in steps:
-                results["step3_test"] = await self.step3_generate_tests(
-                    plan_content, target_directory, logger
-                )
-            
-            # 步骤4: 文档生成 (待实现) / Step 4: Documentation generation (To be implemented)
-            if "docs" in steps:
-                results["step4_docs"] = await self.step4_generate_documentation(
-                    plan_content, target_directory, logger
-                )
-            
-            logger.info("完整工作流执行成功 / Complete workflow execution successful")
+            self.logger.info("工作流执行成功")
             
             return {
                 "status": "success",
                 "plan_file": plan_file_path,
                 "target_directory": target_directory,
                 "code_directory": os.path.join(target_directory, "generate_code"),
-                "executed_steps": steps,
                 "results": results,
-                "method": "mcp_complete_workflow"
+                "mcp_architecture": "standard"
             }
             
         except Exception as e:
-            logger.error(f"完整工作流执行失败 / Complete workflow execution failed: {e}")
-            return {
-                "status": "error", 
-                "message": str(e),
-                "plan_file": plan_file_path
-            }
-
-    # ==================== 便捷接口 / Convenience Interfaces ====================
-    
-    async def run_file_tree_creation_only(
-        self, 
-        plan_file_path: str, 
-        target_directory: Optional[str] = None,
-        logger: Optional[logging.Logger] = None
-    ) -> Dict[str, Any]:
-        """
-        仅运行文件树创建 / Run file tree creation only
-        """
-        return await self.run_complete_workflow(
-            plan_file_path=plan_file_path,
-            target_directory=target_directory,
-            steps=["structure"],
-            logger=logger
-        )
-
-    async def run_code_implementation_only(
-        self, 
-        plan_file_path: str, 
-        target_directory: Optional[str] = None,
-        logger: Optional[logging.Logger] = None
-    ) -> Dict[str, Any]:
-        """
-        仅运行代码实现 / Run code implementation only
-        """
-        return await self.run_complete_workflow(
-            plan_file_path=plan_file_path,
-            target_directory=target_directory,
-            steps=["code"],
-            logger=logger
-        )
+            self.logger.error(f"工作流执行失败: {e}")
+            return {"status": "error", "message": str(e), "plan_file": plan_file_path}
 
 
-# ==================== 便捷函数接口 / Convenience Function Interface ====================
-
-async def create_project_structure(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
-    """
-    创建项目结构 - 便捷函数接口 / Create project structure - convenience function interface
-    """
-    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
-    workflow = CodeImplementationWorkflow()
-    return await workflow.run_file_tree_creation_only(
-        plan_file_path=plan_file_path,
-        target_directory=paper_dir,
-        logger=logger
-    )
-
-async def implement_project_code(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
-    """
-    实现项目代码 - 便捷函数接口 / Implement project code - convenience function interface
-    """
-    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
-    workflow = CodeImplementationWorkflow()
-    return await workflow.run_code_implementation_only(
-        plan_file_path=plan_file_path,
-        target_directory=paper_dir,
-        logger=logger
-    )
-
-async def run_full_implementation_workflow(paper_dir: str, logger: logging.Logger) -> Dict[str, Any]:
-    """
-    运行完整实现工作流 - 便捷函数接口 / Run full implementation workflow - convenience function interface
-    """
-    plan_file_path = os.path.join(paper_dir, "initial_plan.txt")
-    workflow = CodeImplementationWorkflow()
-    return await workflow.run_complete_workflow(
-        plan_file_path=plan_file_path,
-        target_directory=paper_dir,
-        steps=["structure", "code"],  # 目前只执行已实现的步骤 / Currently only execute implemented steps
-        logger=logger
-    )
-
-
-# ==================== 主函数示例 / Main Function Example ====================
+# ==================== 主函数 ====================
 
 async def main():
-    """主函数示例 / Main function example"""
-    # 设置日志 / Setup logging
+    """主函数"""
     logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
-    logger = logging.getLogger(__name__)
     
-    # 示例用法 / Example usage
+    # 示例用法
     plan_file = "agent_folders/papers/1/initial_plan.txt"
     
     workflow = CodeImplementationWorkflow()
     
-    # 选择运行模式 / Choose run mode
-    import sys
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
-        
-        if mode == "structure":
-            # 仅文件树创建模式 / File tree creation only mode
-            logger.info("运行文件树创建工作流 / Running file tree creation workflow...")
-            result = await workflow.run_file_tree_creation_only(plan_file, logger=logger)
-        
-        elif mode == "code":
-            # 仅代码实现模式 / Code implementation only mode
-            logger.info("运行代码实现工作流 / Running code implementation workflow...")
-            result = await workflow.run_code_implementation_only(plan_file, logger=logger)
-        
-        elif mode == "full":
-            # 完整工作流模式 / Full workflow mode
-            logger.info("运行完整工作流 / Running complete workflow...")
-            result = await workflow.run_complete_workflow(plan_file, logger=logger)
-        
-        else:
-            print("无效模式 / Invalid mode. 使用 / Use: structure, code, full")
-            return
-    else:
-        # 默认运行完整工作流 / Default to run complete workflow
-        logger.info("运行完整工作流 / Running complete workflow...")
-        result = await workflow.run_complete_workflow(plan_file, logger=logger)
+    # 运行工作流
+    result = await workflow.run_workflow(plan_file)
     
-    # 显示结果 / Display results
-    print("=" * 80)
-    print("工作流执行结果 / Workflow Execution Result:")
-    print(f"状态 / Status: {result['status']}")
+    # 显示结果
+    print("=" * 60)
+    print("工作流执行结果:")
+    print(f"状态: {result['status']}")
     
     if result['status'] == 'success':
-        print(f"执行步骤 / Executed Steps: {result['executed_steps']}")
-        print(f"代码目录 / Code Directory: {result['code_directory']}")
-        print(f"使用方法 / Method: {result['method']}")
+        print(f"代码目录: {result['code_directory']}")
+        print(f"MCP架构: {result.get('mcp_architecture', 'unknown')}")
+        print("执行完成!")
     else:
-        print(f"错误信息 / Error Message: {result['message']}")
+        print(f"错误信息: {result['message']}")
     
-    print("\n" + "=" * 80)
-    print("使用说明 / Usage Instructions:")
-    print("文件树创建 / File tree creation: python workflows/code_implementation_workflow.py structure")
-    print("代码实现 / Code implementation: python workflows/code_implementation_workflow.py code")
-    print("完整工作流 / Complete workflow: python workflows/code_implementation_workflow.py full")
+    print("=" * 60)
+    print("\n✅ 使用标准MCP架构")
+    print("🔧 MCP服务器: tools/code_implementation_server.py")
+    print("📋 配置文件: mcp_agent.config.yaml")
 
 
 if __name__ == "__main__":

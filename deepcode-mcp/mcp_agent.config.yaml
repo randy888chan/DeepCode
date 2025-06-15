@@ -70,6 +70,12 @@ mcp:
       args: ["tools/command_executor.py"]
       env:
         PYTHONPATH: "."
+    code-implementation:
+      command: "python"
+      args: ["tools/code_implementation_server.py"]
+      env:
+        PYTHONPATH: "."
+      description: "论文代码复现工具服务器 - 提供文件操作、代码执行、搜索等功能"
 
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
