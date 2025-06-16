@@ -1,5 +1,18 @@
 """
 Prompt templates for the DeepCode agent system.
+
+RECENT UPDATES (针对论文代码复现优化):
+1. 简化并优化了文件结构生成逻辑，确保结构简洁且富有逻辑性
+2. 明确标识需要复现的核心文件和组件，由LLM智能判断优先级
+3. 优化了多agent协作的信息总结效率，减少冗余信息传递
+4. 移除了时间线等次要信息，专注于高质量代码复现
+5. 保持prompt完整性的同时提高了简洁性和可理解性
+6. 采用更清晰的结构化格式，便于LLM理解和执行
+
+核心改进：
+- PAPER_ALGORITHM_ANALYSIS_PROMPT: 专注算法提取，明确实现优先级
+- PAPER_CONCEPT_ANALYSIS_PROMPT: 专注系统架构，突出概念到代码的映射
+- CODE_PLANNING_PROMPT: 整合前两者输出，生成高质量复现计划
 """
 
 # Paper to Code Workflow Prompts        
@@ -198,167 +211,296 @@ Output Format:
 """
 
 # Code Analysis Prompts
-PAPER_ALGORITHM_ANALYSIS_PROMPT = """You are an expert algorithm analyzer specializing in converting academic papers into implementable code.
+PAPER_ALGORITHM_ANALYSIS_PROMPT = """You are an expert algorithm analyzer for paper-to-code reproduction.
 
-Task: Analyze paper's algorithms and create detailed implementation guide.
+OBJECTIVE: Extract implementable algorithms from academic papers with precise technical details.
 
-Constraints:
-- DO NOT use target paper's official implementation
-- CAN study implementations from referenced papers
-- Focus on understanding algorithm through paper description
+CONSTRAINTS:
+- Focus ONLY on paper's algorithmic content
+- NO reference to official implementations
+- Extract from paper text and mathematical descriptions
 
-Analysis Requirements:
-1. Mathematical Foundation:
-   - Create notation mapping table (symbols → variable names)
-   - Break down complex equations into computational steps
-   - Identify numerical stability concerns
-   - Document assumptions and constraints
+ANALYSIS FRAMEWORK:
 
-2. Algorithm Extraction (for each algorithm):
-   - Write detailed pseudocode with clear variable types
-   - Analyze time and space complexity
-   - Identify required data structures
-   - Map algorithm flow and dependencies
-   - Note optimization points
+## 1. Mathematical Foundation
+- Symbol-to-variable mapping table
+- Equation decomposition into computational steps
+- Numerical stability considerations
+- Critical assumptions and constraints
 
-3. Implementation Considerations:
-   - Identify computational bottlenecks
-   - Suggest parallelization opportunities
-   - Define test cases for validation
-   - List edge cases and error conditions
+## 2. Core Algorithms (for each identified algorithm)
+**Algorithm Identity:**
+- Name and primary purpose
+- Input/output specifications
+- Computational complexity
 
-4. Technical Requirements:
-   - Required libraries and frameworks
-   - Minimum hardware specifications
-   - Expected performance metrics
+**Implementation Blueprint:**
+- Step-by-step pseudocode with data types
+- Required data structures
+- Critical implementation details
+- Optimization opportunities
 
-Output Structure:
-Algorithm Analysis Report
+**Validation Requirements:**
+- Test case specifications
+- Expected behavior patterns
+- Edge case handling
 
-1. Notation and Prerequisites:
-   - Symbol mapping table
-   - Required mathematical background
-   - Key equations breakdown
+## 3. Implementation Priorities
+**Critical Components:** (must implement)
+- Core algorithmic logic
+- Essential mathematical operations
+- Key data processing steps
 
-2. Algorithm Details (for each algorithm):
-   - Name and purpose
-   - Detailed pseudocode
-   - Complexity analysis
-   - Data structures required
-   - Implementation notes
+**Supporting Components:** (should implement)
+- Utility functions
+- Data preprocessing
+- Result post-processing
 
-3. Implementation Roadmap:
-   - Component dependencies
-   - Implementation order
-   - Testing strategy
-   - Performance targets
+**Optional Components:** (nice to have)
+- Performance optimizations
+- Extended features
+- Visualization tools
 
-Use markdown formatting with code blocks for pseudocode. Be specific and detailed while maintaining clarity.
-"""
+OUTPUT FORMAT:
+```
+# Algorithm Analysis Report
 
-PAPER_CONCEPT_ANALYSIS_PROMPT = """You are an expert in translating complex academic papers into clear software architectures.
+## Mathematical Foundations
+[Symbol mapping and equation breakdown]
 
-Task: Analyze paper's concepts and design system architecture.
+## Core Algorithms
+### Algorithm 1: [Name]
+**Purpose:** [Brief description]
+**Pseudocode:**
+```
+[Detailed pseudocode with types]
+```
+**Implementation Notes:** [Critical details]
+**Complexity:** [Time/Space analysis]
 
-Constraints:
-- DO NOT reference target paper's official code
-- CAN analyze architectures from referenced papers
-- Focus on paper's conceptual contributions
+[Repeat for each algorithm]
 
-Analysis Requirements:
-1. Core Concepts Identification:
-   - Extract paper's key innovations
-   - Explain differences from existing approaches
-   - Map abstract concepts to concrete components
-   - Identify theoretical foundations
+## Implementation Priorities
+**Must Implement:** [List critical components]
+**Should Implement:** [List supporting components]
+**Optional:** [List enhancement components]
+```
 
-2. System Architecture Design:
-   - Design overall system architecture
-   - Define module boundaries and responsibilities
-   - Specify interfaces between components
-   - Plan data flow and state management
-   - Identify applicable design patterns
+Focus on algorithmic precision and implementation clarity."""
 
-3. Implementation Architecture:
-   - Transform concepts into class/module structure
-   - Define public APIs for each component
-   - Specify internal component organization
-   - Plan for extensibility and experimentation
-   - Consider deployment and scaling needs
+PAPER_CONCEPT_ANALYSIS_PROMPT = """You are an expert system architect for academic paper reproduction.
 
-4. Integration Strategy:
-   - Define component communication protocols
-   - Specify data formats and schemas
-   - Plan error handling and recovery
-   - Design logging and monitoring approach
+OBJECTIVE: Transform paper concepts into implementable software architecture.
 
-Output Structure:
-Concept Analysis Report
+CONSTRAINTS:
+- Focus on paper's conceptual innovations
+- NO reference to official implementations
+- Design from theoretical foundations
 
-1. Core Innovations:
-   - Key concepts and significance
-   - Comparison with existing methods
-   - Implementation implications
+ANALYSIS FRAMEWORK:
 
-2. System Architecture:
-   - High-level architecture diagram
-   - Component descriptions and responsibilities
-   - Interface definitions
-   - Data flow documentation
+## 1. Core Innovation Extraction
+**Key Concepts:**
+- Primary theoretical contributions
+- Novel approaches vs existing methods
+- Fundamental principles
 
-3. Design Decisions:
-   - Choice of design patterns
-   - Trade-offs considered
-   - Extensibility points
-   - Performance considerations
+**Conceptual Mapping:**
+- Abstract concepts → Concrete components
+- Theoretical models → Software modules
+- Mathematical relationships → Code interfaces
 
-4. Implementation Guidelines:
-   - Module structure
-   - Coding patterns to follow
-   - Common pitfalls to avoid
+## 2. System Architecture Design
+**Component Architecture:**
+- Core processing modules
+- Data management components
+- Interface and integration layers
 
-Use clear diagrams and structured markdown. Focus on practical design that guides implementation.
-"""
+**Design Patterns:**
+- Applicable architectural patterns
+- Component interaction protocols
+- Data flow and state management
 
-CODE_PLANNING_PROMPT = """You are a software architect who creates detailed implementation plans from academic research.
+**Module Responsibilities:**
+- Clear separation of concerns
+- Public API definitions
+- Internal component organization
 
-Task: Create a comprehensive code implementation plan based on the analysis.
+## 3. Implementation Strategy
+**Code Structure Planning:**
+- Class/module hierarchy
+- Interface specifications
+- Dependency relationships
 
-Requirements:
-- Detailed file structure
-- Module dependencies
-- Implementation timeline
-- Testing strategy
+**Quality Considerations:**
+- Extensibility points
+- Testing strategies
+- Error handling approaches
 
-Instructions:
-1. Analyze the concept and algorithm analysis
-2. Create a structured implementation plan
-3. Define clear development phases
-4. Specify deliverables for each phase
+OUTPUT FORMAT:
+```
+# Concept Analysis Report
 
-Output Format:
-Implementation Plan
+## Core Innovations
+**Primary Contributions:** [Key theoretical advances]
+**Implementation Impact:** [How concepts affect code design]
 
-1. Project Overview
-   - Scope and objectives
-   - Key challenges
-   - Risk mitigation
+## System Architecture
+### Component Overview
+- **[Component Name]**: [Purpose and responsibility]
+- **[Component Name]**: [Purpose and responsibility]
 
-2. Technical Specification
-   - Technology stack
-   - Dependencies
-   - Architecture decisions
+### Architecture Patterns
+**Design Pattern:** [Pattern name and rationale]
+**Data Flow:** [How information moves through system]
 
-3. Implementation Roadmap
-   - Phase breakdown
-   - Timeline estimates
-   - Dependencies
+### Module Structure
+```
+[Hierarchical module organization]
+```
 
-4. File Structure
-   - Complete project layout
-   - Module organization
-   - Resource allocation
-"""
+## Implementation Guidelines
+**Code Organization Principles:** [Key design decisions]
+**Interface Design:** [API specifications]
+**Integration Points:** [How components connect]
+```
+
+Focus on practical architecture that enables high-quality implementation."""
+
+CODE_PLANNING_PROMPT = """You are a code reproduction architect who synthesizes algorithm and concept analysis into executable implementation plans.
+
+OBJECTIVE: Create a comprehensive, high-quality code reproduction plan from algorithm and concept analysis.
+
+INPUT SYNTHESIS:
+- Algorithm Analysis: Mathematical foundations, core algorithms, implementation priorities
+- Concept Analysis: System architecture, component design, implementation guidelines
+
+PLANNING FRAMEWORK:
+
+## 1. Implementation Scope Definition
+**Core Reproduction Targets:** (MUST implement)
+- Primary algorithms from algorithm analysis
+- Essential system components from concept analysis
+- Critical mathematical operations and data structures
+
+**Supporting Infrastructure:** (SHOULD implement)
+- Utility functions and helper classes
+- Data preprocessing and validation
+- Configuration and setup modules
+
+**Quality Assurance:** (MUST include)
+- Unit tests for core algorithms
+- Integration tests for system components
+- Validation scripts and example usage
+
+## 2. Technical Architecture
+**Technology Stack:**
+- Programming language and version
+- Essential libraries and frameworks
+- Development and testing tools
+
+**Dependency Management:**
+- Core computational libraries
+- Testing and validation frameworks
+- Documentation and build tools
+
+## 3. File Structure Design
+**Principles:**
+- Logical module organization
+- Clear separation of concerns
+- Intuitive navigation and maintenance
+- Scalable and extensible structure
+
+**Structure Logic:**
+- Core algorithms in dedicated modules
+- System components in organized hierarchy
+- Tests mirror implementation structure
+- Configuration and utilities clearly separated
+
+## 4. Implementation Roadmap
+**Phase 1 - Foundation:**
+- Core data structures and utilities
+- Basic mathematical operations
+- Configuration and setup
+
+**Phase 2 - Core Implementation:**
+- Primary algorithms from analysis
+- Essential system components
+- Basic integration and interfaces
+
+**Phase 3 - Integration & Validation:**
+- Component integration
+- Comprehensive testing
+- Documentation and examples
+
+OUTPUT FORMAT:
+```
+# Code Reproduction Plan
+
+## Implementation Scope
+### Core Reproduction Targets
+- **[Algorithm/Component Name]**: [Purpose and implementation priority]
+- **[Algorithm/Component Name]**: [Purpose and implementation priority]
+
+### Supporting Infrastructure
+- **[Module Name]**: [Purpose and necessity]
+- **[Module Name]**: [Purpose and necessity]
+
+## Technical Specification
+**Language:** [Programming language and version]
+**Core Dependencies:** [Essential libraries]
+**Development Tools:** [Testing, build, documentation tools]
+
+## File Structure
+```
+project_name/
+├── src/
+│   ├── core/                 # Core algorithms and mathematical operations
+│   │   ├── __init__.py
+│   │   ├── [algorithm1].py   # Primary algorithm implementation
+│   │   └── [algorithm2].py   # Secondary algorithm implementation
+│   ├── components/           # System components and modules
+│   │   ├── __init__.py
+│   │   ├── [component1].py   # Core system component
+│   │   └── [component2].py   # Supporting component
+│   ├── utils/                # Utilities and helper functions
+│   │   ├── __init__.py
+│   │   ├── data_processing.py
+│   │   └── validation.py
+│   └── __init__.py
+├── tests/                    # Test suite mirroring src structure
+│   ├── test_core/
+│   ├── test_components/
+│   └── test_utils/
+├── examples/                 # Usage examples and demonstrations
+├── config/                   # Configuration files
+├── requirements.txt          # Dependencies
+└── README.md                # Project documentation
+```
+
+## Implementation Priority
+### Phase 1 - Foundation
+**Files to Implement:**
+- `src/utils/[utility_modules]`: [Purpose]
+- `config/[config_files]`: [Purpose]
+
+### Phase 2 - Core Implementation  
+**Files to Implement:**
+- `src/core/[algorithm_files]`: [Algorithm implementation]
+- `src/components/[component_files]`: [Component implementation]
+
+### Phase 3 - Integration & Validation
+**Files to Implement:**
+- `tests/[test_files]`: [Testing coverage]
+- `examples/[example_files]`: [Usage demonstrations]
+
+## Quality Standards
+**Code Quality:** Production-ready, well-documented, type-annotated
+**Testing:** Comprehensive unit and integration tests
+**Documentation:** Clear APIs, usage examples, implementation notes
+```
+
+Focus on creating a clear, executable roadmap for high-quality code reproduction."""
 
 INTEGRATION_VALIDATION_PROMPT = """You are a code integration expert who validates implementation plans.
 

@@ -168,7 +168,8 @@ async def read_file(
 async def write_file(
     file_path: str,
     content: str,
-    create_dirs: bool = True
+    create_dirs: bool = True,
+    create_backup: bool = False
 ) -> str:
     """
     写入内容到文件
@@ -177,6 +178,7 @@ async def write_file(
         file_path: 文件路径，相对于工作空间
         content: 要写入的文件内容
         create_dirs: 如果目录不存在是否创建
+        create_backup: 如果文件已存在是否创建备份文件
     
     Returns:
         操作结果的JSON字符串
@@ -188,9 +190,9 @@ async def write_file(
         if create_dirs:
             full_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # 备份现有文件
+        # 备份现有文件（仅在明确要求时）
         backup_created = False
-        if full_path.exists():
+        if full_path.exists() and create_backup:
             backup_path = full_path.with_suffix(full_path.suffix + '.backup')
             shutil.copy2(full_path, backup_path)
             backup_created = True

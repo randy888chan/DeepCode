@@ -94,27 +94,46 @@ class CodeImplementationWorkflow:
             # 创建连接到code-implementation服务器的代理
             self.mcp_agent = Agent(
                 name="CodeImplementationAgent",
-                instruction="你是一个代码实现助手，使用MCP工具来实现论文代码复现。",
+                instruction="You are a code implementation assistant, using MCP tools to implement paper code replication.",
                 server_names=["code-implementation"],  # 连接到我们的MCP服务器
             )
             
+            # 启动代理连接（不使用上下文管理器，手动管理生命周期）
+            await self.mcp_agent.__aenter__()
+            
+            # 初始化LLM
+            llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+            
             # 设置工作空间
-            async with self.mcp_agent:
-                # 初始化LLM
-                llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
-                
-                # 设置工作空间
-                workspace_result = await self.mcp_agent.call_tool(
-                    "set_workspace", 
-                    {"workspace_path": code_directory}
-                )
-                self.logger.info(f"工作空间设置结果: {workspace_result}")
-                
-                return llm
+            workspace_result = await self.mcp_agent.call_tool(
+                "set_workspace", 
+                {"workspace_path": code_directory}
+            )
+            self.logger.info(f"工作空间设置结果: {workspace_result}")
+            
+            return llm
                 
         except Exception as e:
             self.logger.error(f"初始化MCP代理失败: {e}")
+            # 如果初始化失败，确保清理资源
+            if self.mcp_agent:
+                try:
+                    await self.mcp_agent.__aexit__(None, None, None)
+                except:
+                    pass
+                self.mcp_agent = None
             raise
+
+    async def _cleanup_mcp_agent(self):
+        """清理MCP代理资源"""
+        if self.mcp_agent:
+            try:
+                await self.mcp_agent.__aexit__(None, None, None)
+                self.logger.info("MCP代理连接已关闭")
+            except Exception as e:
+                self.logger.warning(f"关闭MCP代理连接时出错: {e}")
+            finally:
+                self.mcp_agent = None
 
     # ==================== 文件树创建流程 ====================
     
@@ -132,24 +151,24 @@ class CodeImplementationWorkflow:
         async with structure_agent:
             creator = await structure_agent.attach_llm(AnthropicAugmentedLLM)
             
-            message = f"""分析以下实现计划并生成shell命令来创建文件树结构。
+            message = f"""Analyze the following implementation plan and generate shell commands to create the file tree structure.
 
-目标目录: {target_directory}/generate_code
+Target Directory: {target_directory}/generate_code
 
-实现计划:
+Implementation Plan:
 {plan_content}
 
-任务:
-1. 在实现计划中找到文件树结构
-2. 生成shell命令 (mkdir -p, touch) 来创建该结构
-3. 使用execute_commands工具运行命令并创建文件
+Tasks:
+1. Find the file tree structure in the implementation plan
+2. Generate shell commands (mkdir -p, touch) to create that structure
+3. Use the execute_commands tool to run the commands and create the file structure
 
-要求:
-- 使用mkdir -p创建目录
-- 使用touch创建文件
-- 为Python包包含__init__.py文件
-- 使用相对于目标目录的路径
-- 执行命令以实际创建文件结构"""
+Requirements:
+- Use mkdir -p to create directories
+- Use touch to create files
+- Include __init__.py file for Python packages
+- Use relative paths to the target directory
+- Execute commands to actually create the file structure"""
             
             result = await creator.generate_str(message=message)
             self.logger.info("文件树结构创建完成")
@@ -165,51 +184,87 @@ class CodeImplementationWorkflow:
         if not os.path.exists(code_directory):
             raise FileNotFoundError("文件树结构不存在，请先运行文件树创建")
         
-        # 初始化LLM客户端
-        client, client_type = await self._initialize_llm_client()
-        
-        # 初始化MCP代理
-        await self._initialize_mcp_agent(code_directory)
-        
-        # 准备工具定义 (MCP标准格式)
-        tools = self._prepare_mcp_tool_definitions()
-        
-        # 初始化对话
-        system_message = ITERATIVE_CODE_SYSTEM_PROMPT + "\n\n" + TOOL_USAGE_EXAMPLES
-        messages = []
-        
-        # 获取当前文件结构
-        file_structure = await self._get_file_structure_via_mcp()
-        
-        # 初始分析消息
-        initial_message = f"""工作目录: {code_directory}
+        try:
+            # 初始化LLM客户端
+            client, client_type = await self._initialize_llm_client()
+            
+            # 初始化MCP代理
+            mcp_llm = await self._initialize_mcp_agent(code_directory)
+            
+            # 准备工具定义 (MCP标准格式)
+            tools = self._prepare_mcp_tool_definitions()
+            
+            # 初始化对话
+            system_message = ITERATIVE_CODE_SYSTEM_PROMPT + "\n\n" + TOOL_USAGE_EXAMPLES
+            messages = []
+            
+            # 初始分析消息
+            initial_message = f"""Working Directory: {code_directory}
 
-当前文件结构:
-{file_structure}
-
-实现计划:
+Implementation Plan:
 {plan_content}
 
-{INITIAL_ANALYSIS_PROMPT}"""
-        
-        messages.append({"role": "user", "content": initial_message})
-        
-        # 迭代开发循环
-        return await self._iterative_development_loop(
-            client, client_type, system_message, messages, tools
-        )
+{INITIAL_ANALYSIS_PROMPT}
+
+Note: Use the get_file_structure tool to explore the current project structure and understand what files already exist."""
+            
+            messages.append({"role": "user", "content": initial_message})
+            
+            # 迭代开发循环
+            result = await self._iterative_development_loop(
+                client, client_type, system_message, messages, tools
+            )
+            
+            return result
+            
+        finally:
+            # 确保清理MCP代理资源
+            await self._cleanup_mcp_agent()
+
+    async def _get_file_structure_overview(self) -> str:
+        """获取文件结构概览（轻量级，仅显示主要目录和文件数量）"""
+        try:
+            if not self.mcp_agent:
+                return "MCP agent not initialized"
+            
+            # 获取浅层文件结构（深度限制为2）
+            result = await self.mcp_agent.call_tool("get_file_structure", {
+                "directory": ".", 
+                "max_depth": 2
+            })
+            
+            # 解析结果并生成概览
+            import json
+            try:
+                data = json.loads(result) if isinstance(result, str) else result
+                if data.get("status") == "success":
+                    summary = data.get("summary", {})
+                    return f"""File Structure Overview:
+- Total files: {summary.get('total_files', 0)}
+- Total directories: {summary.get('total_directories', 0)}
+- Scan depth: 2 levels (overview mode)
+
+💡 Tip: Use the get_file_structure tool to get complete real-time file structure"""
+                else:
+                    return f"Failed to get file structure overview: {data.get('message', 'unknown error')}"
+            except json.JSONDecodeError:
+                return f"File structure data: {result}"
+                
+        except Exception as e:
+            self.logger.error(f"获取文件结构概览失败: {e}")
+            return f"Error getting file structure overview: {str(e)}"
 
     async def _get_file_structure_via_mcp(self) -> str:
-        """通过MCP获取文件结构"""
+        """通过MCP获取文件结构（保留原方法以兼容性）"""
         try:
             if self.mcp_agent:
                 result = await self.mcp_agent.call_tool("get_file_structure", {"directory": ".", "max_depth": 5})
-                return f"文件结构:\n{result}"
+                return f"File Structure:\n{result}"
             else:
-                return "MCP代理未初始化"
+                return "MCP agent not initialized"
         except Exception as e:
             self.logger.error(f"获取文件结构失败: {e}")
-            return f"获取文件结构出错: {str(e)}"
+            return f"Error getting file structure: {str(e)}"
 
     async def _initialize_llm_client(self):
         """初始化LLM客户端"""
@@ -221,7 +276,7 @@ class CodeImplementationWorkflow:
                 client = AsyncAnthropic(api_key=anthropic_key)
                 # 测试连接
                 await client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
+                    model="claude-sonnet-4-20250514",
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}]
                 )
@@ -265,7 +320,7 @@ class CodeImplementationWorkflow:
                 break
             
             if iteration % 5 == 0:
-                progress_msg = f"\n[进度更新] 迭代 {iteration}, 耗时: {elapsed_time:.2f}s / {max_time}s"
+                progress_msg = f"\n[Progress Update] Iteration {iteration}, Time elapsed: {elapsed_time:.2f}s / {max_time}s"
                 messages.append({"role": "user", "content": progress_msg})
             
             self.logger.info(f"迭代 {iteration}: 生成响应")
@@ -284,7 +339,7 @@ class CodeImplementationWorkflow:
                 for tool_result in tool_results:
                     messages.append({
                         "role": "user",
-                        "content": f"工具结果 {tool_result['tool_name']}:\n{tool_result['result']}"
+                        "content": f"Tool Result {tool_result['tool_name']}:\n{tool_result['result']}"
                     })
                 
                 if any("error" in result['result'] for result in tool_results):
@@ -311,29 +366,26 @@ class CodeImplementationWorkflow:
     
     def _prepare_mcp_tool_definitions(self) -> List[Dict[str, Any]]:
         """
-        准备MCP标准格式的工具定义
-        
-        注意：这里使用MCP标准的 inputSchema 格式
-        符合官方MCP规范：https://modelcontextprotocol.io/docs/concepts/tools
+        准备Anthropic API标准格式的工具定义
         """
         return [
             {
                 "name": "read_file",
-                "description": "读取文件内容，支持指定行号范围",
-                "inputSchema": {
+                "description": "Read file content, supports specifying line number range",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "file_path": {
                             "type": "string", 
-                            "description": "文件路径，相对于工作空间"
+                            "description": "File path, relative to workspace"
                         },
                         "start_line": {
                             "type": "integer", 
-                            "description": "起始行号（从1开始，可选）"
+                            "description": "Start line number (starting from 1, optional)"
                         },
                         "end_line": {
                             "type": "integer", 
-                            "description": "结束行号（从1开始，可选）"
+                            "description": "End line number (starting from 1, optional)"
                         }
                     },
                     "required": ["file_path"]
@@ -341,22 +393,27 @@ class CodeImplementationWorkflow:
             },
             {
                 "name": "write_file",
-                "description": "写入内容到文件",
-                "inputSchema": {
+                "description": "Write content to file",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "file_path": {
                             "type": "string", 
-                            "description": "文件路径，相对于工作空间"
+                            "description": "File path, relative to workspace"
                         },
                         "content": {
                             "type": "string", 
-                            "description": "要写入的文件内容"
+                            "description": "Content to write to file"
                         },
                         "create_dirs": {
                             "type": "boolean", 
-                            "description": "如果目录不存在是否创建",
+                            "description": "Whether to create directories if they don't exist",
                             "default": True
+                        },
+                        "create_backup": {
+                            "type": "boolean", 
+                            "description": "Whether to create backup file if file already exists",
+                            "default": False
                         }
                     },
                     "required": ["file_path", "content"]
@@ -364,17 +421,17 @@ class CodeImplementationWorkflow:
             },
             {
                 "name": "execute_python",
-                "description": "执行Python代码并返回输出",
-                "inputSchema": {
+                "description": "Execute Python code and return output",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "code": {
                             "type": "string", 
-                            "description": "要执行的Python代码"
+                            "description": "Python code to execute"
                         },
                         "timeout": {
                             "type": "integer", 
-                            "description": "超时时间（秒）",
+                            "description": "Timeout in seconds",
                             "default": 30
                         }
                     },
@@ -383,17 +440,17 @@ class CodeImplementationWorkflow:
             },
             {
                 "name": "execute_bash",
-                "description": "执行bash命令",
-                "inputSchema": {
+                "description": "Execute bash command",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "command": {
                             "type": "string", 
-                            "description": "要执行的bash命令"
+                            "description": "Bash command to execute"
                         },
                         "timeout": {
                             "type": "integer", 
-                            "description": "超时时间（秒）",
+                            "description": "Timeout in seconds",
                             "default": 30
                         }
                     },
@@ -402,22 +459,22 @@ class CodeImplementationWorkflow:
             },
             {
                 "name": "search_code",
-                "description": "在代码文件中搜索模式",
-                "inputSchema": {
+                "description": "Search for patterns in code files",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "pattern": {
                             "type": "string", 
-                            "description": "搜索模式"
+                            "description": "Search pattern"
                         },
                         "file_pattern": {
                             "type": "string", 
-                            "description": "文件模式（如 '*.py'）",
+                            "description": "File pattern (e.g., '*.py')",
                             "default": "*.py"
                         },
                         "use_regex": {
                             "type": "boolean", 
-                            "description": "是否使用正则表达式",
+                            "description": "Whether to use regular expressions",
                             "default": False
                         }
                     },
@@ -426,18 +483,18 @@ class CodeImplementationWorkflow:
             },
             {
                 "name": "get_file_structure",
-                "description": "获取目录的文件结构",
-                "inputSchema": {
+                "description": "Get directory file structure",
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "directory": {
                             "type": "string", 
-                            "description": "目录路径，相对于工作空间",
+                            "description": "Directory path, relative to workspace",
                             "default": "."
                         },
                         "max_depth": {
                             "type": "integer", 
-                            "description": "最大遍历深度",
+                            "description": "Maximum traversal depth",
                             "default": 5
                         }
                     }
@@ -461,7 +518,7 @@ class CodeImplementationWorkflow:
     async def _call_anthropic_with_tools(self, client, system_message, messages, tools, max_tokens):
         """调用Anthropic API"""
         response = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             system=system_message,
             messages=messages,
             tools=tools,
@@ -494,7 +551,7 @@ class CodeImplementationWorkflow:
                 "function": {
                     "name": tool["name"],
                     "description": tool["description"],
-                    "parameters": tool["inputSchema"]
+                    "parameters": tool["input_schema"]
                 }
             })
         
@@ -553,7 +610,7 @@ class CodeImplementationWorkflow:
                         "tool_name": tool_name,
                         "result": json.dumps({
                             "status": "error",
-                            "message": "MCP代理未初始化"
+                            "message": "MCP agent not initialized"
                         }, ensure_ascii=False)
                     })
                 
@@ -664,6 +721,9 @@ class CodeImplementationWorkflow:
         except Exception as e:
             self.logger.error(f"工作流执行失败: {e}")
             return {"status": "error", "message": str(e), "plan_file": plan_file_path}
+        finally:
+            # 确保清理所有MCP资源
+            await self._cleanup_mcp_agent()
 
 
 # ==================== 主函数 ====================
