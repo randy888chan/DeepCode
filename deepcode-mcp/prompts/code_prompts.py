@@ -383,15 +383,15 @@ PLANNING FRAMEWORK:
 - Essential system components from concept analysis
 - Critical mathematical operations and data structures
 
-**Supporting Infrastructure:** (SHOULD implement)
-- Utility functions and helper classes
-- Data preprocessing and validation
-- Configuration and setup modules
+**Supporting Infrastructure:** (MINIMAL implementation)
+- Essential utility functions only
+- Basic data preprocessing if required
+- Single configuration file maximum
 
-**Quality Assurance:** (MUST include)
-- Unit tests for core algorithms
-- Integration tests for system components
-- Validation scripts and example usage
+**Quality Assurance:** (FOCUSED testing)
+- Key unit tests for critical algorithms
+- One integration test for main workflow
+- Single example/demo script
 
 ## 2. Technical Architecture
 **Technology Stack:**
@@ -406,16 +406,22 @@ PLANNING FRAMEWORK:
 
 ## 3. File Structure Design
 **Principles:**
-- Logical module organization
+- Logical module organization with minimal files
 - Clear separation of concerns
 - Intuitive navigation and maintenance
-- Scalable and extensible structure
+- **CRITICAL: Maximum 30 files total (including tests)**
 
 **Structure Logic:**
-- Core algorithms in dedicated modules
-- System components in organized hierarchy
-- Tests mirror implementation structure
-- Configuration and utilities clearly separated
+- Core algorithms in dedicated modules (consolidate related algorithms)
+- Essential system components only
+- Focused testing for critical functionality
+- Minimal configuration and utilities
+
+**File Optimization Rules:**
+- Combine related functionality into single files
+- Avoid over-segmentation of simple modules
+- Prioritize core functionality over comprehensive coverage
+- Each file should have substantial, meaningful content
 
 ## 4. Implementation Roadmap
 **Phase 1 - Foundation:**
@@ -451,56 +457,109 @@ OUTPUT FORMAT:
 **Core Dependencies:** [Essential libraries]
 **Development Tools:** [Testing, build, documentation tools]
 
-## File Structure
+## File Structure (≤30 files total)
 ```
 project_name/
 ├── src/
-│   ├── core/                 # Core algorithms and mathematical operations
+│   ├── __init__.py
+│   ├── core/                 # Core algorithms (consolidate related ones)
 │   │   ├── __init__.py
-│   │   ├── [algorithm1].py   # Primary algorithm implementation
-│   │   └── [algorithm2].py   # Secondary algorithm implementation
-│   ├── components/           # System components and modules
-│   │   ├── __init__.py
-│   │   ├── [component1].py   # Core system component
-│   │   └── [component2].py   # Supporting component
-│   ├── utils/                # Utilities and helper functions
-│   │   ├── __init__.py
-│   │   ├── data_processing.py
-│   │   └── validation.py
-│   └── __init__.py
-├── tests/                    # Test suite mirroring src structure
-│   ├── test_core/
-│   ├── test_components/
-│   └── test_utils/
-├── examples/                 # Usage examples and demonstrations
-├── config/                   # Configuration files
-├── requirements.txt          # Dependencies
-└── README.md                # Project documentation
+│   │   ├── [main_algorithm].py    # Primary algorithm(s) - combine related
+│   │   └── [math_operations].py   # Mathematical utilities
+│   ├── [system_component].py      # Main system component
+│   └── utils.py                   # Essential utilities only
+├── tests/
+│   ├── test_core.py              # Test core algorithms
+│   ├── test_system.py            # Test main system
+│   └── test_integration.py       # Integration test
+├── examples/
+│   └── demo.py                   # Single demonstration script
+├── config.py                     # Configuration (if needed)
+├── requirements.txt              # Dependencies
+└── README.md                     # Documentation
 ```
 
-## Implementation Priority
-### Phase 1 - Foundation
-**Files to Implement:**
-- `src/utils/[utility_modules]`: [Purpose]
-- `config/[config_files]`: [Purpose]
+**🔥 IMPORTANT: Every single file shown above MUST appear in the Implementation Priority section below. No exceptions!**
 
-### Phase 2 - Core Implementation  
-**Files to Implement:**
-- `src/core/[algorithm_files]`: [Algorithm implementation]
-- `src/components/[component_files]`: [Component implementation]
+**File Count Estimate: 12-18 files (well under 30 limit)**
 
-### Phase 3 - Integration & Validation
+## Implementation Priority (Focus on Essential Files)
+### Phase 1 - Foundation (5-8 files max)
 **Files to Implement:**
-- `tests/[test_files]`: [Testing coverage]
-- `examples/[example_files]`: [Usage demonstrations]
+- `src/__init__.py`, `src/core/__init__.py`: Package initialization
+- `src/utils.py`: Essential utilities only
+- `config.py`: Configuration (if absolutely necessary)
+- `requirements.txt`: Dependencies
+**⚠️ MUST list ALL foundation files from your file structure above**
+
+### Phase 2 - Core Implementation (6-10 files max)
+**Files to Implement:**
+- `src/core/[main_algorithm].py`: Primary algorithm implementation
+- `src/core/[math_operations].py`: Mathematical operations
+- `src/[system_component].py`: Main system component
+- Additional core files only if essential
+**⚠️ MUST list ALL core implementation files from your file structure above**
+
+### Phase 3 - Integration & Validation (3-6 files max)
+**Files to Implement:**
+- `tests/test_core.py`: Core algorithm testing
+- `tests/test_integration.py`: System integration test
+- `examples/demo.py`: Usage demonstration
+- `README.md`: Documentation
+**⚠️ MUST list ALL testing and documentation files from your file structure above**
 
 ## Quality Standards
 **Code Quality:** Production-ready, well-documented, type-annotated
-**Testing:** Comprehensive unit and integration tests
-**Documentation:** Clear APIs, usage examples, implementation notes
-```
+**Testing:** Focused testing for critical functionality only
+**Documentation:** Essential documentation and clear usage examples
+**File Limit:** STRICT maximum of 30 files total
 
-Focus on creating a clear, executable roadmap for high-quality code reproduction."""
+## File Count Verification
+**BEFORE finalizing the plan, count all proposed files:**
+- Source files in src/
+- Test files in tests/
+- Configuration files
+- Documentation and example files
+- **TOTAL MUST BE ≤ 30 files**
+
+**If count exceeds 30:** Consolidate related functionality, remove non-essential files, combine similar modules.
+
+## 🚨 CRITICAL COMPLETENESS TIPS
+**EVERY file in the file structure MUST be included in the implementation plan:**
+
+1. **File Tree Completeness Check:**
+   - List EVERY file shown in your file structure
+   - No file should be missing from the implementation phases
+   - Each file needs a clear purpose and implementation priority
+
+2. **Phase Assignment Verification:**
+   - Ensure all files are assigned to Phase 1, 2, or 3
+   - No "orphan" files that aren't mentioned in any phase
+   - Balance file distribution across phases
+
+3. **Implementation Description Requirement:**
+   - Each file must have a brief purpose description
+   - Specify what functionality it contains
+   - Indicate its implementation complexity
+
+**Example Verification:**
+If your file structure has 15 files, your implementation plan must mention exactly those 15 files across the three phases. Missing even one file will cause implementation failures.
+
+**Double-Check Before Finalizing:**
+Count files in structure → Count files in phases → Ensure numbers match exactly
+
+**🎯 FINAL VERIFICATION CHECKLIST:**
+Before submitting your plan, verify:
+□ File structure shows X files total  
+□ Phase 1 lists Y files
+□ Phase 2 lists Z files  
+□ Phase 3 lists W files
+□ Y + Z + W = X (all files accounted for)
+□ No file appears in structure but missing from phases
+□ No file appears in phases but missing from structure
+□ Total file count ≤ 30
+
+Focus on creating a clear, executable roadmap with minimal but complete file structure for high-quality code reproduction."""
 
 INTEGRATION_VALIDATION_PROMPT = """You are a code integration expert who validates implementation plans.
 
