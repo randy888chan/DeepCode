@@ -30,17 +30,17 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
 from prompts.iterative_code_prompts import (
-    ITERATIVE_CODE_SYSTEM_PROMPT, 
-    CONTINUE_CODE_MESSAGE,
-    INITIAL_ANALYSIS_PROMPT,
-    COMPLETION_CHECK_PROMPT,
-    ERROR_HANDLING_PROMPT,
-    TOOL_USAGE_EXAMPLES,
     PURE_CODE_IMPLEMENTATION_PROMPT
 )
 
 # 导入新的agent类 / Import new agent classes
 from workflows.agents import CodeImplementationAgent, SummaryAgent
+
+# 导入迭代式代码实现模块 / Import iterative code implementation module
+from workflows.iterative_code_implementation import IterativeCodeImplementation
+
+# 导入工具定义模块 / Import tool definitions module
+from config.mcp_tool_definitions import get_mcp_tools
 
 
 class CodeImplementationWorkflow:
@@ -225,42 +225,23 @@ Analyze this plan and begin implementing files one by one, starting with the hig
             await self._cleanup_mcp_agent()
     
     async def implement_code(self, plan_content: str, target_directory: str) -> str:
-        """迭代式代码实现 - 使用MCP服务器"""
-        self.logger.info("开始迭代式代码实现...")
-        
-        code_directory = os.path.join(target_directory, "generate_code")
-        if not os.path.exists(code_directory):
-            raise FileNotFoundError("文件树结构不存在，请先运行文件树创建")
-        
+        """迭代式代码实现 - 使用MCP服务器（委托给专门的实现模块）"""
         try:
             # 初始化LLM客户端
             client, client_type = await self._initialize_llm_client()
             
             # 初始化MCP代理
+            code_directory = os.path.join(target_directory, "generate_code")
             await self._initialize_mcp_agent(code_directory)
             
-            # 准备工具定义 (MCP标准格式)
-            tools = self._prepare_mcp_tool_definitions()
+            # 创建迭代式代码实现实例
+            iterative_implementation = IterativeCodeImplementation(self.logger, self.mcp_agent)
             
-            # 初始化对话
-            system_message = ITERATIVE_CODE_SYSTEM_PROMPT + "\n\n" + TOOL_USAGE_EXAMPLES
-            messages = []
-            
-            # 初始分析消息
-            initial_message = f"""Working Directory: {code_directory}
-
-Implementation Plan:
-{plan_content}
-
-{INITIAL_ANALYSIS_PROMPT}
-
-Note: Use the get_file_structure tool to explore the current project structure and understand what files already exist."""
-            
-            messages.append({"role": "user", "content": initial_message})
-            
-            # 迭代开发循环
-            result = await self._iterative_development_loop(
-                client, client_type, system_message, messages, tools
+            # 委托给专门的实现模块
+            result = await iterative_implementation.implement_code(
+                plan_content, target_directory, client, client_type, self.mcp_agent,
+                self._initialize_llm_client, self._prepare_mcp_tool_definitions,
+                self._call_llm_with_tools, self._execute_mcp_tool_calls
             )
             
             return result
@@ -366,97 +347,22 @@ Note: Use the get_file_structure tool to explore the current project structure a
                 self.logger.warning(f"跳过空消息: {msg}")
         return valid_messages
 
-    async def _iterative_development_loop(self, client, client_type, system_message, messages, tools):
-        """迭代开发循环 - 使用MCP工具调用"""
-        max_iterations = 50
-        iteration = 0
-        start_time = time.time()
-        max_time = 3600  # 1小时
-        
-        while iteration < max_iterations:
-            iteration += 1
-            elapsed_time = time.time() - start_time
-            
-            if elapsed_time > max_time:
-                self.logger.warning(f"达到时间限制: {elapsed_time:.2f}s")
-                break
-            
-            if iteration % 5 == 0:
-                progress_msg = f"\n[Progress Update] Iteration {iteration}, Time elapsed: {elapsed_time:.2f}s / {max_time}s"
-                if progress_msg.strip():  # 确保进度消息不为空
-                    messages.append({"role": "user", "content": progress_msg})
-            
-            self.logger.info(f"迭代 {iteration}: 生成响应")
-            
-            # 验证消息列表，确保没有空消息
-            messages = self._validate_messages(messages)
-            
-            # 调用LLM
-            response = await self._call_llm_with_tools(
-                client, client_type, system_message, messages, tools
-            )
-            
-            # 确保响应内容不为空
-            response_content = response.get("content", "").strip()
-            if not response_content:
-                response_content = "继续实现代码..."
-            
-            messages.append({"role": "assistant", "content": response_content})
-            
-            # 处理工具调用 - 使用MCP
-            if response.get("tool_calls"):
-                tool_results = await self._execute_mcp_tool_calls(response["tool_calls"])
-                
-                for tool_result in tool_results:
-                    tool_content = f"Tool Result {tool_result['tool_name']}:\n{tool_result['result']}"
-                    if tool_content.strip():  # 确保工具结果不为空
-                        messages.append({
-                            "role": "user",
-                            "content": tool_content
-                        })
-                
-                if any("error" in result['result'] for result in tool_results):
-                    messages.append({"role": "user", "content": ERROR_HANDLING_PROMPT})
-            else:
-                messages.append({"role": "user", "content": CONTINUE_CODE_MESSAGE})
-            
-            # 检查完成
-            if "implementation is complete" in response_content.lower():
-                self.logger.info("代码实现声明完成")
-                messages.append({"role": "user", "content": COMPLETION_CHECK_PROMPT})
-                final_response = await self._call_llm_with_tools(
-                    client, client_type, system_message, messages, tools
-                )
-                final_content = final_response.get("content", "").strip()
-                if final_content and "complete" in final_content.lower():
-                    break
-            
-            # 防止消息历史过长 - 改进的消息裁剪逻辑
-            if len(messages) > 100:
-                # 保留系统消息和最近的有效消息
-                filtered_messages = []
-                for msg in messages[-50:]:
-                    if msg.get("content", "").strip():  # 只保留非空消息
-                        filtered_messages.append(msg)
-                
-                messages = messages[:1] + filtered_messages
-                self.logger.info(f"裁剪消息历史，保留 {len(messages)} 条有效消息")
-        
-        return await self._generate_final_report_via_mcp(iteration, time.time() - start_time)
+    # 已移动到 workflows/iterative_code_implementation.py
+    # Moved to workflows/iterative_code_implementation.py
     
     async def _pure_code_implementation_loop(self, client, client_type, system_message, messages, tools):
         """
         Pure code implementation loop with sliding window and key information extraction
         带滑动窗口和关键信息提取的纯代码实现循环
         """
-        max_iterations = 30  # Reduce iterations, focus on code implementation / 减少迭代次数，专注于代码实现
+        max_iterations = 50  # Reduce iterations, focus on code implementation / 减少迭代次数，专注于代码实现
         iteration = 0
         start_time = time.time()
         max_time = 2400  # 40 minutes / 40分钟
         
         # Sliding window configuration / 滑动窗口配置
-        WINDOW_SIZE = 5  # Keep recent 5 complete conversation rounds / 保留最近5轮完整对话
-        SUMMARY_TRIGGER = 5  # Trigger summary after every 5 file implementations / 每5个文件实现后触发总结
+        WINDOW_SIZE = 1  # Keep recent 3 complete conversation rounds / 保留最近3轮完整对话
+        SUMMARY_TRIGGER = 3  # Trigger summary after every 5 file implementations / 每5个文件实现后触发总结
         
         # Initialize specialized agents / 初始化专门的代理
         code_agent = CodeImplementationAgent(self.mcp_agent, self.logger)
@@ -497,58 +403,53 @@ Note: Use the get_file_structure tool to explore the current project structure a
             if response.get("tool_calls"):
                 tool_results = await code_agent.execute_tool_calls(response["tool_calls"])
                 
-                # Add tool results to messages / 将工具结果添加到消息中
-                for tool_result in tool_results:
-                    tool_content = f"Tool Result {tool_result['tool_name']}:\n{tool_result['result']}"
-                    if tool_content.strip():  # Ensure tool result is not empty / 确保工具结果不为空
-                        messages.append({
-                            "role": "user",
-                            "content": tool_content
-                        })
+                # Determine guidance based on results / 根据结果确定指导信息
+                has_error = False
+                for result in tool_results:
+                    try:
+                        # Extract actual content from CallToolResult
+                        if hasattr(result['result'], 'content') and result['result'].content:
+                            content_text = result['result'].content[0].text
+                            # Try to parse as JSON and check status
+                            import json
+                            parsed_result = json.loads(content_text)
+                            if parsed_result.get('status') == 'error':
+                                has_error = True
+                                break
+                        elif isinstance(result['result'], str):
+                            # Fallback for string results
+                            if "error" in result['result'].lower():
+                                has_error = True
+                                break
+                    except (json.JSONDecodeError, AttributeError, IndexError):
+                        # If parsing fails, check for error in raw content
+                        result_str = str(result['result'])
+                        if "error" in result_str.lower():
+                            has_error = True
+                            break
                 
-                # Handle errors with simple guidance / 如果有错误，提供简单的错误处理指导
-                if any("error" in result['result'] for result in tool_results):
-                    messages.append({
-                        "role": "user", 
-                        "content": "Error detected. Fix the issue and continue with the next file implementation."
-                    })
+                if has_error:
+                    guidance = self._generate_error_guidance()
                 else:
-                    # More explicit guidance for continuing with next file / 更明确的下一个文件继续指导
                     files_count = code_agent.get_files_implemented_count()
-                    next_file_guidance = f"""File implementation completed successfully! Current progress: {files_count} files implemented.
-
-NEXT ACTION REQUIRED: Immediately implement the next file according to the implementation plan priorities.
-
-Instructions:
-1. Identify the next highest-priority file from the plan
-2. Implement it completely with production-quality code
-3. Use write_file tool to create the file
-4. Continue this process for each remaining file
-
-Remember: Implement exactly ONE complete file per response. Do not skip files or create multiple files at once."""
-                    
-                    messages.append({
-                        "role": "user", 
-                        "content": next_file_guidance
-                    })
+                    guidance = self._generate_success_guidance(files_count)
+                
+                # Compile tool results and guidance into single user message / 将工具结果和指导合并为单个用户消息
+                compiled_response = self._compile_user_response(tool_results, guidance)
+                
+                messages.append({
+                    "role": "user",
+                    "content": compiled_response
+                })
+                
             else:
                 # If no tool calls, provide stronger guidance / 如果没有工具调用，提供更强的指导
                 files_count = code_agent.get_files_implemented_count()
-                continue_guidance = f"""No tool calls detected. Current progress: {files_count} files implemented.
-
-ACTION REQUIRED: You must implement the next file from the implementation plan.
-
-Steps:
-1. Analyze the implementation plan to identify the next priority file
-2. Implement the complete file with all required functionality
-3. Use the write_file tool to create the file
-4. Provide a brief status update
-
-CRITICAL: You must use tools to implement files. Do not just provide explanations - take action!"""
+                no_tools_guidance = self._generate_no_tools_guidance(files_count)
                 
                 messages.append({
                     "role": "user", 
-                    "content": continue_guidance
+                    "content": no_tools_guidance
                 })
             
             # Sliding window + key information extraction mechanism / 滑动窗口 + 关键信息提取机制
@@ -709,140 +610,9 @@ Used specialized agent architecture for pure code generation:
     def _prepare_mcp_tool_definitions(self) -> List[Dict[str, Any]]:
         """
         准备Anthropic API标准格式的工具定义
+        使用配置模块中的标准化工具定义
         """
-        return [
-            {
-                "name": "read_file",
-                "description": "Read file content, supports specifying line number range",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "file_path": {
-                            "type": "string", 
-                            "description": "File path, relative to workspace"
-                        },
-                        "start_line": {
-                            "type": "integer", 
-                            "description": "Start line number (starting from 1, optional)"
-                        },
-                        "end_line": {
-                            "type": "integer", 
-                            "description": "End line number (starting from 1, optional)"
-                        }
-                    },
-                    "required": ["file_path"]
-                }
-            },
-            {
-                "name": "write_file",
-                "description": "Write content to file",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "file_path": {
-                            "type": "string", 
-                            "description": "File path, relative to workspace"
-                        },
-                        "content": {
-                            "type": "string", 
-                            "description": "Content to write to file"
-                        },
-                        "create_dirs": {
-                            "type": "boolean", 
-                            "description": "Whether to create directories if they don't exist",
-                            "default": True
-                        },
-                        "create_backup": {
-                            "type": "boolean", 
-                            "description": "Whether to create backup file if file already exists",
-                            "default": False
-                        }
-                    },
-                    "required": ["file_path", "content"]
-                }
-            },
-            {
-                "name": "execute_python",
-                "description": "Execute Python code and return output",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {
-                            "type": "string", 
-                            "description": "Python code to execute"
-                        },
-                        "timeout": {
-                            "type": "integer", 
-                            "description": "Timeout in seconds",
-                            "default": 30
-                        }
-                    },
-                    "required": ["code"]
-                }
-            },
-            {
-                "name": "execute_bash",
-                "description": "Execute bash command",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "command": {
-                            "type": "string", 
-                            "description": "Bash command to execute"
-                        },
-                        "timeout": {
-                            "type": "integer", 
-                            "description": "Timeout in seconds",
-                            "default": 30
-                        }
-                    },
-                    "required": ["command"]
-                }
-            },
-            {
-                "name": "search_code",
-                "description": "Search for patterns in code files",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "pattern": {
-                            "type": "string", 
-                            "description": "Search pattern"
-                        },
-                        "file_pattern": {
-                            "type": "string", 
-                            "description": "File pattern (e.g., '*.py')",
-                            "default": "*.py"
-                        },
-                        "use_regex": {
-                            "type": "boolean", 
-                            "description": "Whether to use regular expressions",
-                            "default": False
-                        }
-                    },
-                    "required": ["pattern"]
-                }
-            },
-            {
-                "name": "get_file_structure",
-                "description": "Get directory file structure",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "directory": {
-                            "type": "string", 
-                            "description": "Directory path, relative to workspace",
-                            "default": "."
-                        },
-                        "max_depth": {
-                            "type": "integer", 
-                            "description": "Maximum traversal depth",
-                            "default": 5
-                        }
-                    }
-                }
-            }
-        ]
+        return get_mcp_tools("code_implementation")
     
     async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=16384):
         """调用LLM"""
@@ -981,56 +751,8 @@ Used specialized agent architecture for pure code generation:
         
         return results
     
-    async def _generate_final_report_via_mcp(self, iterations: int, elapsed_time: float):
-        """通过MCP生成最终报告"""
-        try:
-            # 获取操作历史
-            if self.mcp_agent:
-                history_result = await self.mcp_agent.call_tool("get_operation_history", {"last_n": 20})
-                history_data = json.loads(history_result) if isinstance(history_result, str) else history_result
-            else:
-                history_data = {"total_operations": 0, "history": []}
-            
-            # 统计操作
-            operation_counts = {}
-            if "history" in history_data:
-                for item in history_data["history"]:
-                    action = item.get("action", "unknown")
-                    operation_counts[action] = operation_counts.get(action, 0) + 1
-            
-            report = f"""
-# 代码实现完成报告 (MCP版本)
-
-## 执行摘要
-- 总迭代次数: {iterations}
-- 总耗时: {elapsed_time:.2f} 秒
-- 总操作数: {history_data.get('total_operations', 0)}
-
-## 操作统计
-"""
-            for action, count in operation_counts.items():
-                report += f"- {action}: {count} 次\n"
-            
-            report += """
-## 实施方法
-使用了基于aisi-basic-agent的迭代式开发方法：
-1. 分析实现计划和文件结构
-2. 识别核心组件并确定实现顺序  
-3. 迭代式实现每个组件
-4. 测试和验证代码
-5. 修复问题并优化
-
-## MCP架构说明
-✅ 使用标准MCP客户端/服务器架构
-✅ 通过MCP协议进行工具调用
-✅ 支持工作空间管理和操作历史追踪
-✅ 完全符合MCP规范
-"""
-            return report
-            
-        except Exception as e:
-            self.logger.error(f"生成最终报告失败: {e}")
-            return f"生成最终报告失败: {str(e)}"
+    # 已移动到 workflows/iterative_code_implementation.py
+    # Moved to workflows/iterative_code_implementation.py
     
     async def _generate_pure_code_final_report(self, iterations: int, elapsed_time: float):
         """生成纯代码实现的最终报告"""
@@ -1097,6 +819,80 @@ Used specialized agent architecture for pure code generation:
         except Exception as e:
             self.logger.error(f"生成纯代码实现报告失败: {e}")
             return f"生成纯代码实现报告失败: {str(e)}"
+
+    def _generate_success_guidance(self, files_count: int) -> str:
+        """
+        Generate success guidance for continuing implementation
+        生成成功后的继续实现指导信息
+        """
+        return f"""✅ File implementation completed successfully! 
+
+📊 **Progress Status:** {files_count} files implemented
+
+🎯 **Next Action Required:**
+Immediately implement the next file according to the implementation plan priorities.
+
+📋 **Implementation Steps:**
+1. Identify the next highest-priority file from the plan
+2. Implement it completely with production-quality code  
+3. Use write_file tool to create the file
+4. Continue this process for each remaining file
+
+⚠️ **Important:** Implement exactly ONE complete file per response. Do not skip files or create multiple files at once."""
+
+    def _generate_error_guidance(self) -> str:
+        """
+        Generate error guidance for handling issues
+        生成错误处理指导信息
+        """
+        return """❌ Error detected during file implementation.
+
+🔧 **Action Required:**
+1. Review the error details above
+2. Fix the identified issue
+3. Continue with the next file implementation
+4. Ensure proper error handling in future implementations"""
+
+    def _generate_no_tools_guidance(self, files_count: int) -> str:
+        """
+        Generate guidance when no tools are called
+        生成未调用工具时的指导信息
+        """
+        return f"""⚠️ No tool calls detected in your response.
+
+📊 **Current Progress:** {files_count} files implemented
+
+🚨 **Action Required:**
+You must implement the next file from the implementation plan.
+
+📋 **Required Steps:**
+1. Analyze the implementation plan to identify the next priority file
+2. Implement the complete file with all required functionality
+3. Use the write_file tool to create the file
+4. Provide a brief status update
+
+🔥 **Critical:** You must use tools to implement files. Do not just provide explanations - take action!"""
+
+    def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
+        """
+        Compile tool results and guidance into a single user response
+        将工具结果和指导信息合并为单个用户回复
+        """
+        response_parts = []
+        
+        # Add tool results section / 添加工具结果部分
+        if tool_results:
+            response_parts.append("🔧 **Tool Execution Results:**")
+            for tool_result in tool_results:
+                tool_name = tool_result['tool_name']
+                result_content = tool_result['result']
+                response_parts.append(f"```\nTool: {tool_name}\nResult: {result_content}\n```")
+        
+        # Add guidance section / 添加指导信息部分
+        if guidance:
+            response_parts.append("\n" + guidance)
+        
+        return "\n\n".join(response_parts)
 
     # ==================== 主工作流 ====================
     
