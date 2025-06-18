@@ -1,12 +1,12 @@
 <div align="center">
 
-<!-- 科技感标题 -->
+<!-- 科技感标题 - 优化版 -->
 <h1>
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=42&duration=2000&pause=500&color=00FFFF&center=true&vCenter=true&width=800&height=70&lines=⚡+PAPER+TO+CODE+⚡;🧬+AI+RESEARCH+ENGINE+🧬" alt="Paper to Code" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=40&duration=2000&pause=500&color=00FFFF&center=true&vCenter=true&width=600&lines=PAPER+TO+CODE;AI+RESEARCH+ENGINE" alt="Paper to Code" />
 </h1>
 
 <h2>
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=20&duration=3000&pause=1000&color=FF6B9D&center=true&vCenter=true&width=900&lines=🚀+NEURAL+•+AUTONOMOUS+•+REVOLUTIONARY+🚀;💻+Transform+Research+Papers+into+Production+Code+💻;🔬+Next-Generation+AI+Research+Automation+🔬;⚙️+Academic+Excellence+Meets+AI+Innovation+⚙️" alt="Subtitle" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&duration=3000&pause=1000&color=FF6B9D&center=true&vCenter=true&width=700&lines=NEURAL+AUTONOMOUS+REVOLUTIONARY;Transform+Research+Papers+into+Code;Next-Generation+AI+Automation;Academic+Excellence+Meets+Innovation" alt="Subtitle" />
 </h2>
 
 <!-- 霓虹科技徽章 -->
@@ -28,7 +28,7 @@
 
 <br>
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=18&duration=4000&pause=1500&color=00FFFF&center=true&vCenter=true&width=850&lines=🎯+From+Academic+Papers+to+Production+Code+in+Minutes;🧠+Powered+by+Advanced+AI+and+Neural+Networks;🔬+Bridging+Theory+and+Practice+with+Precision;⚡+The+Future+of+Research+Implementation+is+Here" alt="Dynamic Features" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&duration=3000&pause=1000&color=00FFFF&center=true&vCenter=true&width=700&lines=From+Academic+Papers+to+Production+Code;Powered+by+Advanced+AI+Networks;Bridging+Theory+and+Practice;The+Future+of+Research+Implementation" alt="Dynamic Features" />
 
 <br>
 
@@ -66,7 +66,7 @@ graph LR
 
 ## ⚡ **CORE NEURAL MODULES**
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=14&duration=2500&pause=800&color=FF6B9D&center=true&vCenter=true&width=700&lines=🔥+THREE+PILLAR+NEURAL+ARCHITECTURE+🔥;⚡+INTELLIGENT+•+AUTONOMOUS+•+SCALABLE+⚡" alt="Core Modules" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=14&duration=2500&pause=800&color=FF6B9D&center=true&vCenter=true&width=600&lines=THREE+PILLAR+NEURAL+ARCHITECTURE;INTELLIGENT+AUTONOMOUS+SCALABLE" alt="Core Modules" />
 
 <br><br>
 
