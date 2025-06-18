@@ -290,67 +290,44 @@ async def paper_code_preparation(download_result, logger):
         await asyncio.sleep(3)  # Brief pause before starting implementation
         
         # 步骤4: 代码实现工作流 / Step 4: Code Implementation Workflow
-        logger.info("开始代码实现工作流 / Starting code implementation workflow")
-        
-        # 检查initial_plan文件是否存在 / Check if initial_plan file exists
-        initial_plan_path = os.path.join(paper_dir, 'initial_plan.txt')
-        if os.path.exists(initial_plan_path):
-            try:
-                # 执行完整的代码实现工作流 / Execute complete code implementation workflow
-                logger.info(f"执行代码实现工作流 - 计划文件: {initial_plan_path}")
+        try:
+            # 创建代码实现工作流实例 / Create code implementation workflow instance
+            code_workflow = CodeImplementationWorkflow()
+            
+            # 检查初始计划文件是否存在 / Check if initial plan file exists
+            if os.path.exists(initial_plan_path):
+                logger.info(f"Using initial plan from {initial_plan_path}")
                 
-                implementation_result = await run_full_implementation_workflow(
-                    paper_dir=paper_dir,
-                    logger=logger
+                # 运行代码实现工作流 / Run code implementation workflow
+                # 使用纯代码模式进行实现 / Use pure code mode for implementation
+                implementation_result = await code_workflow.run_workflow(
+                    plan_file_path=initial_plan_path,
+                    target_directory=paper_dir,
+                    pure_code_mode=True  # 专注于代码实现，跳过测试
                 )
                 
-                # 记录实现结果 / Log implementation result
-                if implementation_result.get('status') == 'success':
-                    code_directory = implementation_result.get('code_directory')
-                    executed_steps = implementation_result.get('executed_steps', [])
+                # 记录实现结果 / Log implementation results
+                if implementation_result['status'] == 'success':
+                    logger.info(f"Code implementation completed successfully!")
+                    logger.info(f"Code directory: {implementation_result['code_directory']}")
                     
-                    logger.info(f"代码实现工作流成功完成!")
-                    logger.info(f"生成的代码目录: {code_directory}")
-                    logger.info(f"执行的步骤: {executed_steps}")
+                    # 保存实现结果到文件 / Save implementation results to file
+                    implementation_report_path = os.path.join(paper_dir, 'code_implementation_report.txt')
+                    with open(implementation_report_path, 'w', encoding='utf-8') as f:
+                        f.write(str(implementation_result))
+                    logger.info(f"Implementation report saved to {implementation_report_path}")
                     
-                    # 将实现结果保存到文件 / Save implementation result to file
-                    implementation_result_path = os.path.join(paper_dir, 'code_implementation_result.txt')
-                    with open(implementation_result_path, 'w', encoding='utf-8') as f:
-                        f.write(f"代码实现工作流结果 / Code Implementation Workflow Result\n")
-                        f.write(f"状态 / Status: {implementation_result['status']}\n")
-                        f.write(f"代码目录 / Code Directory: {code_directory}\n")
-                        f.write(f"执行步骤 / Executed Steps: {executed_steps}\n")
-                        f.write(f"目标目录 / Target Directory: {implementation_result.get('target_directory')}\n")
-                        f.write(f"方法 / Method: {implementation_result.get('method')}\n")
-                    
-                    logger.info(f"实现结果已保存到: {implementation_result_path}")
-                    
+                    return f"Paper code preparation and implementation completed successfully for {paper_dir}. Code generated in: {implementation_result['code_directory']}"
                 else:
-                    logger.error(f"代码实现工作流失败: {implementation_result.get('message')}")
-                    # 即使失败也继续，不中断整个流程
-                    
-            except Exception as impl_error:
-                logger.error(f"代码实现工作流执行异常: {str(impl_error)}")
-                # 记录错误但不中断整个流程
-                error_log_path = os.path.join(paper_dir, 'code_implementation_error.txt')
-                with open(error_log_path, 'w', encoding='utf-8') as f:
-                    f.write(f"代码实现工作流错误 / Code Implementation Workflow Error\n")
-                    f.write(f"错误信息 / Error Message: {str(impl_error)}\n")
-                    f.write(f"计划文件路径 / Plan File Path: {initial_plan_path}\n")
+                    logger.error(f"Code implementation failed: {implementation_result.get('message', 'Unknown error')}")
+                    return f"Paper code preparation completed, but code implementation failed: {implementation_result.get('message', 'Unknown error')}"
+            else:
+                logger.warning(f"Initial plan file not found at {initial_plan_path}, skipping code implementation")
+                return f"Paper code preparation completed for {paper_dir}, but initial plan not found - code implementation skipped"
                 
-        else:
-            logger.warning(f"未找到initial_plan.txt文件: {initial_plan_path}，跳过代码实现步骤")
-            # 创建提示文件 / Create hint file
-            hint_path = os.path.join(paper_dir, 'code_implementation_skipped.txt')
-            with open(hint_path, 'w', encoding='utf-8') as f:
-                f.write("代码实现步骤被跳过 / Code implementation step was skipped\n")
-                f.write(f"原因: 未找到initial_plan.txt文件 / Reason: initial_plan.txt file not found\n")
-                f.write(f"期望路径 / Expected path: {initial_plan_path}\n")
-        
-        logger.info("代码实现工作流阶段完成 / Code implementation workflow stage completed")
-        
-        # 返回最终结果 / Return final result
-        return f"Paper code preparation completed successfully for {paper_dir}"
+        except Exception as e:
+            logger.error(f"Error during code implementation workflow: {e}")
+            return f"Paper code preparation completed for {paper_dir}, but code implementation failed: {str(e)}"
         
     except Exception as e:
         logger.error(f"Error in paper_code_preparation: {e}")
