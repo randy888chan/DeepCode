@@ -233,7 +233,26 @@ Requirements:
 
 Working Directory: {code_directory}
 
-Analyze this plan and begin implementing files one by one, starting with the highest priority file from Phase 1 (Foundation). Implement exactly one complete file per response."""
+**Smart Implementation Instructions:**
+Analyze this plan and begin implementing files one by one using dependency-aware development:
+
+1. **Start with Foundation Files**: Begin with the highest priority file from Phase 1 (Foundation)
+2. **Dependency Analysis**: Before implementing each file, identify what existing files it should reference
+3. **Read Related Files**: Use read_file tool to examine relevant implemented files for:
+   - Interface patterns and base classes to follow
+   - Configuration structures and constants to reference
+   - Naming conventions and coding patterns already established
+   - Import structures and dependency relationships
+4. **Implement with Context**: Write each file to properly integrate with existing codebase
+5. **Continue Chain**: Repeat this smart workflow for each subsequent file
+
+**First Task:** 
+- Use get_file_structure to understand current project layout
+- Identify the first foundation file to implement
+- Analyze any existing files it should reference
+- Implement exactly one complete file per response
+
+**Remember:** Always use dependency analysis and file reading before implementation to ensure consistency across all files."""
             
             messages.append({"role": "user", "content": implementation_message})
             
@@ -326,6 +345,9 @@ Analyze this plan and begin implementing files one by one, starting with the hig
                 analysis_after = summary_agent.analyze_message_patterns(messages)
                 compression_ratio = (analysis_before['total_messages'] - analysis_after['total_messages']) / analysis_before['total_messages'] * 100
                 self.logger.info(f"Compression ratio: {compression_ratio:.1f}%")
+                
+                # Mark summary as triggered to prevent duplicate summaries
+                code_agent.mark_summary_triggered()
             
             # Check completion
             if any(keyword in response_content.lower() for keyword in [
@@ -480,15 +502,30 @@ Analyze this plan and begin implementing files one by one, starting with the hig
 📊 **Progress Status:** {files_count} files implemented
 
 🎯 **Next Action Required:**
-Immediately implement the next file according to the implementation plan priorities.
+Before implementing the next file, analyze dependencies and read relevant existing files for consistency.
 
-📋 **Implementation Steps:**
-1. Identify the next highest-priority file from the plan
-2. Implement it completely with production-quality code  
-3. Use write_file tool to create the file
-4. Continue this process for each remaining file
+📋 **Smart Implementation Steps:**
+1. **Identify Next File**: Determine the highest-priority file from the implementation plan
+2. **Dependency Analysis**: Analyze what existing files the new file should reference or import from
+3. **Read Related Files**: Use read_file tool to examine relevant implemented files:
+   - Base classes or interfaces to extend/implement
+   - Configuration files and constants to reference  
+   - Common patterns and naming conventions to follow
+   - Import structures and dependencies already established
+4. **Implement with Context**: Write complete, production-quality code that properly integrates with existing files
+5. **Use write_file Tool**: Create the file with full implementation
+6. **Continue Chain**: Repeat this process for each remaining file
 
-⚠️ **Important:** Implement exactly ONE complete file per response."""
+🧠 **Dependency Reading Strategy:**
+- If implementing a model class → Read existing base model files first
+- If implementing a config file → Read other config files for consistency
+- If implementing a utility → Read related utilities for pattern matching
+- If implementing main/entry point → Read all core components first
+
+⚠️ **Critical:** 
+- Always use read_file tool BEFORE write_file when dependencies exist
+- Ensure consistent interfaces and patterns across all files
+- Implement exactly ONE complete file per response"""
 
     def _generate_error_guidance(self) -> str:
         """Generate error guidance for handling issues"""
@@ -507,9 +544,19 @@ Immediately implement the next file according to the implementation plan priorit
 📊 **Current Progress:** {files_count} files implemented
 
 🚨 **Action Required:**
-You must implement the next file from the implementation plan.
+You must implement the next file from the implementation plan using the smart dependency-aware workflow.
 
-🔥 **Critical:** You must use tools to implement files. Do not just provide explanations - take action!"""
+🔥 **Critical Workflow:**
+1. **Analyze Dependencies**: Identify which existing files the next file should reference
+2. **Read Related Files**: Use read_file tool to examine relevant implemented files for patterns and interfaces
+3. **Implement with Context**: Use write_file tool to create a file that properly integrates with existing code
+
+⚡ **Tools You Must Use:**
+- read_file: To understand existing code structure and patterns
+- write_file: To implement the new file with proper integration
+- get_file_structure: To understand the current project layout
+
+🚨 **Remember:** You must use tools to implement files. Do not just provide explanations - take action with dependency analysis first!"""
 
     def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
         """Compile tool results and guidance into a single user response"""
@@ -572,6 +619,9 @@ You must implement the next file from the implementation plan.
 - Technical decisions: {code_stats['technical_decisions_count']}
 - Constraints tracked: {code_stats['constraints_count']}
 - Architecture notes: {code_stats['architecture_notes_count']}
+- Dependency analysis performed: {code_stats['dependency_analysis_count']}
+- Files read for dependencies: {code_stats['files_read_for_dependencies']}
+- Last summary triggered at file count: {code_stats['last_summary_file_count']}
 
 ### Summary Agent
 - Summaries generated: {summary_stats['total_summaries_generated']}
@@ -592,6 +642,9 @@ You must implement the next file from the implementation plan.
 ✅ Progress tracking and implementation statistics
 ✅ MCP-compliant tool execution
 ✅ Production-grade code with comprehensive type hints
+✅ Intelligent dependency analysis and file reading
+✅ Cross-file consistency through smart dependency tracking
+✅ Automated read_file usage for implementation context
 """
             return report
             

@@ -49,6 +49,174 @@ def load_target_structure(structure_path: str) -> str:
         sys.exit(1)
 
 
+def extract_file_tree_from_plan(plan_content: str) -> str:
+    """
+    Extract file tree structure from initial_plan.txt content
+    从initial_plan.txt内容中提取文件树结构
+    
+    Args:
+        plan_content: Content of the initial_plan.txt file
+        
+    Returns:
+        Extracted file tree structure as string
+    """
+    import re
+    
+    # Look for file structure section specifically in the format we see in initial_plan.txt
+    # This matches the exact format: "## File Structure (≤30 files total)" followed by code block
+    file_structure_pattern = r'## File Structure[^\n]*\n```[^\n]*\n(.*?)\n```'
+    
+    match = re.search(file_structure_pattern, plan_content, re.DOTALL)
+    if match:
+        file_tree = match.group(1).strip()
+        lines = file_tree.split('\n')
+        
+        # Clean up the tree - remove empty lines and comments that aren't part of structure
+        cleaned_lines = []
+        for line in lines:
+            # Keep lines that are part of the tree structure
+            if (line.strip() and 
+                (any(char in line for char in ['├──', '└──', '│']) or 
+                 line.strip().endswith('/') or 
+                 '.' in line.split('/')[-1] or  # has file extension
+                 line.strip().endswith('.py') or 
+                 line.strip().endswith('.txt') or 
+                 line.strip().endswith('.md') or 
+                 line.strip().endswith('.yaml'))):
+                cleaned_lines.append(line)
+        
+        if len(cleaned_lines) >= 5:
+            file_tree = '\n'.join(cleaned_lines)
+            print(f"📊 Extracted file tree structure from ## File Structure section ({len(cleaned_lines)} lines)")
+            return file_tree
+    
+    # Fallback: Look for any code block that contains project structure
+    # This pattern looks for code blocks with common project names and tree structure
+    code_block_patterns = [
+        r'```[^\n]*\n(rice_framework/.*?(?:├──|└──).*?)\n```',
+        r'```[^\n]*\n(project/.*?(?:├──|└──).*?)\n```',
+        r'```[^\n]*\n(src/.*?(?:├──|└──).*?)\n```',
+        r'```[^\n]*\n(.*?(?:├──|└──).*?(?:\.py|\.txt|\.md|\.yaml).*?)\n```'
+    ]
+    
+    for pattern in code_block_patterns:
+        match = re.search(pattern, plan_content, re.DOTALL)
+        if match:
+            file_tree = match.group(1).strip()
+            lines = [line for line in file_tree.split('\n') if line.strip()]
+            if len(lines) >= 5:
+                print(f"📊 Extracted file tree structure from code block ({len(lines)} lines)")
+                return file_tree
+    
+    # Final fallback: Extract file paths mentioned in the plan and create a basic structure
+    print("⚠️ No standard file tree found, attempting to extract from file mentions...")
+    
+    # Look for file paths in backticks throughout the document
+    file_mentions = re.findall(r'`([^`]*(?:\.py|\.txt|\.md|\.yaml|\.yml)[^`]*)`', plan_content)
+    
+    if file_mentions:
+        # Organize files into a directory structure
+        dirs = set()
+        files_by_dir = {}
+        
+        for file_path in file_mentions:
+            file_path = file_path.strip()
+            if '/' in file_path:
+                dir_path = '/'.join(file_path.split('/')[:-1])
+                filename = file_path.split('/')[-1]
+                dirs.add(dir_path)
+                if dir_path not in files_by_dir:
+                    files_by_dir[dir_path] = []
+                files_by_dir[dir_path].append(filename)
+            else:
+                if 'root' not in files_by_dir:
+                    files_by_dir['root'] = []
+                files_by_dir['root'].append(file_path)
+        
+        # Create a tree structure
+        structure_lines = []
+        
+        # Determine root directory name
+        root_name = "rice_framework" if any("rice" in f for f in file_mentions) else "project"
+        structure_lines.append(f"{root_name}/")
+        
+        # Add directories and files
+        sorted_dirs = sorted(dirs) if dirs else []
+        for i, dir_path in enumerate(sorted_dirs):
+            is_last_dir = (i == len(sorted_dirs) - 1)
+            prefix = "└──" if is_last_dir else "├──"
+            structure_lines.append(f"{prefix} {dir_path}/")
+            
+            if dir_path in files_by_dir:
+                files = sorted(files_by_dir[dir_path])
+                for j, filename in enumerate(files):
+                    is_last_file = (j == len(files) - 1)
+                    if is_last_dir:
+                        file_prefix = "    └──" if is_last_file else "    ├──"
+                    else:
+                        file_prefix = "│   └──" if is_last_file else "│   ├──"
+                    structure_lines.append(f"{file_prefix} {filename}")
+        
+        # Add root files if any
+        if 'root' in files_by_dir:
+            root_files = sorted(files_by_dir['root'])
+            for i, filename in enumerate(root_files):
+                is_last = (i == len(root_files) - 1) and not sorted_dirs
+                prefix = "└──" if is_last else "├──"
+                structure_lines.append(f"{prefix} {filename}")
+        
+        if len(structure_lines) >= 3:
+            file_tree = '\n'.join(structure_lines)
+            print(f"📊 Generated file tree from file mentions ({len(structure_lines)} lines)")
+            return file_tree
+    
+    # If no file tree found, return None
+    print("⚠️ No file tree structure found in initial plan")
+    return None
+
+
+def load_target_structure_from_plan(plan_path: str) -> str:
+    """
+    Load target structure from initial_plan.txt and extract file tree
+    从initial_plan.txt加载目标结构并提取文件树
+    
+    Args:
+        plan_path: Path to initial_plan.txt file
+        
+    Returns:
+        Extracted file tree structure
+    """
+    try:
+        # Load the full plan content
+        with open(plan_path, 'r', encoding='utf-8') as f:
+            plan_content = f.read()
+        
+        print(f"📄 Loaded initial plan ({len(plan_content)} characters)")
+        
+        # Extract file tree structure
+        file_tree = extract_file_tree_from_plan(plan_content)
+        
+        if file_tree:
+            print("✅ Successfully extracted file tree from initial plan")
+            print(f"📋 Preview of extracted structure:")
+            # Show first few lines of the extracted tree
+            preview_lines = file_tree.split('\n')[:8]
+            for line in preview_lines:
+                print(f"   {line}")
+            if len(file_tree.split('\n')) > 8:
+                print(f"   ... and {len(file_tree.split('\n')) - 8} more lines")
+            return file_tree
+        else:
+            print("⚠️ Could not extract file tree from initial plan")
+            print("🔄 Falling back to default target structure")
+            return get_default_target_structure()
+            
+    except Exception as e:
+        print(f"❌ Error loading initial plan file {plan_path}: {e}")
+        print("🔄 Falling back to default target structure")
+        return get_default_target_structure()
+
+
 def get_default_target_structure() -> str:
     """Get the default target structure"""
     return """
@@ -154,9 +322,10 @@ Examples:
     config = load_config(args.config)
     
     # Load target structure
+    args.target_structure = "./agent_folders/papers/2/initial_plan.txt"
     if args.target_structure:
         print(f"📐 Loading target structure from: {args.target_structure}")
-        target_structure = load_target_structure(args.target_structure)
+        target_structure = load_target_structure_from_plan(args.target_structure)
     else:
         print("📐 Using default target structure")
         target_structure = get_default_target_structure()
@@ -243,4 +412,21 @@ Examples:
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    # Add a simple test mode for file tree extraction
+    if len(sys.argv) > 1 and sys.argv[1] == "--test-extract":
+        print("🧪 Testing file tree extraction from initial_plan.txt...")
+        plan_path = "./agent_folders/papers/2/initial_plan.txt"
+        if Path(plan_path).exists():
+            try:
+                result = load_target_structure_from_plan(plan_path)
+                print("\n" + "="*60)
+                print("📊 Final extracted structure:")
+                print("="*60)
+                print(result)
+                print("="*60)
+            except Exception as e:
+                print(f"❌ Test failed: {e}")
+        else:
+            print(f"❌ Test file not found: {plan_path}")
+    else:
+        asyncio.run(main()) 

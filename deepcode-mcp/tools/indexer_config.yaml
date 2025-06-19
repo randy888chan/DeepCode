@@ -3,8 +3,8 @@
 
 # Paths Configuration
 paths:
-  code_base_path: "./agent_folders/papers/1/code_base"
-  output_dir: "./agent_folders/papers/1/indexes"
+  code_base_path: "./agent_folders/papers/2/code_base"
+  output_dir: "./agent_folders/papers/2/indexes"
 
 # File Analysis Settings
 file_analysis:

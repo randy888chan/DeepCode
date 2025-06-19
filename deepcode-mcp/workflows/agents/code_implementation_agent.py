@@ -46,10 +46,13 @@ class CodeImplementationAgent:
             "completed_files": [],
             "technical_decisions": [],
             "important_constraints": [],
-            "architecture_notes": []
+            "architecture_notes": [],
+            "dependency_analysis": []  # Track dependency analysis and file reads
         }
         self.files_implemented_count = 0
         self.implemented_files_set = set()  # Track unique file paths to avoid duplicate counting / 跟踪唯一文件路径以避免重复计数
+        self.files_read_for_dependencies = set()  # Track files read for dependency analysis / 跟踪为依赖分析而读取的文件
+        self.last_summary_file_count = 0  # Track the file count when last summary was triggered / 跟踪上次触发总结时的文件数
         
     def _create_default_logger(self) -> logging.Logger:
         """Create default logger if none provided / 如果未提供则创建默认日志记录器"""
@@ -96,6 +99,8 @@ class CodeImplementationAgent:
                     # Track file implementation progress / 跟踪文件实现进度
                     if tool_name == 'write_file':
                         self._track_file_implementation(tool_call, result)
+                    elif tool_name == 'read_file':
+                        self._track_dependency_analysis(tool_call, result)
                     
                     results.append({
                         "tool_id": tool_call["id"],
@@ -202,10 +207,44 @@ class CodeImplementationAgent:
             except:
                 pass
     
+    def _track_dependency_analysis(self, tool_call: Dict, result: Any):
+        """
+        Track dependency analysis through read_file calls
+        跟踪通过read_file调用进行的依赖分析
+        """
+        try:
+            file_path = tool_call["input"].get("file_path")
+            if file_path:
+                # Track unique files read for dependency analysis / 跟踪为依赖分析而读取的唯一文件
+                if file_path not in self.files_read_for_dependencies:
+                    self.files_read_for_dependencies.add(file_path)
+                    
+                    # Add to dependency analysis summary / 添加到依赖分析总结
+                    self.implementation_summary["dependency_analysis"].append({
+                        "file_read": file_path,
+                        "timestamp": time.time(),
+                        "purpose": "dependency_analysis"
+                    })
+                    
+                    self.logger.info(f"Dependency analysis tracked: file_read={file_path}")
+                    
+        except Exception as e:
+            self.logger.warning(f"Failed to track dependency analysis: {e}")
+    
     def should_trigger_summary(self, summary_trigger: int = 5) -> bool:
         """
         Check if summary should be triggered based on implementation count
         根据实现计数检查是否应触发总结
+        
+        Only triggers when:
+        1. Files have been implemented (> 0)
+        2. Current file count is a multiple of summary_trigger
+        3. We haven't already triggered summary for this file count
+        
+        只有在以下情况下才触发：
+        1. 已实现文件 (> 0)
+        2. 当前文件数是summary_trigger的倍数
+        3. 我们还没有为这个文件数触发过总结
         
         Args:
             summary_trigger: Number of files after which to trigger summary
@@ -213,8 +252,25 @@ class CodeImplementationAgent:
         Returns:
             True if summary should be triggered
         """
-        return (self.files_implemented_count > 0 and 
-                self.files_implemented_count % summary_trigger == 0)
+        should_trigger = (
+            self.files_implemented_count > 0 and 
+            self.files_implemented_count % summary_trigger == 0 and
+            self.files_implemented_count > self.last_summary_file_count
+        )
+        
+        return should_trigger
+    
+    def mark_summary_triggered(self):
+        """
+        Mark that summary has been triggered for current file count
+        标记当前文件数的总结已被触发
+        
+        This should be called after summary is successfully generated
+        to prevent duplicate summaries for the same file count.
+        应该在成功生成总结后调用此方法，以防止为相同文件数重复生成总结。
+        """
+        self.last_summary_file_count = self.files_implemented_count
+        self.logger.info(f"Summary marked as triggered for file count: {self.files_implemented_count}")
     
     def get_implementation_summary(self) -> Dict[str, Any]:
         """
@@ -280,19 +336,21 @@ class CodeImplementationAgent:
     
     def get_implementation_statistics(self) -> Dict[str, Any]:
         """
-        Get implementation statistics for monitoring
-        获取用于监控的实现统计信息
+        Get comprehensive implementation statistics
+        获取全面的实现统计信息
         """
-        completed_files = self.implementation_summary["completed_files"]
-        
         return {
-            "total_files_implemented": len(completed_files),
+            "total_files_implemented": self.files_implemented_count,
             "files_implemented_count": self.files_implemented_count,
-            "latest_file": completed_files[-1]["file"] if completed_files else None,
-            "latest_implementation_time": completed_files[-1]["timestamp"] if completed_files else None,
             "technical_decisions_count": len(self.implementation_summary["technical_decisions"]),
             "constraints_count": len(self.implementation_summary["important_constraints"]),
-            "architecture_notes_count": len(self.implementation_summary["architecture_notes"])
+            "architecture_notes_count": len(self.implementation_summary["architecture_notes"]),
+            "dependency_analysis_count": len(self.implementation_summary["dependency_analysis"]),
+            "files_read_for_dependencies": len(self.files_read_for_dependencies),
+            "unique_files_implemented": len(self.implemented_files_set),
+            "completed_files_list": [f["file"] for f in self.implementation_summary["completed_files"]],
+            "dependency_files_read": list(self.files_read_for_dependencies),
+            "last_summary_file_count": self.last_summary_file_count
         }
     
     def reset_implementation_tracking(self):
@@ -304,8 +362,11 @@ class CodeImplementationAgent:
             "completed_files": [],
             "technical_decisions": [],
             "important_constraints": [],
-            "architecture_notes": []
+            "architecture_notes": [],
+            "dependency_analysis": []  # Reset dependency analysis and file reads
         }
         self.files_implemented_count = 0
         self.implemented_files_set = set()  # Reset the unique files set / 重置唯一文件集合
+        self.files_read_for_dependencies = set()  # Reset files read for dependency analysis / 重置为依赖分析而读取的文件
+        self.last_summary_file_count = 0  # Reset the file count when last summary was triggered / 重置上次触发总结时的文件数
         self.logger.info("Implementation tracking reset") 

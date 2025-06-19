@@ -1,8 +1,12 @@
 """
-Code Indexer - Build relationships between existing codebase and target project structure
+Code Indexer for Repository Analysis
+代码索引器用于仓库分析
 
-This tool analyzes existing repositories in code_base directory and creates intelligent
-mappings to target project structure using LLM-powered analysis.
+Analyzes code repositories to build comprehensive indexes for each subdirectory,
+identifying file relationships and reusable components for implementation.
+
+分析代码仓库为每个子目录构建综合索引，
+识别文件关系和可重用组件以供实现。
 
 Features:
 - Recursive file traversal
@@ -12,15 +16,15 @@ Features:
 - Progress tracking and error handling
 """
 
+import asyncio
+import json
+import logging
 import os
 import re
-import json
-import asyncio
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
-import logging
 from datetime import datetime
+from pathlib import Path
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Any
 
 @dataclass
 class FileRelationship:
@@ -60,11 +64,14 @@ class RepoIndex:
 class CodeIndexer:
     """Main class for building code repository indexes"""
     
-    def __init__(self, code_base_path: str, target_structure: str, output_dir: str = "indexes"):
+    def __init__(self, code_base_path: str, target_structure: str, output_dir: str = "indexes", config_path: str = "mcp_agent.secrets.yaml"):
         self.code_base_path = Path(code_base_path)
         self.target_structure = target_structure
         self.output_dir = Path(output_dir)
-        self.llm = None
+        self.config_path = config_path
+        self.api_config = self._load_api_config()
+        self.llm_client = None
+        self.llm_client_type = None
         self.logger = self._setup_logger()
         
         # Create output directory if it doesn't exist
@@ -92,59 +99,101 @@ class CodeIndexer:
         
         return logger
 
-    async def llm_model_func(self, prompt, system_prompt="You are a code analysis expert. Provide precise, structured analysis of code relationships and similarities.", history_messages=[], keyword_extraction=False, **kwargs
-    ) -> str:
-        from lightrag.llm.openai import openai_complete_if_cache
-        return await openai_complete_if_cache(
-            "gpt-4o-mini",
-            prompt,
-            system_prompt=system_prompt,
-            history_messages=history_messages,
-            api_key="sk-ZDiJP6MOI3yOr6iL7vOOJ7ohwdhbbuL2jcZe3KDmYMq6nWQ2",
-            base_url="https://api.nuwaapi.com/v1",
-            **kwargs,
-        )
-    # async def llm_model_func(self, prompt: str, max_tokens: int = 4000) -> str:
-    #     """
-    #     LLM model function for making AI analysis calls
+    def _load_api_config(self) -> Dict[str, Any]:
+        """Load API configuration from YAML file"""
+        try:
+            import yaml
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+        except Exception as e:
+            self.logger.warning(f"Failed to load API config from {self.config_path}: {e}")
+            return {}
+
+    async def _initialize_llm_client(self):
+        """Initialize LLM client (Anthropic or OpenAI)"""
+        if self.llm_client is not None:
+            return self.llm_client, self.llm_client_type
+            
+        # Try Anthropic API first
+        try:
+            anthropic_key = self.api_config.get('anthropic', {}).get('api_key')
+            if anthropic_key:
+                from anthropic import AsyncAnthropic
+                client = AsyncAnthropic(api_key=anthropic_key)
+                # Test connection
+                await client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("Using Anthropic API for code analysis")
+                self.llm_client = client
+                self.llm_client_type = "anthropic"
+                return client, "anthropic"
+        except Exception as e:
+            self.logger.warning(f"Anthropic API unavailable: {e}")
         
-    #     Args:
-    #         prompt: The analysis prompt to send to LLM
-    #         max_tokens: Maximum tokens for response
+        # Try OpenAI API
+        try:
+            openai_key = self.api_config.get('openai', {}).get('api_key')
+            if openai_key:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=openai_key)
+                # Test connection
+                await client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("Using OpenAI API for code analysis")
+                self.llm_client = client
+                self.llm_client_type = "openai"
+                return client, "openai"
+        except Exception as e:
+            self.logger.warning(f"OpenAI API unavailable: {e}")
+        
+        raise ValueError("No available LLM API for code analysis")
+
+    async def _call_llm(self, prompt: str, system_prompt: str = "You are a code analysis expert. Provide precise, structured analysis of code relationships and similarities.", max_tokens: int = 1000) -> str:
+        """Call LLM for code analysis"""
+        try:
+            client, client_type = await self._initialize_llm_client()
             
-    #     Returns:
-    #         LLM response text
-    #     """
-    #     from lightrag.llm.openai import openai_complete_if_cache
-    #     try:
-    #         if self.llm is None:
-    #             self.llm = lambda prompt, system_prompt=None, history_messages=[], **kwargs: openai_complete_if_cache(
-    #                 "gpt-4o-mini",
-    #                 prompt,
-    #                 system_prompt=system_prompt,
-    #                 history_messages=history_messages,
-    #                 api_key="sk-ZDiJP6MOI3yOr6iL7vOOJ7ohwdhbbuL2jcZe3KDmYMq6nWQ2",
-    #                 base_url="https://api.nuwaapi.com/v1",
-    #                 **kwargs,
-    #             ),
-            
-    #         # request_params = RequestParams(
-    #         #     max_tokens=max_tokens,
-    #         #     temperature=0.3,  # Lower temperature for more consistent analysis
-    #         #     system_prompt="You are a code analysis expert. Provide precise, structured analysis of code relationships and similarities."
-    #         # )
-            
-    #         print(prompt)
-    #         response = await self.llm(
-    #             prompt=prompt,
-    #             system_prompt="You are a code analysis expert. Provide precise, structured analysis of code relationships and similarities."
-    #         )
-            
-    #         return response
-            
-    #     except Exception as e:
-    #         self.logger.error(f"LLM call failed: {e}")
-    #         return f"Error in LLM analysis: {str(e)}"
+            if client_type == "anthropic":
+                response = await client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_tokens,
+                    temperature=0.2
+                )
+                
+                content = ""
+                for block in response.content:
+                    if block.type == "text":
+                        content += block.text
+                return content
+                
+            elif client_type == "openai":
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+                
+                response = await client.chat.completions.create(
+                    model="gpt-4-1106-preview",
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=0.2
+                )
+                
+                return response.choices[0].message.content or ""
+            else:
+                raise ValueError(f"Unsupported client type: {client_type}")
+                
+        except Exception as e:
+            self.logger.error(f"LLM call failed: {e}")
+            return f"Error in LLM analysis: {str(e)}"
 
     def get_all_repo_files(self, repo_path: Path) -> List[Path]:
         """Recursively get all supported files in a repository"""
@@ -199,7 +248,7 @@ class CodeIndexer:
             """
             
             # Get LLM analysis
-            llm_response = await self.llm_model_func(analysis_prompt, max_tokens=1000)
+            llm_response = await self._call_llm(analysis_prompt, max_tokens=1000)
             
             
             try:
@@ -273,7 +322,7 @@ class CodeIndexer:
         """
         
         try:
-            llm_response = await self.llm_model_func(relationship_prompt, max_tokens=1500)
+            llm_response = await self._call_llm(relationship_prompt, max_tokens=1500)
             
             match = re.search(r"\{.*\}", llm_response, re.DOTALL)
             relationship_data = json.loads(match.group(0))
