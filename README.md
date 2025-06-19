@@ -139,13 +139,18 @@ graph LR
 
 </div>
 
-### ⚙️ **System Bootstrap**
+### ⚙️ **Neural System Bootstrap**
 
 ```bash
-# 🔥 Neural Core Installation
-pip install -r requirements.txt
+# 🧬 Create Conda Neural Environment
+conda create -n neural-research python=3.10 -y
+conda activate neural-research
 
-# 🛠️ Development Environment Setup
+# 🔥 Install Core Neural Dependencies
+conda install -c conda-forge streamlit anthropic aiohttp aiofiles -y
+pip install mcp-agent mcp-server-git pathlib2 asyncio-mqtt PyPDF2 docling
+
+# 🛠️ Neural Repository Setup
 git clone https://github.com/yourusername/paper-to-code.git
 cd paper-to-code && pip install -e .
 ```
@@ -165,14 +170,32 @@ code_result = await paper_code_preparation(analysis_result)
 code_result.deploy()
 ```
 
-### 🌐 **Cyberpunk Web Interface**
+### 🌐 **Neural Web Interface Activation**
 
 ```bash
-# 🎮 Launch Neural Dashboard
-python paper_to_code.py
+# 🎮 Activate Neural Environment
+conda activate neural-research
 
-# 🌍 Access at http://localhost:8501
-# 🎨 Dark theme with neon accents enabled
+# 🚀 Launch Quantum Dashboard
+streamlit run paper_to_code.py --server.port 8501 --server.headless true
+
+# 🌍 Neural Interface: http://localhost:8501
+# 🎨 Cyberpunk UI with quantum visualization enabled
+# ⚡ Real-time neural processing monitoring active
+```
+
+### 📦 **Conda Environment Export**
+
+```bash
+# 🧬 Export Current Neural Environment
+conda env export > neural-environment.yml
+
+# 🔄 Recreate Neural Environment from Config
+conda env create -f neural-environment.yml
+conda activate neural-research
+
+# 🚀 Share Neural Environment Configuration
+# neural-environment.yml contains all optimized dependencies
 ```
 
 ---
@@ -319,35 +342,46 @@ python paper_to_code.py
 
 </div>
 
-### 📋 **System Requirements**
+### 📋 **Neural System Requirements**
 
 ```bash
-# 🔧 Core Dependencies
-Python 3.9+         # Neural runtime environment
-Git 2.0+           # Version control system
-Docker             # Containerization (optional)
-CUDA 11.8+         # GPU acceleration (optional)
+# 🧬 Core Neural Infrastructure
+Conda/Miniconda     # Advanced package management system
+Python 3.10+        # High-performance neural runtime
+Git 2.0+           # Distributed version control
+Docker             # Container orchestration (optional)
+CUDA 11.8+         # GPU acceleration matrix (optional)
+
+# 🔥 Recommended Neural Specifications
+CPU: 8+ cores       # Multi-threaded neural processing
+RAM: 16GB+         # Neural network memory optimization
+GPU: RTX 3060+     # Accelerated tensor operations
+SSD: 100GB+        # High-speed neural data storage
 ```
 
-### 🔧 **Development Environment Setup**
+### 🔧 **Advanced Neural Development Setup**
 
 ```bash
-# 1️⃣ Clone neural repository
+# 1️⃣ Initialize Neural Repository
 git clone https://github.com/yourusername/paper-to-code.git
 cd paper-to-code
 
-# 2️⃣ Initialize virtual environment
-python -m venv neural_env
-source neural_env/bin/activate  # Windows: neural_env\Scripts\activate
+# 2️⃣ Create High-Performance Conda Environment
+conda create -n neural-dev python=3.10 numpy scipy matplotlib jupyter -y
+conda activate neural-dev
 
-# 3️⃣ Install neural dependencies
-pip install -r requirements.txt
+# 3️⃣ Install Neural Dependencies via Conda (Optimized)
+conda install -c conda-forge streamlit anthropic aiohttp aiofiles pytest coverage -y
+conda install -c anaconda pathlib2 -y
+
+# 4️⃣ Install Specialized Neural Components
+pip install mcp-agent mcp-server-git asyncio-mqtt PyPDF2 docling
 pip install -e .
 
-# 4️⃣ Run neural tests
-pytest tests/ --cov=paper2code --cov-report=html
+# 5️⃣ Execute Neural Test Suite
+pytest tests/ --cov=paper2code --cov-report=html --cov-report=term-missing
 
-# 5️⃣ Activate neural interface
+# 6️⃣ Launch Neural Command Center
 python paper_to_code.py
 ```
 
@@ -546,32 +580,38 @@ paper-to-code/
 <tr>
 <td width="50%">
 
-#### 🔄 **Quick Start Guide**
+#### 🔄 **Quick Neural Start Protocol**
 ```bash
-# 🚀 Initialize Neural Environment
+# 🚀 Clone Neural Repository
 git clone https://github.com/yourusername/paper-to-code.git
-cd paper-to-code && npm install
+cd paper-to-code
 
-# ⚡ Activate Development Mode
-python -m venv neural_env
-source neural_env/bin/activate
-pip install -r requirements.txt
+# ⚡ Create & Activate Neural Environment
+conda create -n neural-quickstart python=3.10 -y
+conda activate neural-quickstart
+
+# 🧬 Install Neural Core Systems
+conda install -c conda-forge streamlit anthropic aiohttp aiofiles -y
+pip install mcp-agent mcp-server-git PyPDF2 docling asyncio-mqtt pathlib2
 ```
 
 </td>
 <td width="50%">
 
-#### 🧬 **Contribution Workflow**
+#### 🧬 **Neural Contribution Workflow**
 ```bash
-# 🌟 Create Feature Branch
-git checkout -b neural/amazing-feature
+# 🌟 Initialize Feature Branch
+git checkout -b neural/quantum-feature
 
-# 💻 Develop & Test
-python -m pytest tests/
-git add . && git commit -m "🧬 Add feature"
+# 🔬 Activate Neural Environment
+conda activate neural-dev
 
-# 🚀 Deploy to Neural Network
-git push origin neural/amazing-feature
+# 💻 Execute Neural Tests
+pytest tests/ --cov=paper2code
+git add . && git commit -m "🧬 Quantum feature implementation"
+
+# 🚀 Deploy to Neural Matrix
+git push origin neural/quantum-feature
 ```
 
 </td>

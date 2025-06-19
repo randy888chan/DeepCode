@@ -48,6 +48,62 @@ class IterativeCodeImplementation:
         self.logger = logger
         self.mcp_agent = mcp_agent
     
+    async def implement_code_from_workflow(self, plan_content: str, target_directory: str, 
+                                         workflow_instance) -> str:
+        """迭代式代码实现 - 使用MCP服务器（从主工作流移动的方法）"""
+        try:
+            # 初始化LLM客户端
+            client, client_type = await workflow_instance._initialize_llm_client()
+            
+            # 初始化MCP代理
+            code_directory = os.path.join(target_directory, "generate_code")
+            await workflow_instance._initialize_mcp_agent(code_directory)
+            
+            # 更新本地mcp_agent引用
+            self.mcp_agent = workflow_instance.mcp_agent
+            
+            # 委托给已有的implement_code方法
+            result = await self.implement_code(
+                plan_content, target_directory, client, client_type, workflow_instance.mcp_agent,
+                workflow_instance._initialize_llm_client, workflow_instance._prepare_mcp_tool_definitions,
+                workflow_instance._call_llm_with_tools, workflow_instance._execute_mcp_tool_calls
+            )
+            
+            return result
+            
+        finally:
+            # 确保清理MCP代理资源
+            if workflow_instance and hasattr(workflow_instance, '_cleanup_mcp_agent'):
+                await workflow_instance._cleanup_mcp_agent()
+                
+    async def implement_code_standalone(self, plan_content: str, target_directory: str, 
+                                      workflow_instance) -> str:
+        """迭代式代码实现 - 独立方法（从主工作流移动过来的完整函数）"""
+        try:
+            # 初始化LLM客户端
+            client, client_type = await workflow_instance._initialize_llm_client()
+            
+            # 初始化MCP代理
+            code_directory = os.path.join(target_directory, "generate_code")
+            await workflow_instance._initialize_mcp_agent(code_directory)
+            
+            # 创建迭代式代码实现实例
+            # 注意：这里我们用已有的self，不需要再创建新实例
+            self.mcp_agent = workflow_instance.mcp_agent
+            
+            # 委托给专门的实现模块
+            result = await self.implement_code(
+                plan_content, target_directory, client, client_type, workflow_instance.mcp_agent,
+                workflow_instance._initialize_llm_client, workflow_instance._prepare_mcp_tool_definitions,
+                workflow_instance._call_llm_with_tools, workflow_instance._execute_mcp_tool_calls
+            )
+            
+            return result
+            
+        finally:
+            # 确保清理MCP代理资源
+            await workflow_instance._cleanup_mcp_agent()
+
     async def implement_code(self, plan_content: str, target_directory: str, 
                            client, client_type, mcp_agent, 
                            initialize_llm_client_func, prepare_tools_func,
