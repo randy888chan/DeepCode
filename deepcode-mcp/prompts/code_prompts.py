@@ -15,7 +15,7 @@ RECENT UPDATES (针对论文代码复现优化):
 - CODE_PLANNING_PROMPT: 整合前两者输出，生成高质量复现计划
 """
 
-# Paper to Code Workflow Prompts        
+# Paper to Code Workflow Prompts
 PAPER_INPUT_ANALYZER_PROMPT = """You are a precise input analyzer for paper-to-code tasks. You MUST return only a JSON object with no additional text.
 
 Task: Analyze input text and identify file paths/URLs to determine appropriate input type.
@@ -550,9 +550,9 @@ Count files in structure → Count files in phases → Ensure numbers match exac
 
 **🎯 FINAL VERIFICATION CHECKLIST:**
 Before submitting your plan, verify:
-□ File structure shows X files total  
+□ File structure shows X files total
 □ Phase 1 lists Y files
-□ Phase 2 lists Z files  
+□ Phase 2 lists Z files
 □ Phase 3 lists W files
 □ Y + Z + W = X (all files accounted for)
 □ No file appears in structure but missing from phases
@@ -611,7 +611,7 @@ CRITICAL REQUIREMENTS:
 
 COMMAND GENERATION RULES:
 1. Use `mkdir -p` to create directories (including nested ones)
-2. Use `touch` to create files  
+2. Use `touch` to create files
 3. Create directories before files
 4. One command per line
 5. Use relative paths from the target directory
@@ -620,7 +620,7 @@ COMMAND GENERATION RULES:
 EXAMPLE OUTPUT FORMAT:
 ```
 mkdir -p project/src/core
-mkdir -p project/src/models  
+mkdir -p project/src/models
 mkdir -p project/tests
 touch project/src/__init__.py
 touch project/src/core/__init__.py
@@ -647,7 +647,7 @@ OBJECTIVE: Analyze implementation plans and generate shell commands that create 
 
 INPUT ANALYSIS:
 1. Parse implementation plan structure and identify project type
-2. Extract file tree, dependencies, and technical requirements  
+2. Extract file tree, dependencies, and technical requirements
 3. Determine optimal code generation sequence
 4. Apply appropriate quality standards based on context
 
@@ -728,7 +728,7 @@ OBJECTIVE: Analyze conversation history and extract key information to reduce to
 EXTRACTION TARGETS:
 1. **Completed Files**: List all files successfully implemented with implementation status
 2. **Technical Decisions**: Architecture/implementation choices made by the assistant
-3. **Key Constraints**: Requirements/limitations mentioned by user or discovered by assistant  
+3. **Key Constraints**: Requirements/limitations mentioned by user or discovered by assistant
 4. **Implementation Progress**: Current development status and accomplished milestones
 5. **Error Patterns**: Issues encountered and solutions applied
 6. **Role-Specific Context**: Who made what decisions and provided what guidance
@@ -749,7 +749,7 @@ Provide a role-aware structured summary in 250-350 words:
 - Current phase: [development stage]
 - Success metrics: [quantified progress]
 
-**TECHNICAL CONTEXT:**  
+**TECHNICAL CONTEXT:**
 - Key decisions made by assistant: [architectural choices]
 - Constraints identified: [requirements/limitations]
 - Dependencies resolved: [integration points]
@@ -827,7 +827,7 @@ INTELLIGENT DEPENDENCY ANALYSIS:
    - What files this new file will import from or depend on
    - Which already-implemented files contain relevant patterns, interfaces, or base classes
    - What existing code structures should be referenced for consistency
-   
+
 🧠 **Smart File Reading**: Use read_file tool to examine:
    - Base classes and interfaces that the new file should extend/implement
    - Common patterns and naming conventions from existing files
@@ -872,7 +872,7 @@ WORKFLOW OPTIMIZATION:
 
 TOOL USAGE PROTOCOL:
 - `read_file`: Critical for dependency analysis - USE BEFORE implementing dependent files
-- `write_file`: Primary tool for creating complete implementations - USE THIS FOR EVERY FILE  
+- `write_file`: Primary tool for creating complete implementations - USE THIS FOR EVERY FILE
 - `get_file_structure`: Project organization understanding
 - `search_code`: Pattern finding and reference checking
 
@@ -908,4 +908,3 @@ SUCCESS METRICS:
 - Continuous progress without manual intervention
 - Complete plan implementation from start to finish
 - Consistent code architecture across all implemented files"""
-

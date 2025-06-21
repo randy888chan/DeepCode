@@ -3,8 +3,8 @@
 
 # Paths Configuration
 paths:
-  code_base_path: "./agent_folders/papers/2/code_base"
-  output_dir: "./agent_folders/papers/2/indexes"
+  code_base_path: "D:/Documents/GitHub/Code-Agent/examples/input/paper1/code_base"
+  output_dir: "D:/Documents/GitHub/Code-Agent/examples/input/paper1/indexes"
 
 # File Analysis Settings
 file_analysis:
@@ -12,7 +12,7 @@ file_analysis:
   supported_extensions:
     - ".py"      # Python
     - ".js"      # JavaScript
-    - ".ts"      # TypeScript  
+    - ".ts"      # TypeScript
     - ".java"    # Java
     - ".cpp"     # C++
     - ".c"       # C
@@ -62,18 +62,18 @@ file_analysis:
 # LLM Configuration
 llm:
   # Model selection: "anthropic" or "openai"
-  model_provider: "anthropic"
-  
+  model_provider: "openai"
+
   # Request parameters
   max_tokens: 4000
   temperature: 0.3
-  
+
   # System prompt for analysis
   system_prompt: "You are a code analysis expert. Provide precise, structured analysis of code relationships and similarities."
-  
+
   # Rate limiting (seconds between requests)
   request_delay: 0.1
-  
+
   # Retry configuration
   max_retries: 3
   retry_delay: 1.0
@@ -82,10 +82,10 @@ llm:
 relationships:
   # Minimum confidence score to include a relationship
   min_confidence_score: 0.3
-  
+
   # High confidence threshold for reporting
   high_confidence_threshold: 0.7
-  
+
   # Relationship types and their priorities
   relationship_types:
     direct_match: 1.0      # Direct implementation match
@@ -98,14 +98,14 @@ output:
   # JSON formatting options
   json_indent: 2
   ensure_ascii: false
-  
+
   # Generate additional report files
   generate_summary: true
   generate_statistics: true
-  
+
   # Include metadata in output
   include_metadata: true
-  
+
   # File naming pattern (use {repo_name} placeholder)
   index_filename_pattern: "{repo_name}_index.json"
   summary_filename: "indexing_summary.json"
@@ -123,7 +123,7 @@ performance:
   # Enable concurrent processing of files within a repository
   enable_concurrent_analysis: true
   max_concurrent_files: 5
-  
+
   # Memory optimization
   enable_content_caching: false
   max_cache_size: 100
@@ -133,9 +133,9 @@ debug:
   # Save raw LLM responses for debugging
   save_raw_responses: false
   raw_responses_dir: "debug_responses"
-  
+
   # Verbose output during processing
   verbose_output: false
-  
+
   # Skip LLM calls for testing (uses mock responses)
-  mock_llm_responses: false 
+  mock_llm_responses: false

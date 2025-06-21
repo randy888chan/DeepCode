@@ -17,7 +17,7 @@ from typing import Dict, List, Any
 
 class MCPToolDefinitions:
     """MCP工具定义管理器"""
-    
+
     @staticmethod
     def get_code_implementation_tools() -> List[Dict[str, Any]]:
         """
@@ -32,7 +32,7 @@ class MCPToolDefinitions:
             MCPToolDefinitions._get_search_code_tool(),
             MCPToolDefinitions._get_file_structure_tool(),
         ]
-    
+
     @staticmethod
     def _get_read_file_tool() -> Dict[str, Any]:
         """读取文件工具定义"""
@@ -43,22 +43,22 @@ class MCPToolDefinitions:
                 "type": "object",
                 "properties": {
                     "file_path": {
-                        "type": "string", 
-                        "description": "File path, relative to workspace"
+                        "type": "string",
+                        "description": "File path, relative to workspace",
                     },
                     "start_line": {
-                        "type": "integer", 
-                        "description": "Start line number (starting from 1, optional)"
+                        "type": "integer",
+                        "description": "Start line number (starting from 1, optional)",
                     },
                     "end_line": {
-                        "type": "integer", 
-                        "description": "End line number (starting from 1, optional)"
-                    }
+                        "type": "integer",
+                        "description": "End line number (starting from 1, optional)",
+                    },
                 },
-                "required": ["file_path"]
-            }
+                "required": ["file_path"],
+            },
         }
-    
+
     @staticmethod
     def _get_write_file_tool() -> Dict[str, Any]:
         """写入文件工具定义"""
@@ -69,28 +69,28 @@ class MCPToolDefinitions:
                 "type": "object",
                 "properties": {
                     "file_path": {
-                        "type": "string", 
-                        "description": "File path, relative to workspace"
+                        "type": "string",
+                        "description": "File path, relative to workspace",
                     },
                     "content": {
-                        "type": "string", 
-                        "description": "Content to write to file"
+                        "type": "string",
+                        "description": "Content to write to file",
                     },
                     "create_dirs": {
-                        "type": "boolean", 
+                        "type": "boolean",
                         "description": "Whether to create directories if they don't exist",
-                        "default": True
+                        "default": True,
                     },
                     "create_backup": {
-                        "type": "boolean", 
+                        "type": "boolean",
                         "description": "Whether to create backup file if file already exists",
-                        "default": False
-                    }
+                        "default": False,
+                    },
                 },
-                "required": ["file_path", "content"]
-            }
+                "required": ["file_path", "content"],
+            },
         }
-    
+
     @staticmethod
     def _get_execute_python_tool() -> Dict[str, Any]:
         """Python执行工具定义"""
@@ -100,20 +100,17 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "code": {
-                        "type": "string", 
-                        "description": "Python code to execute"
-                    },
+                    "code": {"type": "string", "description": "Python code to execute"},
                     "timeout": {
-                        "type": "integer", 
+                        "type": "integer",
                         "description": "Timeout in seconds",
-                        "default": 30
-                    }
+                        "default": 30,
+                    },
                 },
-                "required": ["code"]
-            }
+                "required": ["code"],
+            },
         }
-    
+
     @staticmethod
     def _get_execute_bash_tool() -> Dict[str, Any]:
         """Bash执行工具定义"""
@@ -124,19 +121,19 @@ class MCPToolDefinitions:
                 "type": "object",
                 "properties": {
                     "command": {
-                        "type": "string", 
-                        "description": "Bash command to execute"
+                        "type": "string",
+                        "description": "Bash command to execute",
                     },
                     "timeout": {
-                        "type": "integer", 
+                        "type": "integer",
                         "description": "Timeout in seconds",
-                        "default": 30
-                    }
+                        "default": 30,
+                    },
                 },
-                "required": ["command"]
-            }
+                "required": ["command"],
+            },
         }
-    
+
     @staticmethod
     def _get_search_code_tool() -> Dict[str, Any]:
         """代码搜索工具定义"""
@@ -146,25 +143,22 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "pattern": {
-                        "type": "string", 
-                        "description": "Search pattern"
-                    },
+                    "pattern": {"type": "string", "description": "Search pattern"},
                     "file_pattern": {
-                        "type": "string", 
+                        "type": "string",
                         "description": "File pattern (e.g., '*.py')",
-                        "default": "*.py"
+                        "default": "*.py",
                     },
                     "use_regex": {
-                        "type": "boolean", 
+                        "type": "boolean",
                         "description": "Whether to use regular expressions",
-                        "default": False
-                    }
+                        "default": False,
+                    },
                 },
-                "required": ["pattern"]
-            }
+                "required": ["pattern"],
+            },
         }
-    
+
     @staticmethod
     def _get_file_structure_tool() -> Dict[str, Any]:
         """文件结构获取工具定义"""
@@ -175,19 +169,19 @@ class MCPToolDefinitions:
                 "type": "object",
                 "properties": {
                     "directory": {
-                        "type": "string", 
+                        "type": "string",
                         "description": "Directory path, relative to workspace",
-                        "default": "."
+                        "default": ".",
                     },
                     "max_depth": {
-                        "type": "integer", 
+                        "type": "integer",
                         "description": "Maximum traversal depth",
-                        "default": 5
-                    }
-                }
-            }
+                        "default": 5,
+                    },
+                },
+            },
         }
-    
+
     @staticmethod
     def get_available_tool_sets() -> Dict[str, str]:
         """
@@ -200,7 +194,7 @@ class MCPToolDefinitions:
             # "data_analysis": "数据分析工具集 / Data analysis tool set",
             # "web_scraping": "网页爬取工具集 / Web scraping tool set",
         }
-    
+
     @staticmethod
     def get_tool_set(tool_set_name: str) -> List[Dict[str, Any]]:
         """
@@ -210,9 +204,9 @@ class MCPToolDefinitions:
         tool_sets = {
             "code_implementation": MCPToolDefinitions.get_code_implementation_tools(),
         }
-        
+
         return tool_sets.get(tool_set_name, [])
-    
+
     @staticmethod
     def get_all_tools() -> List[Dict[str, Any]]:
         """
@@ -230,11 +224,11 @@ def get_mcp_tools(tool_set: str = "code_implementation") -> List[Dict[str, Any]]
     """
     便捷函数：获取MCP工具定义
     Convenience function: Get MCP tool definitions
-    
+
     Args:
         tool_set: 工具集名称 (默认: "code_implementation")
-    
+
     Returns:
         工具定义列表
     """
-    return MCPToolDefinitions.get_tool_set(tool_set) 
+    return MCPToolDefinitions.get_tool_set(tool_set)

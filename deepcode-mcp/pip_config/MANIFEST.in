@@ -16,4 +16,4 @@ global-exclude .DS_Store
 global-exclude agent_folders/*
 global-exclude logs/*
 global-exclude test_files/*
-global-exclude tests/* 
+global-exclude tests/*

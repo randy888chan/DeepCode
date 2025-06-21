@@ -125,7 +125,7 @@ import torch.nn as nn
 class BaseModel(nn.Module):
     def __init__(self):
         super().__init__()
-    
+
     def forward(self, x):
         return x
 '''
@@ -199,4 +199,4 @@ Status: File implemented successfully
 Next: [next_file_to_implement]
 ```
 
-Begin by analyzing the provided Code Reproduction Plan and implementing the first priority file.""" 
+Begin by analyzing the provided Code Reproduction Plan and implementing the first priority file."""

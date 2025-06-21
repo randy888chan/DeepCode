@@ -38,8 +38,8 @@ Edit `tools/indexer_config.yaml` to customize:
 ```yaml
 # Paths Configuration
 paths:
-  code_base_path: "deepcode-mcp/agent_folders/papers/paper_3/code_base"
-  output_dir: "deepcode-mcp/agent_folders/papers/paper_3/indexes"
+  code_base_path: "/examples/input/paper1/code_base"
+  output_dir: "/examples/input/paper1/indexes"
 
 # LLM Configuration
 llm:
@@ -167,7 +167,7 @@ python run_indexer.py --target-structure my_structure.txt
 file_analysis:
   supported_extensions:
     - ".py"
-    - ".js" 
+    - ".js"
     - ".cpp"
   skip_directories:
     - "__pycache__"
@@ -326,7 +326,7 @@ with open('indexes/LightGCN-PyTorch_index.json', 'r') as f:
     index = json.load(f)
 
 # Find high-confidence relationships
-high_conf = [r for r in index['relationships'] 
+high_conf = [r for r in index['relationships']
              if r['confidence_score'] > 0.7]
 
 # Group by target file
@@ -344,7 +344,7 @@ for target, relationships in by_target.items():
 
 ```python
 # Find all files related to specific functionality
-gcn_related = [r for r in index['relationships'] 
+gcn_related = [r for r in index['relationships']
                if 'gcn' in r['target_file_path'].lower()]
 
 # Get summary statistics
@@ -403,4 +403,4 @@ for repo_name, index_file in output_files.items():
     print(f"Processed {repo_name}: {index_file}")
 ```
 
-This comprehensive system provides everything you need to build intelligent relationships between existing codebases and your target project structure. The LLM-powered analysis ensures accurate and contextual understanding of code relationships. 
+This comprehensive system provides everything you need to build intelligent relationships between existing codebases and your target project structure. The LLM-powered analysis ensures accurate and contextual understanding of code relationships.

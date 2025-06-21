@@ -17,7 +17,7 @@
 ### Component Overview
 - **ExplanationEngine**: Generates step-level importance scores using simplified StateMask approach with reward bonus mechanism
 - **StateDistributionManager**: Constructs and manages mixed initial state distributions from default states and critical states
-- **ExplorationController**: Implements RND-based intrinsic motivation to expand state coverage from frontier states  
+- **ExplorationController**: Implements RND-based intrinsic motivation to expand state coverage from frontier states
 - **PolicyRefiner**: Coordinates the overall refinement process using PPO with mixed initialization and exploration bonuses
 - **EnvironmentInterface**: Handles state reset functionality and trajectory collection for explanation generation
 
@@ -69,7 +69,7 @@ class ExplanationEngine:
 class RICERefiner:
     def __init__(self, policy, explanation_engine, environment)
     def refine(self, num_iterations, mixing_ratio, exploration_bonus) -> Policy
-    
+
 class MixedStateDistribution:
     def sample_initial_state(self, mixing_probability) -> State
     def update_critical_states(self, new_critical_states)
