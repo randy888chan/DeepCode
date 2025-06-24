@@ -14,9 +14,7 @@ from .components import (
     sidebar_control_panel,
     input_method_selector,
     results_display_component,
-    footer_component,
-    display_refresh_warning,
-    create_persistent_processing_state
+    footer_component
 )
 from .handlers import (
     initialize_session_state,
@@ -49,12 +47,6 @@ def render_main_content():
     """
     渲染主要内容区域 / Render main content area
     """
-    # 初始化持久化状态
-    create_persistent_processing_state()
-    
-    # 显示刷新警告（如果有正在运行的任务）
-    display_refresh_warning()
-    
     # 显示头部和功能特性
     display_header()
     display_features()

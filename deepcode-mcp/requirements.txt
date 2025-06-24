@@ -2,6 +2,7 @@ mcp-agent
 mcp-server-git
 anthropic
 streamlit
+nest_asyncio
 pathlib2
 asyncio-mqtt
 aiohttp>=3.8.0
