@@ -16,7 +16,7 @@ from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLL
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
 from workflows.initial_workflows import (
-    paper_code_preparation,
+    execute_multi_agent_research_pipeline,
     run_paper_analyzer,
     run_paper_downloader
 )
@@ -69,7 +69,7 @@ async def process_input(input_source: str, cli: CLIInterface, logger):
         cli.print_results_header()
         print(f"{Colors.CYAN}{download_result}{Colors.ENDC}")
 
-        repo_result = await paper_code_preparation(download_result, logger)
+        repo_result = await execute_multi_agent_research_pipeline(download_result, logger)
         
         cli.print_separator()
         cli.print_status("All operations completed successfully! 🎉", "success")

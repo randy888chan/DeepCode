@@ -8,7 +8,8 @@ from .initial_workflows import (
     paper_code_analyzer,
     github_repo_download,
     paper_reference_analyzer,
-    paper_code_preparation
+    execute_multi_agent_research_pipeline,
+    paper_code_preparation  # Deprecated, for backward compatibility
 )
 
 from .code_implementation_workflow import CodeImplementationWorkflow
@@ -20,7 +21,8 @@ __all__ = [
     'paper_code_analyzer',
     'github_repo_download',
     'paper_reference_analyzer',
-    'paper_code_preparation',
+    'execute_multi_agent_research_pipeline',  # Main multi-agent pipeline function
+    'paper_code_preparation',  # Deprecated, for backward compatibility
     # Code implementation workflows
     'CodeImplementationWorkflow'
 ] 

@@ -12,7 +12,8 @@ from .utils import FileProcessor
 from .workflows import (
     run_paper_analyzer,
     run_paper_downloader,
-    paper_code_preparation,
+    execute_multi_agent_research_pipeline,
+    paper_code_preparation,  # Deprecated, for backward compatibility
     execute_code_implementation
 )
 from .tools import (
@@ -25,7 +26,8 @@ __all__ = [
     'FileProcessor',
     'run_paper_analyzer',
     'run_paper_downloader', 
-    'paper_code_preparation',
+    'execute_multi_agent_research_pipeline',
+    'paper_code_preparation',  # Deprecated, for backward compatibility
     'execute_code_implementation',
     'CodeGenerator',
     'PDFDownloader',
