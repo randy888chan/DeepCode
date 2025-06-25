@@ -47,6 +47,18 @@ def check_dependencies():
     print("✅ All dependencies satisfied")
     return True
 
+def cleanup_cache():
+    """清理Python缓存文件 / Clean up Python cache files"""
+    try:
+        print("🧹 Cleaning up cache files...")
+        # 清理__pycache__目录
+        os.system('find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null')
+        # 清理.pyc文件
+        os.system('find . -name "*.pyc" -delete 2>/dev/null')
+        print("✅ Cache cleanup completed")
+    except Exception as e:
+        print(f"⚠️  Cache cleanup failed: {e}")
+
 def print_banner():
     """显示启动横幅 / Display startup banner"""
     banner = """
@@ -117,6 +129,9 @@ def main():
         print(f"\n❌ Unexpected error: {e}")
         print("Please check your Python environment and try again.")
         sys.exit(1)
+    finally:
+        # 清理缓存文件 / Clean up cache files
+        cleanup_cache()
 
 if __name__ == "__main__":
     main() 
