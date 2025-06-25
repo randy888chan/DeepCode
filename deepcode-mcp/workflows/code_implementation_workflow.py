@@ -710,7 +710,7 @@ async def main():
     """Main function for running the workflow"""
     logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
     
-    plan_file = "agent_folders/papers/2/initial_plan.txt"
+    plan_file = "agent_folders/papers/1/initial_plan.txt"
     workflow = CodeImplementationWorkflow()
     
     print("Implementation Mode Selection:")
