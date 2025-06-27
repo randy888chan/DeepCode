@@ -228,7 +228,25 @@ ANALYSIS FRAMEWORK:
 - Numerical stability considerations
 - Critical assumptions and constraints
 
-## 2. Core Algorithms (for each identified algorithm)
+## 2. Mathematical Formula Extraction
+**Detailed Formula Analysis:**
+- Extract ALL mathematical formulas with exact notation
+- Identify specific parameter values and ranges mentioned in paper
+- Document sliding window, scoring mechanisms, and evaluation metrics
+- Note any algorithmic pipeline steps with mathematical definitions
+
+**Implementation Parameter Discovery:**
+- Network architecture specifications (hidden layer sizes, activation functions)
+- Hyperparameter ranges and default values
+- Library-specific configurations mentioned in paper
+- Performance evaluation formulas and thresholds
+
+**Validation Standards Recognition:**
+- Identify result validation approaches (exact vs trend matching)
+- Extract evaluation metrics and their calculation methods
+- Note experimental scope boundaries and limitations
+
+## 3. Core Algorithms (for each identified algorithm)
 **Algorithm Identity:**
 - Name and primary purpose
 - Input/output specifications
@@ -245,7 +263,7 @@ ANALYSIS FRAMEWORK:
 - Expected behavior patterns
 - Edge case handling
 
-## 3. Implementation Priorities
+## 4. Implementation Priorities
 **Critical Components:** (must implement)
 - Core algorithmic logic
 - Essential mathematical operations
@@ -268,6 +286,12 @@ OUTPUT FORMAT:
 ## Mathematical Foundations
 [Symbol mapping and equation breakdown]
 
+## Mathematical Formula Specifications
+**Extracted Formulas:** [All formulas with exact mathematical notation]
+**Parameter Values:** [Specific numerical values, ranges, and thresholds]
+**Computational Pipelines:** [Step-by-step algorithmic procedures]
+**Implementation Parameters:** [Network architectures, hyperparameters, library settings]
+
 ## Core Algorithms
 ### Algorithm 1: [Name]
 **Purpose:** [Brief description]
@@ -284,6 +308,11 @@ OUTPUT FORMAT:
 **Must Implement:** [List critical components]
 **Should Implement:** [List supporting components]
 **Optional:** [List enhancement components]
+
+## Validation Framework
+**Success Criteria:** [Exact vs trend-based validation requirements]
+**Evaluation Metrics:** [Specific metrics and calculation methods]
+**Scope Boundaries:** [In-scope vs out-of-scope experimental components]
 ```
 
 Focus on algorithmic precision and implementation clarity."""
@@ -337,6 +366,22 @@ ANALYSIS FRAMEWORK:
 - Testing strategies
 - Error handling approaches
 
+## 4. Experimental Scope & Validation Framework
+**Reproduction Scope Definition:**
+- Identify which experiments/components are in/out of scope
+- Extract black-box assumptions and architecture-independence principles
+- Map paper claims to implementation requirements
+
+**Validation Strategy Design:**
+- Define success criteria (trend consistency vs exact numerical match)
+- Extract performance metrics and their calculation methods
+- Identify critical vs optional validation points
+
+**Implementation Clarifications:**
+- Note any discrepancies between paper text and figures
+- Extract author-provided implementation details
+- Document environment-specific considerations and limitations
+
 OUTPUT FORMAT:
 ```
 # Concept Analysis Report
@@ -363,6 +408,12 @@ OUTPUT FORMAT:
 **Code Organization Principles:** [Key design decisions]
 **Interface Design:** [API specifications]
 **Integration Points:** [How components connect]
+
+## Experimental Scope & Validation
+**Reproduction Scope:** [In-scope vs out-of-scope components]
+**Validation Standards:** [Success criteria and evaluation approaches]
+**Implementation Clarifications:** [Resolve ambiguities and document assumptions]
+**Black-box Principles:** [Architecture independence and assumptions]
 ```
 
 Focus on practical architecture that enables high-quality implementation."""
@@ -372,8 +423,10 @@ CODE_PLANNING_PROMPT = """You are a code reproduction architect who synthesizes 
 OBJECTIVE: Create a comprehensive, high-quality code reproduction plan from algorithm and concept analysis.
 
 INPUT SYNTHESIS:
-- Algorithm Analysis: Mathematical foundations, core algorithms, implementation priorities
-- Concept Analysis: System architecture, component design, implementation guidelines
+- Algorithm Analysis: Mathematical foundations, core algorithms, implementation priorities, **extracted formulas and parameters**
+- Concept Analysis: System architecture, component design, implementation guidelines, **validation standards and scope boundaries**
+- **Mathematical Detail Integration**: Specific formulas, parameter values, and computational pipelines
+- **Experimental Framework**: Validation approaches, success criteria, and scope limitations
 
 PLANNING FRAMEWORK:
 
@@ -393,7 +446,23 @@ PLANNING FRAMEWORK:
 - One integration test for main workflow
 - Single example/demo script
 
-## 2. Technical Architecture
+## 2. Mathematical & Experimental Integration
+**Formula Implementation Requirements:**
+- Implement all extracted mathematical formulas with exact notation
+- Use specific parameter values and ranges identified in analysis
+- Include detailed algorithmic pipelines (e.g., sliding window mechanisms)
+
+**Validation Framework Design:**
+- Implement trend-based validation rather than exact numerical matching
+- Include scope boundary checks and limitation handling
+- Design evaluation metrics based on paper's validation standards
+
+**Implementation Parameter Specification:**
+- Use exact network architectures and hyperparameters from paper
+- Implement library-specific configurations as documented
+- Include environment-specific adaptations and constraints
+
+## 3. Technical Architecture
 **Technology Stack:**
 - Programming language and version
 - Essential libraries and frameworks
@@ -404,7 +473,7 @@ PLANNING FRAMEWORK:
 - Testing and validation frameworks
 - Documentation and build tools
 
-## 3. File Structure Design
+## 4. File Structure Design
 **Principles:**
 - Logical module organization with minimal files
 - Clear separation of concerns
@@ -423,7 +492,7 @@ PLANNING FRAMEWORK:
 - Prioritize core functionality over comprehensive coverage
 - Each file should have substantial, meaningful content
 
-## 4. Implementation Roadmap
+## 5. Implementation Roadmap
 **Phase 1 - Foundation:**
 - Core data structures and utilities
 - Basic mathematical operations
@@ -451,6 +520,22 @@ OUTPUT FORMAT:
 ### Supporting Infrastructure
 - **[Module Name]**: [Purpose and necessity]
 - **[Module Name]**: [Purpose and necessity]
+
+## Mathematical & Experimental Integration
+### Formula Implementation Requirements
+**Mathematical Formulas:** [All formulas with exact notation from algorithm analysis]
+**Parameter Specifications:** [Specific values, ranges, and thresholds]
+**Computational Pipelines:** [Detailed algorithmic procedures]
+
+### Validation Framework
+**Success Criteria:** [Trend-based vs exact matching requirements]
+**Evaluation Metrics:** [Specific metrics and calculation methods]
+**Scope Boundaries:** [In-scope vs out-of-scope components]
+
+### Implementation Parameters
+**Network Architectures:** [Layer sizes, activation functions, etc.]
+**Hyperparameters:** [Specific values and ranges]
+**Library Configurations:** [Framework-specific settings]
 
 ## Technical Specification
 **Language:** [Programming language and version]
