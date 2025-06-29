@@ -31,6 +31,7 @@ class MCPToolDefinitions:
             MCPToolDefinitions._get_execute_bash_tool(),
             MCPToolDefinitions._get_search_code_tool(),
             MCPToolDefinitions._get_file_structure_tool(),
+            MCPToolDefinitions._get_search_reference_code_tool(),
         ]
 
     @staticmethod
@@ -182,6 +183,34 @@ class MCPToolDefinitions:
             },
         }
 
+    @staticmethod
+    def _get_search_reference_code_tool() -> Dict[str, Any]:
+        """代码参考搜索工具定义"""
+        return {
+            "name": "search_reference_code",
+            "description": "Search relevant reference code from indexes folder for implementation guidance",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "target_file": {
+                        "type": "string",
+                        "description": "Target file path to be implemented"
+                    },
+                    "keywords": {
+                        "type": "string",
+                        "description": "Search keywords, comma-separated",
+                        "default": ""
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 10
+                    }
+                },
+                "required": ["target_file"]
+            }
+        }
+    
     @staticmethod
     def get_available_tool_sets() -> Dict[str, str]:
         """

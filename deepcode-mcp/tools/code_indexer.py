@@ -73,7 +73,7 @@ class CodeIndexer:
         code_base_path: str = None,
         target_structure: str = None,
         output_dir: str = None,
-        config_path: str = None,
+        config_path: str = "mcp_agent.secrets.yaml",
         indexer_config_path: str = None,
         enable_pre_filtering: bool = True,
     ):
