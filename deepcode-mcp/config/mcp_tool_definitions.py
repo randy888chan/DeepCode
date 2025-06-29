@@ -32,6 +32,8 @@ class MCPToolDefinitions:
             MCPToolDefinitions._get_search_code_tool(),
             MCPToolDefinitions._get_file_structure_tool(),
             MCPToolDefinitions._get_search_reference_code_tool(),
+            MCPToolDefinitions._get_all_available_references_tool(),
+            MCPToolDefinitions._get_set_indexes_directory_tool(),
         ]
 
     @staticmethod
@@ -208,6 +210,37 @@ class MCPToolDefinitions:
                     }
                 },
                 "required": ["target_file"]
+            }
+        }
+
+    @staticmethod
+    def _get_all_available_references_tool() -> Dict[str, Any]:
+        """Get all available reference code overview tool definition"""
+        return {
+            "name": "get_all_available_references",
+            "description": "Get overview of all available reference code indexes and repositories",
+            "input_schema": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+
+    @staticmethod
+    def _get_set_indexes_directory_tool() -> Dict[str, Any]:
+        """Set indexes directory tool definition"""
+        return {
+            "name": "set_indexes_directory",
+            "description": "Set the directory path for code reference indexes",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "indexes_path": {
+                        "type": "string",
+                        "description": "Directory path containing index JSON files"
+                    }
+                },
+                "required": ["indexes_path"]
             }
         }
     

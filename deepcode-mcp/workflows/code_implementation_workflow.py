@@ -95,7 +95,7 @@ class CodeImplementationWorkflow:
             self.mcp_agent = Agent(
                 name="CodeImplementationAgent",
                 instruction="You are a code implementation assistant, using MCP tools to implement paper code replication.",
-                server_names=["code-implementation"],
+                server_names=["code-implementation", "code-reference-indexer"],
             )
             
             await self.mcp_agent.__aenter__()
@@ -505,16 +505,23 @@ Analyze this plan and begin implementing files one by one using dependency-aware
 Before implementing the next file, analyze dependencies and read relevant existing files for consistency.
 
 📋 **Smart Implementation Steps:**
-1. **Identify Next File**: Determine the highest-priority file from the implementation plan
-2. **Dependency Analysis**: Analyze what existing files the new file should reference or import from
-3. **Read Related Files**: Use read_file tool to examine relevant implemented files:
+1. **Get Reference Code**: Use search_reference_code tool to find relevant examples from indexed repositories
+2. **Identify Next File**: Determine the highest-priority file from the implementation plan
+3. **Dependency Analysis**: Analyze what existing files the new file should reference or import from
+4. **Read Related Files**: Use read_file tool to examine relevant implemented files:
    - Base classes or interfaces to extend/implement
    - Configuration files and constants to reference  
    - Common patterns and naming conventions to follow
    - Import structures and dependencies already established
-4. **Implement with Context**: Write complete, production-quality code that properly integrates with existing files
-5. **Use write_file Tool**: Create the file with full implementation
-6. **Continue Chain**: Repeat this process for each remaining file
+5. **Implement with Context**: Write complete, production-quality code that properly integrates with existing files
+6. **Use write_file Tool**: Create the file with full implementation
+7. **Continue Chain**: Repeat this process for each remaining file
+
+🔍 **Code Reference Search Strategy:**
+- Use search_reference_code with target file path and relevant keywords
+- Example: search_reference_code(target_file="models/transformer.py", keywords="transformer,attention,pytorch")
+- Review the formatted reference information for implementation patterns
+- Use get_all_available_references to see what reference repositories are available
 
 🧠 **Dependency Reading Strategy:**
 - If implementing a model class → Read existing base model files first
@@ -523,7 +530,8 @@ Before implementing the next file, analyze dependencies and read relevant existi
 - If implementing main/entry point → Read all core components first
 
 ⚠️ **Critical:** 
-- Always use read_file tool BEFORE write_file when dependencies exist
+- Always use search_reference_code BEFORE implementing unfamiliar file types
+- Use read_file tool BEFORE write_file when dependencies exist
 - Ensure consistent interfaces and patterns across all files
 - Implement exactly ONE complete file per response"""
 
@@ -547,16 +555,19 @@ Before implementing the next file, analyze dependencies and read relevant existi
 You must implement the next file from the implementation plan using the smart dependency-aware workflow.
 
 🔥 **Critical Workflow:**
-1. **Analyze Dependencies**: Identify which existing files the next file should reference
-2. **Read Related Files**: Use read_file tool to examine relevant implemented files for patterns and interfaces
-3. **Implement with Context**: Use write_file tool to create a file that properly integrates with existing code
+1. **Search Reference Code**: Use search_reference_code to find relevant implementation examples
+2. **Analyze Dependencies**: Identify which existing files the next file should reference
+3. **Read Related Files**: Use read_file tool to examine relevant implemented files for patterns and interfaces
+4. **Implement with Context**: Use write_file tool to create a file that properly integrates with existing code
 
 ⚡ **Tools You Must Use:**
+- search_reference_code: To find relevant implementation patterns from indexed repositories
+- get_all_available_references: To see what reference repositories are available
 - read_file: To understand existing code structure and patterns
 - write_file: To implement the new file with proper integration
 - get_file_structure: To understand the current project layout
 
-🚨 **Remember:** You must use tools to implement files. Do not just provide explanations - take action with dependency analysis first!"""
+🚨 **Remember:** You must use tools to implement files. Do not just provide explanations - take action with reference code search and dependency analysis first!"""
 
     def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
         """Compile tool results and guidance into a single user response"""
@@ -652,6 +663,97 @@ You must implement the next file from the implementation plan using the smart de
             self.logger.error(f"Failed to generate final report: {e}")
             return f"Failed to generate final report: {str(e)}"
 
+    # ==================== Testing Functions ====================
+
+    async def test_code_reference_indexer(self):
+        """Test code reference indexer integration"""
+        self.logger.info("=" * 60)
+        self.logger.info("TESTING CODE REFERENCE INDEXER INTEGRATION")
+        self.logger.info("=" * 60)
+        
+        try:
+            # Initialize MCP agent with code reference indexer
+            test_directory = "test_workspace"
+            await self._initialize_mcp_agent(test_directory)
+            
+            if not self.mcp_agent:
+                self.logger.error("Failed to initialize MCP agent")
+                return False
+            
+            # Test 1: Check available references
+            self.logger.info("\n🔍 Test 1: Getting all available references...")
+            try:
+                refs_result = await self.mcp_agent.call_tool("get_all_available_references", {})
+                self.logger.info(f"✅ get_all_available_references result: {refs_result}")
+            except Exception as e:
+                self.logger.error(f"❌ get_all_available_references failed: {e}")
+            
+            # Test 2: Set indexes directory
+            self.logger.info("\n📁 Test 2: Setting indexes directory...")
+            indexes_path = "D:/Documents/GitHub/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"
+            try:
+                set_dir_result = await self.mcp_agent.call_tool(
+                    "set_indexes_directory", 
+                    {"indexes_path": indexes_path}
+                )
+                self.logger.info(f"✅ set_indexes_directory result: {set_dir_result}")
+            except Exception as e:
+                self.logger.error(f"❌ set_indexes_directory failed: {e}")
+            
+            # Test 3: Search reference code
+            self.logger.info("\n🔍 Test 3: Searching reference code...")
+            try:
+                search_result = await self.mcp_agent.call_tool(
+                    "search_reference_code", 
+                    {
+                        "target_file": "models/transformer.py",
+                        "keywords": "transformer,attention,pytorch",
+                        "max_results": 5
+                    }
+                )
+                self.logger.info(f"✅ search_reference_code result length: {len(str(search_result))}")
+                
+                # Parse and display summary
+                if isinstance(search_result, str):
+                    import json
+                    try:
+                        parsed_result = json.loads(search_result)
+                        self.logger.info(f"📊 Search Summary:")
+                        self.logger.info(f"  - Status: {parsed_result.get('status', 'unknown')}")
+                        self.logger.info(f"  - Target File: {parsed_result.get('target_file', 'unknown')}")
+                        self.logger.info(f"  - References Found: {parsed_result.get('total_references_found', 0)}")
+                        self.logger.info(f"  - Relationships Found: {parsed_result.get('total_relationships_found', 0)}")
+                        self.logger.info(f"  - Indexes Loaded: {parsed_result.get('indexes_loaded', [])}")
+                    except json.JSONDecodeError:
+                        self.logger.info(f"Raw result preview: {str(search_result)[:200]}...")
+                        
+            except Exception as e:
+                self.logger.error(f"❌ search_reference_code failed: {e}")
+            
+            # Test 4: Check MCP tool definitions
+            self.logger.info("\n🛠️ Test 4: Checking MCP tool definitions...")
+            try:
+                from config.mcp_tool_definitions import get_mcp_tools
+                tools = get_mcp_tools("code_implementation")
+                reference_tools = [tool for tool in tools if 'reference' in tool['name']]
+                self.logger.info(f"✅ Reference tools found: {len(reference_tools)}")
+                for tool in reference_tools:
+                    self.logger.info(f"  - {tool['name']}: {tool['description']}")
+            except Exception as e:
+                self.logger.error(f"❌ Tool definitions check failed: {e}")
+            
+            self.logger.info("\n" + "=" * 60)
+            self.logger.info("✅ CODE REFERENCE INDEXER TESTING COMPLETED")
+            self.logger.info("=" * 60)
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"❌ Test failed with error: {e}")
+            return False
+        finally:
+            await self._cleanup_mcp_agent()
+
     # ==================== Main Workflow ====================
 
     async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None, pure_code_mode: bool = False):
@@ -710,33 +812,60 @@ async def main():
     """Main function for running the workflow"""
     logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
     
-    plan_file = "agent_folders/papers/1/initial_plan.txt"
     workflow = CodeImplementationWorkflow()
     
-    print("Implementation Mode Selection:")
-    print("1. Pure Code Implementation Mode (Recommended)")
-    print("2. Iterative Implementation Mode")
-    
-    pure_code_mode = True
-    mode_name = "Pure Code Implementation Mode with Agent Architecture"
-    print(f"Using: {mode_name}")
-    
-    result = await workflow.run_workflow(plan_file, pure_code_mode=pure_code_mode)
-    
     print("=" * 60)
-    print("Workflow Execution Results:")
-    print(f"Status: {result['status']}")
-    print(f"Mode: {mode_name}")
+    print("Code Implementation Workflow with Reference Indexer")
+    print("=" * 60)
+    print("Select mode:")
+    print("1. Test Code Reference Indexer Integration")
+    print("2. Run Full Implementation Workflow")
+    print("3. Run Implementation with Pure Code Mode")
     
-    if result['status'] == 'success':
-        print(f"Code Directory: {result['code_directory']}")
-        print(f"MCP Architecture: {result.get('mcp_architecture', 'unknown')}")
-        print("Execution completed!")
+    # For testing purposes, we'll run the test first
+    print("Running Code Reference Indexer Integration Test...")
+    test_success = await workflow.test_code_reference_indexer()
+    
+    if test_success:
+        print("\n" + "=" * 60)
+        print("🎉 Code Reference Indexer Integration Test PASSED!")
+        print("=" * 60)
+        
+        # Ask if user wants to continue with actual workflow
+        print("\nContinuing with workflow execution...")
+        
+        plan_file = "D:/Documents/GitHub/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
+        
+        print("Implementation Mode Selection:")
+        print("1. Pure Code Implementation Mode (Recommended)")
+        print("2. Iterative Implementation Mode")
+        
+        pure_code_mode = True
+        mode_name = "Pure Code Implementation Mode with Agent Architecture + Code Reference Indexer"
+        print(f"Using: {mode_name}")
+        
+        result = await workflow.run_workflow(plan_file, pure_code_mode=pure_code_mode)
+        
+        print("=" * 60)
+        print("Workflow Execution Results:")
+        print(f"Status: {result['status']}")
+        print(f"Mode: {mode_name}")
+        
+        if result['status'] == 'success':
+            print(f"Code Directory: {result['code_directory']}")
+            print(f"MCP Architecture: {result.get('mcp_architecture', 'unknown')}")
+            print("Execution completed!")
+        else:
+            print(f"Error Message: {result['message']}")
+        
+        print("=" * 60)
+        print("✅ Using Standard MCP Architecture with Specialized Agents + Code Reference Indexer")
+        
     else:
-        print(f"Error Message: {result['message']}")
-    
-    print("=" * 60)
-    print("✅ Using Standard MCP Architecture with Specialized Agents")
+        print("\n" + "=" * 60)
+        print("❌ Code Reference Indexer Integration Test FAILED!")
+        print("Please check the configuration and try again.")
+        print("=" * 60)
 
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ inputs/
 rag_storage/
 examples/input/
 examples/output/
+deepcode-mcp/agent_folders
 
 # Miscellaneous
 .DS_Store
