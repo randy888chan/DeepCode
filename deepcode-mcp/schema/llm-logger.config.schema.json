@@ -95,7 +95,7 @@
       }
     },
     "anthropic": {
-      "type": "object", 
+      "type": "object",
       "description": "Anthropic模型配置",
       "properties": {
         "default_model": {
@@ -105,4 +105,4 @@
       }
     }
   }
-} 
+}

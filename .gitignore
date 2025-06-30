@@ -49,6 +49,7 @@ inputs/
 rag_storage/
 examples/input/
 examples/output/
+deepcode-mcp/agent_folders
 
 # Miscellaneous
 .DS_Store
@@ -58,6 +59,8 @@ ignore_this.txt
 
 # unit-test files
 test_*
+run_indexer_with_filtering.py
 
 # Cline files
 memory-bank/
+

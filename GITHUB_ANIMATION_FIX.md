@@ -93,4 +93,4 @@ cp README.md README_backup.md
 # 缩短width参数
 ```
 
-记住：**简单的配置往往更稳定！** 
+记住：**简单的配置往往更稳定！**

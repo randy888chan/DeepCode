@@ -13,20 +13,20 @@ authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
 keywords = [
-    "research", 
-    "paper", 
-    "code-generation", 
-    "automation", 
-    "academic", 
-    "machine-learning", 
-    "AI", 
+    "research",
+    "paper",
+    "code-generation",
+    "automation",
+    "academic",
+    "machine-learning",
+    "AI",
     "natural-language-processing"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10", 
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -69,4 +69,4 @@ exclude = ["tests*", "docs*", "agent_folders*", "logs*", "test_files*", "schema*
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.txt", "*.md"]
 "prompts" = ["*.py"]
-"schema" = ["*.json", "*.yaml"] 
+"schema" = ["*.json", "*.yaml"]

@@ -7,7 +7,9 @@ def read_long_description():
     try:
         return Path("README.md").read_text(encoding="utf-8")
     except FileNotFoundError:
-        return "A tool for converting research papers to executable code implementations."
+        return (
+            "A tool for converting research papers to executable code implementations."
+        )
 
 
 # Retrieving metadata from __init__.py
@@ -106,7 +108,13 @@ setuptools.setup(
         "Homepage": metadata.get("__url__", ""),
     },
     keywords=[
-        "research", "paper", "code-generation", "automation", 
-        "academic", "machine-learning", "AI", "natural-language-processing"
+        "research",
+        "paper",
+        "code-generation",
+        "automation",
+        "academic",
+        "machine-learning",
+        "AI",
+        "natural-language-processing",
     ],
-) 
+)

@@ -10,7 +10,7 @@ from .streamlit_app import main
 
 # 直接导出main函数，使外部可以直接调用
 # Directly export main function for external calls
-__all__ = ['main']
+__all__ = ["main"]
 
 if __name__ == "__main__":
-    main() 
+    main()

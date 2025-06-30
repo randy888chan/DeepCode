@@ -10,4 +10,4 @@ This package contains specialized agents for different aspects of code implement
 from .code_implementation_agent import CodeImplementationAgent
 from .summary_agent import SummaryAgent
 
-__all__ = ['CodeImplementationAgent', 'SummaryAgent'] 
+__all__ = ["CodeImplementationAgent", "SummaryAgent"]
