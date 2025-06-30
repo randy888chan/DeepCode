@@ -76,6 +76,12 @@ mcp:
       env:
         PYTHONPATH: "."
       description: "论文代码复现工具服务器 - 提供文件操作、代码执行、搜索等功能"
+    code-reference-indexer:
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      args: ["tools/code_reference_indexer.py"]
+      env:
+        PYTHONPATH: "."
+      description: "Code reference indexer server - Provides intelligent code reference search from indexed repositories"
 
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored

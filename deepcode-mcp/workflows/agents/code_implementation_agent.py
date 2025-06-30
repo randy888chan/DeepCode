@@ -12,6 +12,13 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 
+# Import tiktoken for token calculation
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+
 # Import prompts from code_prompts
 import sys
 import os
@@ -32,6 +39,7 @@ class CodeImplementationAgent:
     - Execute MCP tool calls for code generation / 执行MCP工具调用进行代码生成
     - Monitor implementation status / 监控实现状态
     - Coordinate with Summary Agent for memory optimization / 与总结代理协调进行内存优化
+    - Calculate token usage for context management / 计算token使用量用于上下文管理
     """
 
     def __init__(self, mcp_agent, logger: Optional[logging.Logger] = None):
@@ -58,6 +66,25 @@ class CodeImplementationAgent:
             set()
         )  # Track files read for dependency analysis / 跟踪为依赖分析而读取的文件
         self.last_summary_file_count = 0  # Track the file count when last summary was triggered / 跟踪上次触发总结时的文件数
+        
+        # Token calculation settings / Token计算设置
+        self.max_context_tokens = 200000  # Default max context tokens for Claude-3.5-Sonnet / Claude-3.5-Sonnet的默认最大上下文tokens
+        self.token_buffer = 10000  # Safety buffer before reaching max / 达到最大值前的安全缓冲区
+        self.summary_trigger_tokens = self.max_context_tokens - self.token_buffer  # Trigger summary when approaching limit / 接近限制时触发总结
+        self.last_summary_token_count = 0  # Track token count when last summary was triggered / 跟踪上次触发总结时的token数
+        
+        # Initialize tokenizer / 初始化tokenizer
+        if TIKTOKEN_AVAILABLE:
+            try:
+                # Use Claude-3 tokenizer (approximation with OpenAI's o200k_base) / 使用Claude-3 tokenizer（用OpenAI的o200k_base近似）
+                self.tokenizer = tiktoken.get_encoding("o200k_base")
+                self.logger.info("Token calculation enabled with o200k_base encoding")
+            except Exception as e:
+                self.tokenizer = None
+                self.logger.warning(f"Failed to initialize tokenizer: {e}")
+        else:
+            self.tokenizer = None
+            self.logger.warning("tiktoken not available, token-based summary triggering disabled")
 
     def _create_default_logger(self) -> logging.Logger:
         """Create default logger if none provided / 如果未提供则创建默认日志记录器"""
@@ -267,27 +294,96 @@ class CodeImplementationAgent:
         except Exception as e:
             self.logger.warning(f"Failed to track dependency analysis: {e}")
 
-    def should_trigger_summary(self, summary_trigger: int = 5) -> bool:
+    def calculate_messages_token_count(self, messages: List[Dict]) -> int:
         """
-        Check if summary should be triggered based on implementation count
-        根据实现计数检查是否应触发总结
-
-        Only triggers when:
-        1. Files have been implemented (> 0)
-        2. Current file count is a multiple of summary_trigger
-        3. We haven't already triggered summary for this file count
-
-        只有在以下情况下才触发：
-        1. 已实现文件 (> 0)
-        2. 当前文件数是summary_trigger的倍数
-        3. 我们还没有为这个文件数触发过总结
+        Calculate total token count for a list of messages
+        计算消息列表的总token数
 
         Args:
-            summary_trigger: Number of files after which to trigger summary
+            messages: List of chat messages with 'role' and 'content' keys
+
+        Returns:
+            Total token count
+        """
+        if not self.tokenizer:
+            # Fallback: rough estimation based on character count / 回退：基于字符数的粗略估计
+            total_chars = sum(len(str(msg.get("content", ""))) for msg in messages)
+            # Rough approximation: 1 token ≈ 4 characters / 粗略近似：1个token ≈ 4个字符
+            return total_chars // 4
+        
+        try:
+            total_tokens = 0
+            for message in messages:
+                content = str(message.get("content", ""))
+                role = message.get("role", "")
+                
+                # Count tokens for content / 计算内容的token数
+                if content:
+                    content_tokens = len(self.tokenizer.encode(content, disallowed_special=()))
+                    total_tokens += content_tokens
+                
+                # Add tokens for role and message structure / 为角色和消息结构添加token
+                role_tokens = len(self.tokenizer.encode(role, disallowed_special=()))
+                total_tokens += role_tokens + 4  # Extra tokens for message formatting / 消息格式化的额外token
+            
+            return total_tokens
+            
+        except Exception as e:
+            self.logger.warning(f"Token calculation failed: {e}")
+            # Fallback estimation / 回退估计
+            total_chars = sum(len(str(msg.get("content", ""))) for msg in messages)
+            return total_chars // 4
+
+    def should_trigger_summary_by_tokens(self, messages: List[Dict]) -> bool:
+        """
+        Check if summary should be triggered based on token count
+        根据token数检查是否应触发总结
+
+        Args:
+            messages: Current conversation messages
+
+        Returns:
+            True if summary should be triggered based on token count
+        """
+        if not messages:
+            return False
+        
+        # Calculate current token count / 计算当前token数
+        current_token_count = self.calculate_messages_token_count(messages)
+        
+        # Check if we should trigger summary / 检查是否应触发总结
+        should_trigger = (
+            current_token_count > self.summary_trigger_tokens and
+            current_token_count > self.last_summary_token_count + 10000  # Minimum 10k tokens between summaries / 总结间最少10k tokens
+        )
+        
+        if should_trigger:
+            self.logger.info(
+                f"Token-based summary trigger: current={current_token_count:,}, "
+                f"threshold={self.summary_trigger_tokens:,}, "
+                f"last_summary={self.last_summary_token_count:,}"
+            )
+        
+        return should_trigger
+
+    def should_trigger_summary(self, summary_trigger: int = 5, messages: List[Dict] = None) -> bool:
+        """
+        Check if summary should be triggered based on token count (preferred) or file count (fallback)
+        根据token数（首选）或文件数（回退）检查是否应触发总结
+
+        Args:
+            summary_trigger: Number of files after which to trigger summary (fallback)
+            messages: Current conversation messages for token calculation
 
         Returns:
             True if summary should be triggered
         """
+        # Primary: Token-based triggering / 主要：基于token的触发
+        if messages and self.tokenizer:
+            return self.should_trigger_summary_by_tokens(messages)
+        
+        # Fallback: File-based triggering (original logic) / 回退：基于文件的触发（原始逻辑）
+        self.logger.info("Using fallback file-based summary triggering")
         should_trigger = (
             self.files_implemented_count > 0
             and self.files_implemented_count % summary_trigger == 0
@@ -296,19 +392,28 @@ class CodeImplementationAgent:
 
         return should_trigger
 
-    def mark_summary_triggered(self):
+    def mark_summary_triggered(self, messages: List[Dict] = None):
         """
-        Mark that summary has been triggered for current file count
-        标记当前文件数的总结已被触发
+        Mark that summary has been triggered for current state
+        标记当前状态的总结已被触发
 
-        This should be called after summary is successfully generated
-        to prevent duplicate summaries for the same file count.
-        应该在成功生成总结后调用此方法，以防止为相同文件数重复生成总结。
+        Args:
+            messages: Current conversation messages for token tracking
         """
+        # Update file-based tracking / 更新基于文件的跟踪
         self.last_summary_file_count = self.files_implemented_count
-        self.logger.info(
-            f"Summary marked as triggered for file count: {self.files_implemented_count}"
-        )
+        
+        # Update token-based tracking / 更新基于token的跟踪
+        if messages and self.tokenizer:
+            self.last_summary_token_count = self.calculate_messages_token_count(messages)
+            self.logger.info(
+                f"Summary marked as triggered - file_count: {self.files_implemented_count}, "
+                f"token_count: {self.last_summary_token_count:,}"
+            )
+        else:
+            self.logger.info(
+                f"Summary marked as triggered for file count: {self.files_implemented_count}"
+            )
 
     def get_implementation_summary(self) -> Dict[str, Any]:
         """
@@ -415,4 +520,5 @@ class CodeImplementationAgent:
             set()
         )  # Reset files read for dependency analysis / 重置为依赖分析而读取的文件
         self.last_summary_file_count = 0  # Reset the file count when last summary was triggered / 重置上次触发总结时的文件数
+        self.last_summary_token_count = 0  # Reset token count when last summary was triggered / 重置上次触发总结时的token数
         self.logger.info("Implementation tracking reset")

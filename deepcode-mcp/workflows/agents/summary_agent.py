@@ -12,6 +12,13 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 
+# Import tiktoken for token calculation
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+
 # Import prompts from code_prompts
 import sys
 import os
@@ -44,6 +51,18 @@ class SummaryAgent:
         """
         self.logger = logger or self._create_default_logger()
         self.summary_history = []  # Store generated summaries / 存储生成的总结
+        
+        # Initialize tokenizer for token calculation / 初始化tokenizer用于token计算
+        if TIKTOKEN_AVAILABLE:
+            try:
+                self.tokenizer = tiktoken.get_encoding("o200k_base")
+                self.logger.info("SummaryAgent: Token calculation enabled with o200k_base encoding")
+            except Exception as e:
+                self.tokenizer = None
+                self.logger.warning(f"SummaryAgent: Failed to initialize tokenizer: {e}")
+        else:
+            self.tokenizer = None
+            self.logger.warning("SummaryAgent: tiktoken not available, token calculation disabled")
 
     def _create_default_logger(self) -> logging.Logger:
         """Create default logger if none provided / 如果未提供则创建默认日志记录器"""
@@ -907,9 +926,14 @@ I will now continue implementing the remaining files according to the original p
                 "conversation_rounds": 0,
                 "message_lengths": [],
                 "tool_result_count": 0,
+                "total_tokens": 0,
+                "average_tokens_per_message": 0,
             }
 
-            # Analyze role distribution / 分析角色分布
+            total_tokens = 0
+            message_token_counts = []
+
+            # Analyze role distribution and calculate tokens / 分析角色分布并计算tokens
             for msg in messages:
                 role = msg.get("role", "unknown")
                 analysis["role_distribution"][role] = (
@@ -917,12 +941,36 @@ I will now continue implementing the remaining files according to the original p
                 )
 
                 # Count message length / 计算消息长度
-                content_length = len(msg.get("content", ""))
+                content = str(msg.get("content", ""))
+                content_length = len(content)
                 analysis["message_lengths"].append(content_length)
 
+                # Calculate token count for this message / 计算这条消息的token数
+                if self.tokenizer:
+                    try:
+                        role_tokens = len(self.tokenizer.encode(role, disallowed_special=()))
+                        content_tokens = len(self.tokenizer.encode(content, disallowed_special=()))
+                        message_tokens = role_tokens + content_tokens + 4  # Message formatting overhead
+                        message_token_counts.append(message_tokens)
+                        total_tokens += message_tokens
+                    except Exception as e:
+                        # Fallback to character-based estimation / 回退到基于字符的估计
+                        estimated_tokens = (content_length + len(role)) // 4
+                        message_token_counts.append(estimated_tokens)
+                        total_tokens += estimated_tokens
+                else:
+                    # Fallback to character-based estimation / 回退到基于字符的估计
+                    estimated_tokens = (content_length + len(role)) // 4
+                    message_token_counts.append(estimated_tokens)
+                    total_tokens += estimated_tokens
+
                 # Count tool results / 计算工具结果
-                if "Tool Result" in msg.get("content", ""):
+                if "Tool Result" in content:
                     analysis["tool_result_count"] += 1
+
+            # Set token analysis results / 设置token分析结果
+            analysis["total_tokens"] = total_tokens
+            analysis["message_token_counts"] = message_token_counts
 
             # Estimate conversation rounds / 估计对话轮次
             assistant_messages = analysis["role_distribution"].get("assistant", 0)
@@ -934,6 +982,10 @@ I will now continue implementing the remaining files according to the original p
                     analysis["message_lengths"]
                 ) / len(analysis["message_lengths"])
                 analysis["max_message_length"] = max(analysis["message_lengths"])
+
+            if message_token_counts:
+                analysis["average_tokens_per_message"] = total_tokens / len(message_token_counts)
+                analysis["max_tokens_per_message"] = max(message_token_counts)
 
             return analysis
 

@@ -1,14 +1,13 @@
 """
 Paper Code Implementation Workflow - MCP-compliant Iterative Development
-论文代码复现工作流 - 基于MCP标准的迭代式开发
 
 Features:
-1. File Tree Creation (文件树创建)
-2. Code Implementation (代码实现) - 基于aisi-basic-agent的迭代式开发
+1. File Tree Creation
+2. Code Implementation - Based on aisi-basic-agent iterative development
 
 MCP Architecture:
 - MCP Server: tools/code_implementation_server.py
-- MCP Client: 通过mcp_agent框架调用
+- MCP Client: Called through mcp_agent framework
 - Configuration: mcp_agent.config.yaml
 """
 
@@ -38,7 +37,6 @@ from config.mcp_tool_definitions import get_mcp_tools
 class CodeImplementationWorkflow:
     """
     Paper Code Implementation Workflow Manager
-    论文代码复现工作流管理器
     
     Uses standard MCP architecture:
     1. Connect to code-implementation server via MCP client
@@ -46,14 +44,15 @@ class CodeImplementationWorkflow:
     3. Support workspace management and operation history tracking
     """
     
+    # ==================== 1. Class Initialization and Configuration (Infrastructure Layer) ====================
+    
     def __init__(self, config_path: str = "mcp_agent.secrets.yaml"):
+        """Initialize workflow with configuration"""
         self.config_path = config_path
         self.api_config = self._load_api_config()
         self.logger = self._create_logger()
         self.mcp_agent = None
 
-    # ==================== Initialization ====================
-    
     def _load_api_config(self) -> Dict[str, Any]:
         """Load API configuration from YAML file"""
         try:
@@ -87,91 +86,56 @@ class CodeImplementationWorkflow:
         code_directory = os.path.join(target_directory, "generate_code")
         return os.path.exists(code_directory) and len(os.listdir(code_directory)) > 0
 
-    # ==================== MCP Agent Management ====================
+    # ==================== 2. Public Interface Methods (External API Layer) ====================
 
-    async def _initialize_mcp_agent(self, code_directory: str):
-        """Initialize MCP agent and connect to code-implementation server"""
+    async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None, pure_code_mode: bool = False):
+        """Run complete workflow - Main public interface"""
         try:
-            self.mcp_agent = Agent(
-                name="CodeImplementationAgent",
-                instruction="You are a code implementation assistant, using MCP tools to implement paper code replication.",
-                server_names=["code-implementation", "code-reference-indexer"],
-            )
+            plan_content = self._read_plan_file(plan_file_path)
             
-            await self.mcp_agent.__aenter__()
-            llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+            if target_directory is None:
+                target_directory = str(Path(plan_file_path).parent)
             
-            # Set workspace
-            workspace_result = await self.mcp_agent.call_tool(
-                "set_workspace", 
-                {"workspace_path": code_directory}
-            )
-            self.logger.info(f"Workspace setup result: {workspace_result}")
+            self.logger.info(f"Starting workflow: {plan_file_path}")
+            self.logger.info(f"Target directory: {target_directory}")
             
-            return llm
-                
-        except Exception as e:
-            self.logger.error(f"Failed to initialize MCP agent: {e}")
-            if self.mcp_agent:
-                try:
-                    await self.mcp_agent.__aexit__(None, None, None)
-                except:
-                    pass
-                self.mcp_agent = None
-            raise
-
-    async def _cleanup_mcp_agent(self):
-        """Clean up MCP agent resources"""
-        if self.mcp_agent:
-            try:
-                await self.mcp_agent.__aexit__(None, None, None)
-                self.logger.info("MCP agent connection closed")
-            except Exception as e:
-                self.logger.warning(f"Error closing MCP agent: {e}")
-            finally:
-                self.mcp_agent = None
-
-    # ==================== LLM Client Management ====================
-
-    async def _initialize_llm_client(self):
-        """Initialize LLM client (Anthropic or OpenAI)"""
-        # Try Anthropic API first
-        try:
-            anthropic_key = self.api_config.get('anthropic', {}).get('api_key')
-            if anthropic_key:
-                from anthropic import AsyncAnthropic
-                client = AsyncAnthropic(api_key=anthropic_key)
-                # Test connection
-                await client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=10,
-                    messages=[{"role": "user", "content": "test"}]
+            results = {}
+            
+            # Check if file tree exists
+            if self._check_file_tree_exists(target_directory):
+                self.logger.info("File tree exists, skipping creation")
+                results["file_tree"] = "Already exists, skipped creation"
+            else:
+                self.logger.info("Creating file tree...")
+                results["file_tree"] = await self.create_file_structure(plan_content, target_directory)
+            
+            # Code implementation
+            if pure_code_mode:
+                self.logger.info("Starting pure code implementation...")
+                results["code_implementation"] = await self.implement_code_pure(plan_content, target_directory)
+            else:
+                self.logger.info("Starting iterative code implementation...")
+                iterative_implementation = IterativeCodeImplementation(self.logger, self.mcp_agent)
+                results["code_implementation"] = await iterative_implementation.implement_code_standalone(
+                    plan_content, target_directory, workflow_instance=self
                 )
-                self.logger.info("Using Anthropic API")
-                return client, "anthropic"
+            
+            self.logger.info("Workflow execution successful")
+            
+            return {
+                "status": "success",
+                "plan_file": plan_file_path,
+                "target_directory": target_directory,
+                "code_directory": os.path.join(target_directory, "generate_code"),
+                "results": results,
+                "mcp_architecture": "standard"
+            }
+            
         except Exception as e:
-            self.logger.warning(f"Anthropic API unavailable: {e}")
-        
-        # Try OpenAI API
-        try:
-            openai_key = self.api_config.get('openai', {}).get('api_key')
-            if openai_key:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=openai_key)
-                # Test connection
-                await client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    max_tokens=10,
-                    messages=[{"role": "user", "content": "test"}]
-                )
-                self.logger.info("Using OpenAI API")
-                return client, "openai"
-        except Exception as e:
-            self.logger.warning(f"OpenAI API unavailable: {e}")
-        
-        raise ValueError("No available LLM API")
-
-    # ==================== File Structure Creation ====================
+            self.logger.error(f"Workflow execution failed: {e}")
+            return {"status": "error", "message": str(e), "plan_file": plan_file_path}
+        finally:
+            await self._cleanup_mcp_agent()
 
     async def create_file_structure(self, plan_content: str, target_directory: str) -> str:
         """Create file tree structure based on implementation plan"""
@@ -209,8 +173,6 @@ Requirements:
             self.logger.info("File tree structure creation completed")
             return result
 
-    # ==================== Code Implementation ====================
-
     async def implement_code_pure(self, plan_content: str, target_directory: str) -> str:
         """Pure code implementation - focus on code writing without testing"""
         self.logger.info("Starting pure code implementation (no testing)...")
@@ -227,32 +189,14 @@ Requirements:
             system_message = PURE_CODE_IMPLEMENTATION_PROMPT
             messages = []
             
-            implementation_message = f"""Code Reproduction Plan:
+            implementation_message = f"""**Task: Implement code based on the following reproduction plan**
 
+**Code Reproduction Plan:**
 {plan_content}
 
-Working Directory: {code_directory}
+**Working Directory:** {code_directory}
 
-**Smart Implementation Instructions:**
-Analyze this plan and begin implementing files one by one using dependency-aware development:
-
-1. **Start with Foundation Files**: Begin with the highest priority file from Phase 1 (Foundation)
-2. **Dependency Analysis**: Before implementing each file, identify what existing files it should reference
-3. **Read Related Files**: Use read_file tool to examine relevant implemented files for:
-   - Interface patterns and base classes to follow
-   - Configuration structures and constants to reference
-   - Naming conventions and coding patterns already established
-   - Import structures and dependency relationships
-4. **Implement with Context**: Write each file to properly integrate with existing codebase
-5. **Continue Chain**: Repeat this smart workflow for each subsequent file
-
-**First Task:** 
-- Use get_file_structure to understand current project layout
-- Identify the first foundation file to implement
-- Analyze any existing files it should reference
-- Implement exactly one complete file per response
-
-**Remember:** Always use dependency analysis and file reading before implementation to ensure consistency across all files."""
+**Current Objective:** Begin implementation by analyzing the plan structure, examining the current project layout, and implementing the first foundation file according to the plan's priority order."""
             
             messages.append({"role": "user", "content": implementation_message})
             
@@ -265,6 +209,8 @@ Analyze this plan and begin implementing files one by one using dependency-aware
         finally:
             await self._cleanup_mcp_agent()
 
+    # ==================== 3. Core Business Logic (Implementation Layer) ====================
+
     async def _pure_code_implementation_loop(self, client, client_type, system_message, messages, tools):
         """Pure code implementation loop with sliding window and key information extraction"""
         max_iterations = 50
@@ -274,7 +220,7 @@ Analyze this plan and begin implementing files one by one using dependency-aware
         
         # Sliding window configuration
         WINDOW_SIZE = 1
-        SUMMARY_TRIGGER = 3
+        SUMMARY_TRIGGER = 8
         
         # Initialize specialized agents
         code_agent = CodeImplementationAgent(self.mcp_agent, self.logger)
@@ -328,9 +274,10 @@ Analyze this plan and begin implementing files one by one using dependency-aware
                 no_tools_guidance = self._generate_no_tools_guidance(files_count)
                 messages.append({"role": "user", "content": no_tools_guidance})
             
-            # Sliding window + key information extraction
-            if code_agent.should_trigger_summary(SUMMARY_TRIGGER):
-                self.logger.info(f"Triggering summary: {code_agent.get_files_implemented_count()} files implemented")
+            # Sliding window + key information extraction based on token count
+            if code_agent.should_trigger_summary(SUMMARY_TRIGGER, messages):
+                current_token_count = code_agent.calculate_messages_token_count(messages) if code_agent.tokenizer else len(messages)
+                self.logger.info(f"Triggering summary: {code_agent.get_files_implemented_count()} files implemented, {current_token_count:,} tokens")
                 
                 analysis_before = summary_agent.analyze_message_patterns(messages)
                 
@@ -344,10 +291,11 @@ Analyze this plan and begin implementing files one by one using dependency-aware
                 
                 analysis_after = summary_agent.analyze_message_patterns(messages)
                 compression_ratio = (analysis_before['total_messages'] - analysis_after['total_messages']) / analysis_before['total_messages'] * 100
-                self.logger.info(f"Compression ratio: {compression_ratio:.1f}%")
+                token_reduction = analysis_before.get('total_tokens', 0) - analysis_after.get('total_tokens', 0)
+                self.logger.info(f"Compression ratio: {compression_ratio:.1f}%, token reduction: {token_reduction:,}")
                 
                 # Mark summary as triggered to prevent duplicate summaries
-                code_agent.mark_summary_triggered()
+                code_agent.mark_summary_triggered(messages)
             
             # Check completion
             if any(keyword in response_content.lower() for keyword in [
@@ -368,7 +316,87 @@ Analyze this plan and begin implementing files one by one using dependency-aware
             iteration, time.time() - start_time, code_agent, summary_agent
         )
 
-    # ==================== LLM Communication ====================
+    # ==================== 4. MCP Agent and LLM Communication Management (Communication Layer) ====================
+
+    async def _initialize_mcp_agent(self, code_directory: str):
+        """Initialize MCP agent and connect to code-implementation server"""
+        try:
+            self.mcp_agent = Agent(
+                name="CodeImplementationAgent",
+                instruction="You are a code implementation assistant, using MCP tools to implement paper code replication.",
+                server_names=["code-implementation", "code-reference-indexer"],
+            )
+            
+            await self.mcp_agent.__aenter__()
+            llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+            
+            # Set workspace
+            workspace_result = await self.mcp_agent.call_tool(
+                "set_workspace", 
+                {"workspace_path": code_directory}
+            )
+            self.logger.info(f"Workspace setup result: {workspace_result}")
+            
+            return llm
+                
+        except Exception as e:
+            self.logger.error(f"Failed to initialize MCP agent: {e}")
+            if self.mcp_agent:
+                try:
+                    await self.mcp_agent.__aexit__(None, None, None)
+                except:
+                    pass
+                self.mcp_agent = None
+            raise
+
+    async def _cleanup_mcp_agent(self):
+        """Clean up MCP agent resources"""
+        if self.mcp_agent:
+            try:
+                await self.mcp_agent.__aexit__(None, None, None)
+                self.logger.info("MCP agent connection closed")
+            except Exception as e:
+                self.logger.warning(f"Error closing MCP agent: {e}")
+            finally:
+                self.mcp_agent = None
+
+    async def _initialize_llm_client(self):
+        """Initialize LLM client (Anthropic or OpenAI)"""
+        # Try Anthropic API first
+        try:
+            anthropic_key = self.api_config.get('anthropic', {}).get('api_key')
+            if anthropic_key:
+                from anthropic import AsyncAnthropic
+                client = AsyncAnthropic(api_key=anthropic_key)
+                # Test connection
+                await client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("Using Anthropic API")
+                return client, "anthropic"
+        except Exception as e:
+            self.logger.warning(f"Anthropic API unavailable: {e}")
+        
+        # Try OpenAI API
+        try:
+            openai_key = self.api_config.get('openai', {}).get('api_key')
+            if openai_key:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=openai_key)
+                # Test connection
+                await client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+                self.logger.info("Using OpenAI API")
+                return client, "openai"
+        except Exception as e:
+            self.logger.warning(f"OpenAI API unavailable: {e}")
+        
+        raise ValueError("No available LLM API")
 
     async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=16384):
         """Call LLM with tools"""
@@ -455,7 +483,7 @@ Analyze this plan and begin implementing files one by one using dependency-aware
         
         return {"content": content, "tool_calls": tool_calls}
 
-    # ==================== Utility Methods ====================
+    # ==================== 5. Tools and Utility Methods (Utility Layer) ====================
 
     def _validate_messages(self, messages: List[Dict]) -> List[Dict]:
         """Validate and clean message list"""
@@ -493,46 +521,19 @@ Analyze this plan and begin implementing files one by one using dependency-aware
                     return True
         return False
 
-    # ==================== Guidance Messages ====================
+    # ==================== 6. User Interaction and Feedback (Interaction Layer) ====================
 
     def _generate_success_guidance(self, files_count: int) -> str:
-        """Generate success guidance for continuing implementation"""
+        """Generate concise success guidance for continuing implementation"""
         return f"""✅ File implementation completed successfully! 
 
 📊 **Progress Status:** {files_count} files implemented
 
-🎯 **Next Action Required:**
-Before implementing the next file, analyze dependencies and read relevant existing files for consistency.
+🎯 **Next Action:** Continue with dependency-aware implementation workflow.
 
-📋 **Smart Implementation Steps:**
-1. **Get Reference Code**: Use search_reference_code tool to find relevant examples from indexed repositories
-2. **Identify Next File**: Determine the highest-priority file from the implementation plan
-3. **Dependency Analysis**: Analyze what existing files the new file should reference or import from
-4. **Read Related Files**: Use read_file tool to examine relevant implemented files:
-   - Base classes or interfaces to extend/implement
-   - Configuration files and constants to reference  
-   - Common patterns and naming conventions to follow
-   - Import structures and dependencies already established
-5. **Implement with Context**: Write complete, production-quality code that properly integrates with existing files
-6. **Use write_file Tool**: Create the file with full implementation
-7. **Continue Chain**: Repeat this process for each remaining file
-
-🔍 **Code Reference Search Strategy:**
-- Use search_reference_code with target file path and relevant keywords
-- Example: search_reference_code(target_file="models/transformer.py", keywords="transformer,attention,pytorch")
-- Review the formatted reference information for implementation patterns
-- Use get_all_available_references to see what reference repositories are available
-
-🧠 **Dependency Reading Strategy:**
-- If implementing a model class → Read existing base model files first
-- If implementing a config file → Read other config files for consistency
-- If implementing a utility → Read related utilities for pattern matching
-- If implementing main/entry point → Read all core components first
-
-⚠️ **Critical:** 
-- Always use search_reference_code BEFORE implementing unfamiliar file types
-- Use read_file tool BEFORE write_file when dependencies exist
-- Ensure consistent interfaces and patterns across all files
+⚡ **Quick Reminder:**
+- Use search_reference_code for unfamiliar file types
+- Read related files before implementing dependent files
 - Implement exactly ONE complete file per response"""
 
     def _generate_error_guidance(self) -> str:
@@ -546,28 +547,17 @@ Before implementing the next file, analyze dependencies and read relevant existi
 4. Ensure proper error handling in future implementations"""
 
     def _generate_no_tools_guidance(self, files_count: int) -> str:
-        """Generate guidance when no tools are called"""
+        """Generate concise guidance when no tools are called"""
         return f"""⚠️ No tool calls detected in your response.
 
 📊 **Current Progress:** {files_count} files implemented
 
-🚨 **Action Required:**
-You must implement the next file from the implementation plan using the smart dependency-aware workflow.
+🚨 **Action Required:** You must use tools to implement the next file. Follow the dependency-aware workflow in your system prompt.
 
-🔥 **Critical Workflow:**
-1. **Search Reference Code**: Use search_reference_code to find relevant implementation examples
-2. **Analyze Dependencies**: Identify which existing files the next file should reference
-3. **Read Related Files**: Use read_file tool to examine relevant implemented files for patterns and interfaces
-4. **Implement with Context**: Use write_file tool to create a file that properly integrates with existing code
+⚡ **Essential Tools:**
+- search_reference_code → read_file → write_file → continue
 
-⚡ **Tools You Must Use:**
-- search_reference_code: To find relevant implementation patterns from indexed repositories
-- get_all_available_references: To see what reference repositories are available
-- read_file: To understand existing code structure and patterns
-- write_file: To implement the new file with proper integration
-- get_file_structure: To understand the current project layout
-
-🚨 **Remember:** You must use tools to implement files. Do not just provide explanations - take action with reference code search and dependency analysis first!"""
+🚨 **Critical:** Use tools to implement files, not just explanations!"""
 
     def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
         """Compile tool results and guidance into a single user response"""
@@ -585,7 +575,7 @@ You must implement the next file from the implementation plan using the smart de
         
         return "\n\n".join(response_parts)
 
-    # ==================== Report Generation ====================
+    # ==================== 7. Reporting and Output (Output Layer) ====================
 
     async def _generate_pure_code_final_report_with_agents(
         self, 
@@ -663,7 +653,7 @@ You must implement the next file from the implementation plan using the smart de
             self.logger.error(f"Failed to generate final report: {e}")
             return f"Failed to generate final report: {str(e)}"
 
-    # ==================== Testing Functions ====================
+    # ==================== 8. Testing and Debugging (Testing Layer) ====================
 
     async def test_code_reference_indexer(self):
         """Test code reference indexer integration"""
@@ -690,7 +680,7 @@ You must implement the next file from the implementation plan using the smart de
             
             # Test 2: Set indexes directory
             self.logger.info("\n📁 Test 2: Setting indexes directory...")
-            indexes_path = "D:/Documents/GitHub/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"
+            indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"
             try:
                 set_dir_result = await self.mcp_agent.call_tool(
                     "set_indexes_directory", 
@@ -754,59 +744,8 @@ You must implement the next file from the implementation plan using the smart de
         finally:
             await self._cleanup_mcp_agent()
 
-    # ==================== Main Workflow ====================
 
-    async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None, pure_code_mode: bool = False):
-        """Run complete workflow"""
-        try:
-            plan_content = self._read_plan_file(plan_file_path)
-            
-            if target_directory is None:
-                target_directory = str(Path(plan_file_path).parent)
-            
-            self.logger.info(f"Starting workflow: {plan_file_path}")
-            self.logger.info(f"Target directory: {target_directory}")
-            
-            results = {}
-            
-            # Check if file tree exists
-            if self._check_file_tree_exists(target_directory):
-                self.logger.info("File tree exists, skipping creation")
-                results["file_tree"] = "Already exists, skipped creation"
-            else:
-                self.logger.info("Creating file tree...")
-                results["file_tree"] = await self.create_file_structure(plan_content, target_directory)
-            
-            # Code implementation
-            if pure_code_mode:
-                self.logger.info("Starting pure code implementation...")
-                results["code_implementation"] = await self.implement_code_pure(plan_content, target_directory)
-            else:
-                self.logger.info("Starting iterative code implementation...")
-                iterative_implementation = IterativeCodeImplementation(self.logger, self.mcp_agent)
-                results["code_implementation"] = await iterative_implementation.implement_code_standalone(
-                    plan_content, target_directory, workflow_instance=self
-                )
-            
-            self.logger.info("Workflow execution successful")
-            
-            return {
-                "status": "success",
-                "plan_file": plan_file_path,
-                "target_directory": target_directory,
-                "code_directory": os.path.join(target_directory, "generate_code"),
-                "results": results,
-                "mcp_architecture": "standard"
-            }
-            
-        except Exception as e:
-            self.logger.error(f"Workflow execution failed: {e}")
-            return {"status": "error", "message": str(e), "plan_file": plan_file_path}
-        finally:
-            await self._cleanup_mcp_agent()
-
-
-# ==================== Main Function ====================
+# ==================== 9. Program Entry Point (Entry Layer) ====================
 
 async def main():
     """Main function for running the workflow"""
@@ -834,7 +773,7 @@ async def main():
         # Ask if user wants to continue with actual workflow
         print("\nContinuing with workflow execution...")
         
-        plan_file = "D:/Documents/GitHub/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
+        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
         
         print("Implementation Mode Selection:")
         print("1. Pure Code Implementation Mode (Recommended)")
