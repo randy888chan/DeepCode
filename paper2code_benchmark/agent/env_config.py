@@ -16,8 +16,8 @@ DEFAULT_ENV_VARS = {
     "PAPER_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/paper",
     
     # AI模型配置
-    "MODEL": "openai/gpt-4o-mini",  # 默认使用较稳定的模型
-    "MAX_TIME_IN_HOURS": "0.1",
+    "MODEL": "openai/gpt-4o",  # 默认使用较稳定的模型
+    "MAX_TIME_IN_HOURS": "36000",
     "DISALLOW_SUBMIT": "False",
     "ITERATIVE_AGENT": "False",
     

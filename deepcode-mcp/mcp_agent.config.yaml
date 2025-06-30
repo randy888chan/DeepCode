@@ -84,3 +84,4 @@ openai:
 
 anthropic:
   default_model: "claude-sonnet-4-20250514"
+  # default_model: "claude-sonnet-3.5-20241022"
