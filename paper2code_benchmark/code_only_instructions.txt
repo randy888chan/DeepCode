@@ -24,4 +24,6 @@ The output of your work must be a git repository containing all the necessary co
 
 Your submission will be graded based on whether the code necessary for reproducing the paper has been correctly implemented. The code will not be executed during grading.
 
+You don't need to set up the code enviroment(ps: no need to pip install package), you should reproduce the code.
+
 Finally, please also include a README.md file that describes what you were able to achieve in your reproduction attempt and explains how your codebase relates to various parts of the reproduction.

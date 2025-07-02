@@ -4,16 +4,29 @@
 import os
 import subprocess
 import socket
+from pathlib import Path
+
+# 动态获取项目根目录
+def get_project_root():
+    """获取项目根目录路径"""
+    # 从当前文件路径向上查找，直到找到包含特定标识文件的目录
+    current_file = Path(__file__).resolve()
+    # 从 agent/env_config.py 向上两级到达项目根目录
+    project_root = current_file.parent.parent
+    return str(project_root)
+
+# 获取项目根目录
+PROJECT_ROOT = get_project_root()
 
 # 默认环境变量配置
 DEFAULT_ENV_VARS = {
-    # 路径相关（通常由容器/系统设置）
-    "WORKSPACE_BASE": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark",
-    "CODE_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/code", 
-    "AGENT_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/agent",
-    "LOGS_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/logs",
-    "SUBMISSION_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/submission",
-    "PAPER_DIR": "/Users/lizongwei/Desktop/LLM_research/Paper2code_benchmark/paper",
+    # 路径相关（动态配置）
+    "WORKSPACE_BASE": PROJECT_ROOT,
+    "CODE_DIR": os.path.join(PROJECT_ROOT, "code"), 
+    "AGENT_DIR": os.path.join(PROJECT_ROOT, "agent"),
+    "LOGS_DIR": os.path.join(PROJECT_ROOT, "logs"),
+    "SUBMISSION_DIR": os.path.join(PROJECT_ROOT, "submission"),
+    "PAPER_DIR": os.path.join(PROJECT_ROOT, "paper"),
     
     # AI模型配置
     "MODEL": "openai/gpt-4o",  # 默认使用较稳定的模型
@@ -27,6 +40,7 @@ DEFAULT_ENV_VARS = {
     "HF_TOKEN": "",
     "OPENROUTER_API_KEY": "",
     "GOOGLE_API_KEY": "",
+    "PB_CODE_ONLY": "true",
     
     # 网络代理配置（香港大学宿主机代理：127.0.0.1:7890 -> Docker内：172.17.0.1:7890）
     "USE_PROXY": "True",   # 启用宿主机代理以解决地区限制

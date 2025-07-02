@@ -40,7 +40,7 @@ additional_notes = additional_notes_template.substitute(
     workspace=CODE_DIR,
     workspace_base=WORKSPACE_BASE,
 )
-with open(f"{WORKSPACE_BASE}/instructions.txt", "r") as file:
+with open(f"{WORKSPACE_BASE}/code_only_instructions.txt", "r") as file:
     partial_instructions = file.read()
 
 # 替换指令中的路径变量
