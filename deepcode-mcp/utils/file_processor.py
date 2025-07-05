@@ -252,12 +252,13 @@ class FileProcessor:
         return "\n".join(output)
 
     @classmethod
-    async def process_file_input(cls, file_input: Union[str, Dict]) -> Dict:
+    async def process_file_input(cls, file_input: Union[str, Dict], base_dir: str = None) -> Dict:
         """
         Process file input information and return the structured content.
 
         Args:
             file_input: File input information (JSON string, dict, or direct file path)
+            base_dir: Optional base directory to use for creating paper directories (for sync support)
 
         Returns:
             Dict: The structured content with sections and standardized text
@@ -274,6 +275,22 @@ class FileProcessor:
 
             # Extract paper directory path
             paper_dir = cls.extract_file_path(file_input)
+            
+            # If base_dir is provided, adjust paper_dir to be relative to base_dir
+            if base_dir and paper_dir:
+                import pathlib
+                # If paper_dir is using default location, move it to base_dir
+                if paper_dir.endswith(('deepcode_lab', 'agent_folders')):
+                    paper_dir = base_dir
+                else:
+                    # Extract the relative part and combine with base_dir
+                    paper_name = os.path.basename(paper_dir)
+                    # 保持原始目录名不变，不做任何替换
+                    paper_dir = os.path.join(base_dir, 'papers', paper_name)
+                        
+                # Ensure the directory exists
+                os.makedirs(paper_dir, exist_ok=True)
+            
             if not paper_dir:
                 raise ValueError("Could not determine paper directory path")
 

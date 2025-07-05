@@ -1,5 +1,5 @@
 """
-Paper to Code - AI Research Engine
+DeepCode - AI Research Engine
 论文到代码 - AI研究引擎
 
 Streamlit Web界面主应用文件

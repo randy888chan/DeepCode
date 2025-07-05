@@ -615,7 +615,7 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # 测试参数
-    paper_dir = "./agent_folders/papers/2"
+    paper_dir = "./deepcode_lab/papers/2"
     initial_plan_path = os.path.join(paper_dir, "initial_plan.txt")
     
     # 运行工作流

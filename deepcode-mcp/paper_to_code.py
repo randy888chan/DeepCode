@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Paper to Code - AI Research Engine Launcher
+DeepCode - AI Research Engine Launcher
 论文到代码 - AI研究引擎启动器
 
 🧬 Next-Generation AI Research Automation Platform
@@ -64,7 +64,7 @@ def print_banner():
     banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║    🧬 Paper to Code - AI Research Engine                     ║
+║    🧬 DeepCode - AI Research Engine                          ║
 ║                                                              ║
 ║    ⚡ NEURAL • AUTONOMOUS • REVOLUTIONARY ⚡                ║
 ║                                                              ║
@@ -95,7 +95,7 @@ def main():
         sys.exit(1)
     
     print(f"\n📁 UI App location: {streamlit_app_path}")
-    print("🌐 Starting Paper to Code web interface...")
+    print("🌐 Starting DeepCode web interface...")
     print("🚀 Launching on http://localhost:8501")
     print("=" * 70)
     print("💡 Tip: Keep this terminal open while using the application")
@@ -119,12 +119,12 @@ def main():
         subprocess.run(cmd, check=True)
         
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Failed to start Paper to Code: {e}")
+        print(f"\n❌ Failed to start DeepCode: {e}")
         print("Please check if Streamlit is properly installed.")
         sys.exit(1)
     except KeyboardInterrupt:
-        print("\n\n🛑 Paper to Code server stopped by user")
-        print("Thank you for using Paper to Code! 🧬")
+        print("\n\n🛑 DeepCode server stopped by user")
+        print("Thank you for using DeepCode! 🧬")
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         print("Please check your Python environment and try again.")

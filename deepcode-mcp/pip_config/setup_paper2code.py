@@ -67,7 +67,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(
-        exclude=("tests*", "docs*", "agent_folders*", "logs*", "test_files*", "schema*")
+        exclude=("tests*", "docs*", "deepcode_lab*", "logs*", "test_files*", "schema*")
     ),  # Automatically find packages
     classifiers=[
         "Development Status :: 3 - Alpha",

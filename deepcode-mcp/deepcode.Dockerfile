@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-ENV CONDA_ENV_NAME=myenv
+ENV CONDA_ENV_NAME=deepcode
 ENV PYTHON_VERSION=3.13
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -14,7 +14,16 @@ RUN apt-get update && apt-get install -y \
     htop \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+# 自动检测架构并下载对应的Miniconda版本
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        MINICONDA_ARCH="x86_64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        MINICONDA_ARCH="aarch64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${MINICONDA_ARCH}.sh -O /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh
 

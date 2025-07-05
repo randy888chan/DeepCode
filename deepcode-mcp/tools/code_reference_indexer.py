@@ -67,9 +67,9 @@ def initialize_indexes_directory(indexes_dir: str = None):
     """Initialize indexes directory"""
     global INDEXES_DIRECTORY
     if indexes_dir is None:
-        # Default to agent_folders/papers/1/indexes directory
+        # Default to deepcode_lab/papers/1/indexes directory
         current_dir = Path.cwd()
-        INDEXES_DIRECTORY = current_dir / "agent_folders" / "papers" / "1" / "indexes"
+        INDEXES_DIRECTORY = current_dir / "deepcode_lab" / "papers" / "1" / "indexes"
     else:
         INDEXES_DIRECTORY = Path(indexes_dir).resolve()
     

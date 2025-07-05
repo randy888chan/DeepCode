@@ -1094,6 +1094,7 @@ class CodeIndexer:
 
         # Create semaphore to limit concurrent tasks
         semaphore = asyncio.Semaphore(self.max_concurrent_files)
+        tasks = []
 
         async def _process_with_semaphore(file_path: Path, index: int, total: int):
             async with semaphore:
@@ -1106,55 +1107,99 @@ class CodeIndexer:
                     file_path, index, total
                 )
 
-        # Create tasks for all files
-        tasks = [
-            _process_with_semaphore(file_path, i, len(files_to_analyze))
-            for i, file_path in enumerate(files_to_analyze, 1)
-        ]
-
-        # Process tasks and collect results
-        if self.verbose_output:
-            self.logger.info(f"Starting concurrent analysis of {len(tasks)} files...")
-
         try:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Create tasks for all files
+            tasks = [
+                _process_with_semaphore(file_path, i, len(files_to_analyze))
+                for i, file_path in enumerate(files_to_analyze, 1)
+            ]
 
-            for i, result in enumerate(results):
-                if isinstance(result, Exception):
-                    self.logger.error(
-                        f"Failed to analyze file {files_to_analyze[i]}: {result}"
-                    )
-                    # Create error summary
-                    error_summary = FileSummary(
-                        file_path=str(
-                            files_to_analyze[i].relative_to(self.code_base_path)
-                        ),
-                        file_type="error",
-                        main_functions=[],
-                        key_concepts=[],
-                        dependencies=[],
-                        summary=f"Concurrent analysis failed: {str(result)}",
-                        lines_of_code=0,
-                        last_modified="",
-                    )
-                    file_summaries.append(error_summary)
-                else:
-                    file_summary, relationships = result
-                    file_summaries.append(file_summary)
-                    all_relationships.extend(relationships)
+            # Process tasks and collect results
+            if self.verbose_output:
+                self.logger.info(f"Starting concurrent analysis of {len(tasks)} files...")
 
+            try:
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                for i, result in enumerate(results):
+                    if isinstance(result, Exception):
+                        self.logger.error(
+                            f"Failed to analyze file {files_to_analyze[i]}: {result}"
+                        )
+                        # Create error summary
+                        error_summary = FileSummary(
+                            file_path=str(
+                                files_to_analyze[i].relative_to(self.code_base_path)
+                            ),
+                            file_type="error",
+                            main_functions=[],
+                            key_concepts=[],
+                            dependencies=[],
+                            summary=f"Concurrent analysis failed: {str(result)}",
+                            lines_of_code=0,
+                            last_modified="",
+                        )
+                        file_summaries.append(error_summary)
+                    else:
+                        file_summary, relationships = result
+                        file_summaries.append(file_summary)
+                        all_relationships.extend(relationships)
+
+            except Exception as e:
+                self.logger.error(f"Concurrent processing failed: {e}")
+                # Cancel any remaining tasks
+                for task in tasks:
+                    if not task.done() and not task.cancelled():
+                        task.cancel()
+                
+                # Wait for cancelled tasks to complete
+                try:
+                    await asyncio.sleep(0.1)  # Brief wait for cancellation
+                except Exception:
+                    pass
+                
+                # Fallback to sequential processing
+                self.logger.info("Falling back to sequential processing...")
+                return await self._process_files_sequentially(files_to_analyze)
+
+            if self.verbose_output:
+                self.logger.info(
+                    f"Concurrent analysis completed: {len(file_summaries)} files processed"
+                )
+
+            return file_summaries, all_relationships
+            
         except Exception as e:
-            self.logger.error(f"Concurrent processing failed: {e}")
+            # Ensure all tasks are cancelled in case of unexpected errors
+            if tasks:
+                for task in tasks:
+                    if not task.done() and not task.cancelled():
+                        task.cancel()
+                        
+            # Wait briefly for cancellation to complete
+            try:
+                await asyncio.sleep(0.1)
+            except Exception:
+                pass
+            
+            self.logger.error(f"Critical error in concurrent processing: {e}")
             # Fallback to sequential processing
-            self.logger.info("Falling back to sequential processing...")
+            self.logger.info("Falling back to sequential processing due to critical error...")
             return await self._process_files_sequentially(files_to_analyze)
-
-        if self.verbose_output:
-            self.logger.info(
-                f"Concurrent analysis completed: {len(file_summaries)} files processed"
-            )
-
-        return file_summaries, all_relationships
+        
+        finally:
+            # Final cleanup: ensure all tasks are properly finished
+            if tasks:
+                for task in tasks:
+                    if not task.done() and not task.cancelled():
+                        task.cancel()
+                        
+            # Clear task references to help with garbage collection
+            tasks.clear()
+            
+            # Force garbage collection to help clean up semaphore and related resources
+            import gc
+            gc.collect()
 
     async def build_all_indexes(self) -> Dict[str, str]:
         """Build indexes for all repositories in code_base"""

@@ -8,6 +8,8 @@ from utils.file_processor import FileProcessor
 from tools.github_downloader import GitHubDownloader
 # 导入代码实现工作流 / Import code implementation workflow
 from workflows.code_implementation_workflow import CodeImplementationWorkflow
+# 导入Docker同步管理器 / Import Docker sync manager
+from utils.docker_sync_manager import setup_docker_sync, get_sync_directory
 import os
 import asyncio
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
@@ -19,7 +21,6 @@ from prompts.code_prompts import (
     PAPER_CONCEPT_ANALYSIS_PROMPT,
     CODE_PLANNING_PROMPT,
     GITHUB_DOWNLOAD_PROMPT,
-    INTEGRATION_VALIDATION_PROMPT
 )
 import json
 import re
@@ -116,7 +117,17 @@ async def run_paper_analyzer(prompt_text, logger):
         
         
         analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
-        raw_result = await analyzer.generate_str(message=prompt_text)
+        
+        # 为论文分析设置更高的token输出量 / Set higher token output for paper analysis
+        analysis_params = RequestParams(
+            max_tokens=6144,  # 为论文分析设置6144 tokens
+            temperature=0.3,  # 适中的创造性用于分析
+        )
+        
+        raw_result = await analyzer.generate_str(
+            message=prompt_text,
+            request_params=analysis_params
+        )
         
         # 清理LLM输出，确保只返回纯净的JSON
         clean_result = extract_clean_json(raw_result)
@@ -148,7 +159,17 @@ async def run_paper_downloader(analysis_result, logger):
         logger.info("Tools available:", data=tools.model_dump())
         
         downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
-        return await downloader.generate_str(message=analysis_result)
+        
+        # 为下载器设置更高的token输出量 / Set higher token output for downloader
+        downloader_params = RequestParams(
+            max_tokens=4096,  # 为下载器设置4096 tokens
+            temperature=0.2,  # 下载任务需要精确性
+        )
+        
+        return await downloader.generate_str(
+            message=analysis_result,
+            request_params=downloader_params
+        )
 
 async def paper_code_analyzer(document, logger):
     """
@@ -164,34 +185,37 @@ async def paper_code_analyzer(document, logger):
     concept_analysis_agent = Agent(
         name="ConceptAnalysisAgent",
         instruction=PAPER_CONCEPT_ANALYSIS_PROMPT,
-        server_names=["filesystem"],
+        server_names=[],
     )
     algorithm_analysis_agent = Agent(
         name="AlgorithmAnalysisAgent",
         instruction=PAPER_ALGORITHM_ANALYSIS_PROMPT,
-        server_names=["filesystem","brave"],
+        server_names=["brave"],
     )
     code_planner_agent = Agent(
         name="CodePlannerAgent",
         instruction=CODE_PLANNING_PROMPT,
         server_names=["brave"],
     )
-    # code_validation_agent = Agent(
-    #     name="CodeValidationAgent",
-    #     instruction=INTEGRATION_VALIDATION_PROMPT,
-    # )
+
     code_aggregator_agent = ParallelLLM(
             fan_in_agent=code_planner_agent,
             fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
             llm_factory=AnthropicAugmentedLLM,
         )
-    result = await code_aggregator_agent.generate_str(message=document)
+    
+    # 设置更高的token输出量 / Set higher token output limit
+    enhanced_params = RequestParams(
+        max_tokens=16384,  # 增加到16384 tokens以确保完整输出
+        temperature=0.3,   # 保持适中的创造性
+    )
+    
+    result = await code_aggregator_agent.generate_str(
+        message=document,
+        request_params=enhanced_params
+    )
     logger.info(f"Code analysis result: {result}")
     return result
-    # async with code_validation_agent:
-    #     logger.info("code_validation_agent: Connected to server, calling list_tools...")
-    #     code_validation = await code_validation_agent.attach_llm(AnthropicAugmentedLLM)
-    #     return await code_validation.generate_str(message=result)
 
 async def github_repo_download(search_result, paper_dir, logger):
     """
@@ -214,7 +238,17 @@ async def github_repo_download(search_result, paper_dir, logger):
     async with github_download_agent:
         logger.info("GitHub downloader: Downloading repositories...")
         downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
-        return await downloader.generate_str(message=search_result)
+        
+        # 为GitHub下载设置更高的token输出量 / Set higher token output for GitHub download
+        github_params = RequestParams(
+            max_tokens=4096,  # 为GitHub下载设置4096 tokens
+            temperature=0.1,  # GitHub下载需要高精确性
+        )
+        
+        return await downloader.generate_str(
+            message=search_result,
+            request_params=github_params
+        )
 
 async def paper_reference_analyzer(analysis_result, logger):
     """
@@ -237,7 +271,17 @@ async def paper_reference_analyzer(analysis_result, logger):
     async with reference_analysis_agent:
         logger.info("Reference analyzer: Connected to server, analyzing references...")
         analyzer = await reference_analysis_agent.attach_llm(AnthropicAugmentedLLM)
-        reference_result = await analyzer.generate_str(message=analysis_result)
+        
+        # 为引用分析设置更高的token输出量 / Set higher token output for reference analysis
+        reference_params = RequestParams(
+            max_tokens=6144,  # 为引用分析设置6144 tokens
+            temperature=0.2,  # 引用分析需要更精确
+        )
+        
+        reference_result = await analyzer.generate_str(
+            message=analysis_result,
+            request_params=reference_params
+        )
         return reference_result
 
     
@@ -288,7 +332,7 @@ async def _execute_paper_analysis_phase(input_source: str, logger, progress_call
     
     return analysis_result, download_result
 
-async def _setup_paper_directory_structure(download_result: str, logger) -> dict:
+async def _setup_paper_directory_structure(download_result: str, logger, sync_directory: str = None) -> dict:
     """
     Setup paper directory structure and prepare file paths.
     设置论文目录结构并准备文件路径
@@ -296,13 +340,19 @@ async def _setup_paper_directory_structure(download_result: str, logger) -> dict
     Args:
         download_result: Download result from previous phase
         logger: Logger instance
+        sync_directory: Optional sync directory path override
         
     Returns:
         dict: Directory structure information
     """
     # Parse download result to get file information
-    result = await FileProcessor.process_file_input(download_result)
+    result = await FileProcessor.process_file_input(download_result, base_dir=sync_directory)
     paper_dir = result['paper_dir']
+    
+    # Log directory structure setup
+    logger.info(f"📁 Paper directory structure:")
+    logger.info(f"   Base sync directory: {sync_directory or 'default'}")
+    logger.info(f"   Paper directory: {paper_dir}")
     
     return {
         'paper_dir': paper_dir,
@@ -311,7 +361,8 @@ async def _setup_paper_directory_structure(download_result: str, logger) -> dict
         'initial_plan_path': os.path.join(paper_dir, 'initial_plan.txt'),
         'download_path': os.path.join(paper_dir, 'github_download.txt'),
         'index_report_path': os.path.join(paper_dir, 'codebase_index_report.txt'),
-        'implementation_report_path': os.path.join(paper_dir, 'code_implementation_report.txt')
+        'implementation_report_path': os.path.join(paper_dir, 'code_implementation_report.txt'),
+        'sync_directory': sync_directory
     }
 
 async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_callback=None) -> str:
@@ -589,27 +640,58 @@ async def _execute_code_implementation_phase(dir_info: dict, logger, progress_ca
         logger.error(f"Error during code implementation workflow: {e}")
         return {'status': 'error', 'message': str(e)}
 
-async def execute_multi_agent_research_pipeline(input_source, logger, progress_callback=None):
+async def execute_multi_agent_research_pipeline(input_source, logger, progress_callback=None, enable_indexing=True):
     """
     Execute the complete multi-agent research pipeline from paper input to code implementation.
     执行从论文输入到代码实现的完整多智能体研究流水线
     
     This is the main orchestration function that coordinates all research workflow phases:
+    - Docker synchronization setup for seamless file access
     - Paper analysis and content extraction
     - Reference analysis and GitHub repository discovery
     - Code planning and structure design
-    - Codebase indexing and relationship analysis
+    - Codebase indexing and relationship analysis (optional)
     - Final code implementation
     
     Args:
         input_source (str): The input source (file path, URL, or analysis result)
         logger: The logger instance for comprehensive logging
         progress_callback (callable, optional): Progress callback function for UI updates
+        enable_indexing (bool, optional): Whether to enable codebase indexing (default: True)
         
     Returns:
         str: The comprehensive pipeline execution result with status and outcomes
     """ 
     try:
+        # Phase 0: Docker Synchronization Setup
+        # 阶段0：Docker同步设置
+        if progress_callback:
+            progress_callback(5, "🔄 Setting up Docker synchronization for seamless file access...")
+        
+        logger.info("🚀 Starting multi-agent research pipeline with Docker sync support")
+        
+        # Setup Docker synchronization
+        sync_result = await setup_docker_sync(logger=logger)
+        sync_directory = get_sync_directory()
+        
+        logger.info(f"📁 Sync environment: {sync_result['environment']}")
+        logger.info(f"📂 Sync directory: {sync_directory}")
+        logger.info(f"✅ Sync status: {sync_result['message']}")
+        
+        # 记录索引功能状态
+        if enable_indexing:
+            logger.info("🗂️ Codebase indexing enabled - full workflow")
+        else:
+            logger.info("⚡ Fast mode - codebase indexing disabled")
+        
+        # Update file processor to use sync directory
+        if sync_result['environment'] == 'docker':
+            logger.info("🐳 Running in Docker container - files will sync to local machine")
+        else:
+            logger.info("💻 Running locally - use Docker container for full sync experience")
+            logger.info("💡 Tip: Run 'python start_docker_sync.py' for Docker sync mode")
+        
+        # Continue with original pipeline phases...
         # Phase 1: Input Processing and Validation
         # 阶段1：输入处理和验证
         input_source = await _process_input_source(input_source, logger)
@@ -627,7 +709,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         if progress_callback:
             progress_callback(40, "🔧 Starting comprehensive code preparation workflow...")
         
-        dir_info = await _setup_paper_directory_structure(download_result, logger)
+        dir_info = await _setup_paper_directory_structure(download_result, logger, sync_directory)
         
         # Phase 4: Reference Analysis
         # 阶段4：引用分析
@@ -637,13 +719,30 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         # 阶段5：代码规划
         await _execute_code_planning_phase(dir_info, logger, progress_callback)
         
-        # Phase 6: GitHub Repository Download
-        # 阶段6：GitHub仓库下载
-        await _execute_github_download_phase(reference_result, dir_info, logger, progress_callback)
+        # Phase 6: GitHub Repository Download (可选)
+        # 阶段6：GitHub仓库下载（可选）
+        if enable_indexing:
+            await _execute_github_download_phase(reference_result, dir_info, logger, progress_callback)
+        else:
+            logger.info("🔶 Skipping GitHub repository download (indexing disabled)")
+            # 创建一个空的下载结果文件以保持文件结构一致性
+            with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
+                f.write("GitHub repository download skipped - indexing disabled for faster processing")
         
-        # Phase 7: Codebase Indexing
-        # 阶段7：代码库索引
-        index_result = await _execute_codebase_indexing_phase(dir_info, logger, progress_callback)
+        # Phase 7: Codebase Indexing (可选)
+        # 阶段7：代码库索引（可选）
+        if enable_indexing:
+            index_result = await _execute_codebase_indexing_phase(dir_info, logger, progress_callback)
+        else:
+            logger.info("🔶 Skipping codebase indexing (indexing disabled)")
+            # 创建一个跳过索引的结果
+            index_result = {
+                'status': 'skipped',
+                'reason': 'indexing_disabled',
+                'message': 'Codebase indexing skipped for faster processing'
+            }
+            with open(dir_info['index_report_path'], 'w', encoding='utf-8') as f:
+                f.write(str(index_result))
         
         # Phase 8: Code Implementation
         # 阶段8：代码实现
@@ -651,10 +750,15 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         
         # Final Status Report
         # 最终状态报告
-        pipeline_summary = f"Multi-agent research pipeline completed for {dir_info['paper_dir']}"
+        if enable_indexing:
+            pipeline_summary = f"Multi-agent research pipeline completed for {dir_info['paper_dir']}"
+        else:
+            pipeline_summary = f"Multi-agent research pipeline completed (fast mode) for {dir_info['paper_dir']}"
         
         # Add indexing status to summary
-        if index_result['status'] == 'skipped':
+        if not enable_indexing:
+            pipeline_summary += f"\n⚡ Fast mode: GitHub download and codebase indexing skipped"
+        elif index_result['status'] == 'skipped':
             pipeline_summary += f"\n🔶 Codebase indexing: {index_result['message']}"
         elif index_result['status'] == 'error':
             pipeline_summary += f"\n❌ Codebase indexing failed: {index_result['message']}"

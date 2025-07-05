@@ -64,7 +64,7 @@ paper2code = "paper2code.main:main"
 version = {attr = "paper2code.__version__"}
 
 [tool.setuptools.packages.find]
-exclude = ["tests*", "docs*", "agent_folders*", "logs*", "test_files*", "schema*"]
+exclude = ["tests*", "docs*", "deepcode_lab*", "logs*", "test_files*", "schema*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.txt", "*.md"]

@@ -1,5 +1,5 @@
 """
-Paper to Code UI Application Entry Point
+DeepCode UI Application Entry Point
 论文到代码 UI应用程序入口
 
 这个文件作为UI模块的统一入口点

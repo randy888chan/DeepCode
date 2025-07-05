@@ -28,7 +28,7 @@ def setup_page_config():
     设置页面配置 / Setup page configuration
     """
     st.set_page_config(
-        page_title="Paper to Code - AI Research Engine",
+        page_title="DeepCode - AI Research Engine",
         page_icon="🧬",
         layout="wide",
         initial_sidebar_state="expanded",

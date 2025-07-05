@@ -28,9 +28,8 @@ from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLL
 # Local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
-from prompts.iterative_code_prompts import PURE_CODE_IMPLEMENTATION_PROMPT
+from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
 from workflows.agents import CodeImplementationAgent, SummaryAgent
-from workflows.iterative_code_implementation import IterativeCodeImplementation
 from config.mcp_tool_definitions import get_mcp_tools
 
 
@@ -114,11 +113,7 @@ class CodeImplementationWorkflow:
                 self.logger.info("Starting pure code implementation...")
                 results["code_implementation"] = await self.implement_code_pure(plan_content, target_directory)
             else:
-                self.logger.info("Starting iterative code implementation...")
-                iterative_implementation = IterativeCodeImplementation(self.logger, self.mcp_agent)
-                results["code_implementation"] = await iterative_implementation.implement_code_standalone(
-                    plan_content, target_directory, workflow_instance=self
-                )
+                pass
             
             self.logger.info("Workflow execution successful")
             
@@ -186,7 +181,7 @@ Requirements:
             await self._initialize_mcp_agent(code_directory)
             
             tools = self._prepare_mcp_tool_definitions()
-            system_message = PURE_CODE_IMPLEMENTATION_PROMPT
+            system_message = PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
             messages = []
             
             implementation_message = f"""**Task: Implement code based on the following reproduction plan**
@@ -673,7 +668,7 @@ Requirements:
             
             # Test 2: Set indexes directory
             self.logger.info("\n📁 Test 2: Setting indexes directory...")
-            indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"
+            indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/indexes"
             try:
                 set_dir_result = await self.mcp_agent.call_tool(
                     "set_indexes_directory", 
@@ -766,7 +761,7 @@ async def main():
         # Ask if user wants to continue with actual workflow
         print("\nContinuing with workflow execution...")
         
-        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
+        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
         
         print("Implementation Mode Selection:")
         print("1. Pure Code Implementation Mode (Recommended)")

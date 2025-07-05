@@ -217,7 +217,7 @@ def main():
     主函数，用于测试
     """
     # 示例用法
-    paper_dir = "./agent_folders/papers/paper_1"
+    paper_dir = "./deepcode_lab/papers/paper_1"
     # paper_dir = str(sys.argv[1])
     downloader = GitHubDownloader(paper_dir)
 

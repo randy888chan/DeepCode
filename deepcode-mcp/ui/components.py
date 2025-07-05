@@ -19,7 +19,7 @@ def display_header():
     """
     st.markdown("""
     <div class="main-header">
-        <h1>🧬 Paper to Code</h1>
+        <h1>🧬 DeepCode</h1>
         <h3>NEXT-GENERATION AI RESEARCH AUTOMATION PLATFORM</h3>
         <p>⚡ NEURAL • AUTONOMOUS • REVOLUTIONARY ⚡</p>
     </div>
@@ -214,6 +214,22 @@ def sidebar_control_panel() -> Dict[str, Any]:
         else:
             st.info("⚪ Engine Ready")
         
+        # 工作流配置选项
+        st.markdown("### ⚙️ Workflow Settings")
+        
+        # 索引功能开关
+        enable_indexing = st.checkbox(
+            "🗂️ Enable Codebase Indexing",
+            value=True,
+            help="Enable GitHub repository download and codebase indexing. Disabling this will skip Phase 6 (GitHub Download) and Phase 7 (Codebase Indexing) for faster processing.",
+            key="enable_indexing"
+        )
+        
+        if enable_indexing:
+            st.success("✅ Full workflow with indexing enabled")
+        else:
+            st.info("⚡ Fast mode - indexing disabled")
+        
         # 系统信息
         st.markdown("### 📊 System Info")
         st.info(f"**Python:** {sys.version.split()[0]}")
@@ -234,7 +250,8 @@ def sidebar_control_panel() -> Dict[str, Any]:
         return {
             "processing": st.session_state.processing,
             "history_count": history_info["count"],
-            "has_history": history_info["has_history"]
+            "has_history": history_info["has_history"],
+            "enable_indexing": enable_indexing  # 添加索引开关状态
         }
 
 
@@ -629,31 +646,48 @@ def progress_display_component():
     return progress_bar, status_text
 
 
-def enhanced_progress_display_component():
+def enhanced_progress_display_component(enable_indexing: bool = True):
     """
     增强版进度显示组件 / Enhanced progress display component
     
+    Args:
+        enable_indexing: 是否启用索引功能 / Whether indexing is enabled
+    
     Returns:
-        (progress_bar, status_text, step_indicator) / (进度条, 状态文本, 步骤指示器)
+        (progress_bar, status_text, step_indicator, workflow_steps) / (进度条, 状态文本, 步骤指示器, 工作流步骤)
     """
     # 显示处理进度标题
-    st.markdown("### 🚀 AI Research Engine - Processing Workflow")
+    if enable_indexing:
+        st.markdown("### 🚀 AI Research Engine - Full Processing Workflow")
+    else:
+        st.markdown("### ⚡ AI Research Engine - Fast Processing Workflow (Indexing Disabled)")
     
     # 创建进度容器
     progress_container = st.container()
     
     with progress_container:
-        # 工作流步骤定义
-        workflow_steps = [
-            ("🚀", "Initialize", "Setting up AI engine"),
-            ("📊", "Analyze", "Analyzing paper content"),
-            ("📥", "Download", "Processing document"),
-            ("🔍", "References", "Analyzing references"),
-            ("📋", "Plan", "Generating code plan"),
-            ("📦", "Repos", "Downloading repositories"),
-            ("🗂️", "Index", "Building code index"),
-            ("⚙️", "Implement", "Implementing code")
-        ]
+        # 工作流步骤定义 - 根据索引开关调整
+        if enable_indexing:
+            workflow_steps = [
+                ("🚀", "Initialize", "Setting up AI engine"),
+                ("📊", "Analyze", "Analyzing paper content"),
+                ("📥", "Download", "Processing document"),
+                ("🔍", "References", "Analyzing references"),
+                ("📋", "Plan", "Generating code plan"),
+                ("📦", "Repos", "Downloading repositories"),
+                ("🗂️", "Index", "Building code index"),
+                ("⚙️", "Implement", "Implementing code")
+            ]
+        else:
+            # 快速模式 - 跳过 Repos 和 Index 步骤
+            workflow_steps = [
+                ("🚀", "Initialize", "Setting up AI engine"),
+                ("📊", "Analyze", "Analyzing paper content"),
+                ("📥", "Download", "Processing document"),
+                ("🔍", "References", "Analyzing references"),
+                ("📋", "Plan", "Generating code plan"),
+                ("⚙️", "Implement", "Implementing code")
+            ]
         
         # 创建步骤指示器容器
         step_container = st.container()
@@ -690,6 +724,10 @@ def enhanced_progress_display_component():
         
         # 实时信息显示
         info_text = st.empty()
+        
+        # 显示模式信息
+        if not enable_indexing:
+            st.info("⚡ Fast Mode: GitHub repository download and codebase indexing are disabled for faster processing.")
     
     return progress_bar, status_text, step_indicators, workflow_steps
 
@@ -748,7 +786,7 @@ def footer_component():
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; padding: 2rem;">
-        <p>🧬 <strong>Paper to Code v3.0</strong> | Next-Gen AI Research Platform | 
+        <p>🧬 <strong>DeepCode v3.0</strong> | Next-Gen AI Research Platform | 
         <a href="https://github.com/your-repo" target="_blank" style="color: var(--neon-blue);">GitHub</a></p>
         <p>⚡ Powered by Neural Networks • Quantum Computing • Multi-Agent AI • Advanced NLP</p>
         <p><small>💡 Tip: Experience the future of research automation - keep this tab active for optimal performance</small></p>

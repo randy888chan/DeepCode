@@ -174,6 +174,298 @@ Please provide a role-aware summary that maintains clear distinction between use
             # Return fallback summary with role context / 返回带角色上下文的备用总结
             return self._generate_fallback_summary(implementation_summary)
 
+    async def generate_evaluation_aware_summary(
+        self,
+        client,
+        client_type: str,
+        messages: List[Dict],
+        implementation_summary: Dict[str, Any],
+        phases_completed: Dict[str, bool],
+    ) -> str:
+        """
+        Generate evaluation-aware conversation summary for enhanced workflow
+        为增强工作流生成评估感知的对话总结
+
+        Args:
+            client: LLM client instance
+            client_type: Type of LLM client ('anthropic' or 'openai')
+            messages: Conversation messages to summarize
+            implementation_summary: Current implementation progress data
+            phases_completed: Status of 5-phase evaluation workflow
+
+        Returns:
+            Generated evaluation-aware summary string
+        """
+        try:
+            self.logger.info(
+                "Generating evaluation-aware conversation summary for enhanced workflow"
+            )
+
+            # Prepare enhanced summary with phase context
+            recent_messages = (
+                messages[-30:] if len(messages) > 30 else messages
+            )  # More context for evaluation phases
+
+            # Analyze phase progress and execution context
+            phase_analysis = self._analyze_phase_progress(phases_completed)
+            execution_analysis = self._analyze_execution_context(recent_messages)
+            cleaned_messages = self._prepare_messages_for_summary(recent_messages)
+
+            self.logger.info(f"Phase analysis: {phase_analysis}")
+            self.logger.info(f"Execution analysis: {execution_analysis}")
+
+            # Create enhanced summary request with evaluation context
+            evaluation_summary_prompt = """You are a conversation summarization assistant for a 5-phase code implementation and evaluation workflow.
+
+PHASE WORKFLOW CONTEXT:
+1. Code Implementation (File-by-File Development)
+2. Dependencies & Environment Setup
+3. Code Execution & Testing
+4. Results Reproduction & Validation
+5. Performance Evaluation
+
+Your summary should:
+- Preserve critical implementation and execution context
+- Track phase progression and completion status
+- Maintain evaluation results and validation outcomes
+- Preserve error recovery and debugging information
+- Keep testing and reproduction results
+- Document performance metrics and evaluation findings
+
+Focus on actionable progress and maintain continuity for subsequent phases."""
+
+            summary_messages = [
+                {"role": "user", "content": evaluation_summary_prompt},
+                {
+                    "role": "user",
+                    "content": f"""ENHANCED WORKFLOW CONTEXT:
+
+PHASE COMPLETION ANALYSIS:
+{json.dumps(phase_analysis, ensure_ascii=False, indent=2)}
+
+EXECUTION CONTEXT ANALYSIS:
+{json.dumps(execution_analysis, ensure_ascii=False, indent=2)}
+
+CONVERSATION TO SUMMARIZE (Phase-Aware):
+{json.dumps(cleaned_messages, ensure_ascii=False, indent=2)}
+
+IMPLEMENTATION PROGRESS:
+- Files completed: {len(implementation_summary.get('completed_files', []))}
+- Technical decisions: {len(implementation_summary.get('technical_decisions', []))}
+- Constraints tracked: {len(implementation_summary.get('important_constraints', []))}
+- Dependencies analyzed: {len(implementation_summary.get('dependency_analysis', []))}
+
+Please provide an evaluation-aware summary that maintains:
+1. Phase progression context and completion status
+2. Critical implementation decisions and constraints
+3. Execution results, testing outcomes, and error recovery
+4. Validation results and reproduction status
+5. Performance metrics and evaluation findings
+6. Next phase requirements and dependencies""",
+                },
+            ]
+
+            # Call LLM for enhanced summary generation
+            summary_response = await self._call_llm_for_summary(
+                client, client_type, summary_messages
+            )
+
+            summary_content = summary_response.get("content", "").strip()
+
+            # Validate summary contains evaluation context
+            if not self._validate_evaluation_aware_summary(summary_content, phases_completed):
+                self.logger.warning(
+                    "Generated summary lacks evaluation context, enhancing..."
+                )
+                summary_content = self._enhance_summary_with_evaluation_context(
+                    summary_content, phase_analysis, execution_analysis, implementation_summary
+                )
+
+            # Update implementation summary with evaluation context
+            self._update_implementation_summary_with_phases(
+                implementation_summary, summary_content, len(recent_messages), phases_completed
+            )
+
+            # Store in enhanced summary history
+            self.summary_history.append(
+                {
+                    "timestamp": time.time(),
+                    "summary": summary_content,
+                    "message_count": len(recent_messages),
+                    "phases_completed": phases_completed.copy(),
+                    "execution_analysis": execution_analysis,
+                    "summary_type": "evaluation_aware"
+                }
+            )
+
+            self.logger.info(
+                f"Evaluation-aware summary generated successfully, length: {len(summary_content)} characters"
+            )
+            return summary_content
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to generate evaluation-aware conversation summary: {e}"
+            )
+            # Return enhanced fallback summary
+            return self._generate_evaluation_fallback_summary(implementation_summary, phases_completed)
+
+    def _analyze_phase_progress(self, phases_completed: Dict[str, bool]) -> Dict[str, Any]:
+        """Analyze phase progression and completion status"""
+        completed_phases = [phase for phase, completed in phases_completed.items() if completed]
+        remaining_phases = [phase for phase, completed in phases_completed.items() if not completed]
+        
+        phase_order = [
+            "code_implementation", 
+            "environment_setup", 
+            "code_testing", 
+            "results_reproduction", 
+            "performance_evaluation"
+        ]
+        
+        # Find current phase
+        current_phase = None
+        for phase in phase_order:
+            if not phases_completed.get(phase, False):
+                current_phase = phase
+                break
+        
+        return {
+            "completed_phases": completed_phases,
+            "remaining_phases": remaining_phases,
+            "current_phase": current_phase,
+            "completion_percentage": (len(completed_phases) / 5) * 100,
+            "phase_order": phase_order
+        }
+
+    def _analyze_execution_context(self, messages: List[Dict]) -> Dict[str, Any]:
+        """Analyze execution context from recent messages"""
+        execution_commands = []
+        error_occurrences = []
+        success_indicators = []
+        
+        for msg in messages:
+            content = msg.get("content", "").lower()
+            
+            # Look for command execution
+            if "execute_commands" in content or "bash" in content or "python" in content:
+                execution_commands.append(msg.get("role", "unknown"))
+            
+            # Look for errors
+            if "error" in content or "failed" in content or "exception" in content:
+                error_occurrences.append(msg.get("role", "unknown"))
+            
+            # Look for success indicators
+            if "success" in content or "completed" in content or "✅" in content:
+                success_indicators.append(msg.get("role", "unknown"))
+        
+        return {
+            "execution_commands_count": len(execution_commands),
+            "error_occurrences_count": len(error_occurrences),
+            "success_indicators_count": len(success_indicators),
+            "execution_to_error_ratio": len(execution_commands) / max(len(error_occurrences), 1),
+            "has_recent_execution": len(execution_commands) > 0,
+            "has_recent_errors": len(error_occurrences) > 0,
+            "overall_success_trend": len(success_indicators) > len(error_occurrences)
+        }
+
+    def _validate_evaluation_aware_summary(self, summary: str, phases_completed: Dict[str, bool]) -> bool:
+        """Validate that summary contains evaluation context"""
+        summary_lower = summary.lower()
+        
+        # Check for phase-related content
+        phase_indicators = [
+            "phase", "implementation", "setup", "testing", 
+            "reproduction", "evaluation", "completed", "progress"
+        ]
+        
+        has_phase_context = any(indicator in summary_lower for indicator in phase_indicators)
+        
+        # Check for execution-related content
+        execution_indicators = [
+            "execute", "command", "bash", "python", "error", "success"
+        ]
+        
+        has_execution_context = any(indicator in summary_lower for indicator in execution_indicators)
+        
+        # Should have both contexts for a good evaluation-aware summary
+        return has_phase_context and has_execution_context
+
+    def _enhance_summary_with_evaluation_context(
+        self,
+        original_summary: str,
+        phase_analysis: Dict[str, Any],
+        execution_analysis: Dict[str, Any],
+        implementation_summary: Dict[str, Any],
+    ) -> str:
+        """Enhance summary with evaluation context"""
+        enhancement = f"""
+
+## ENHANCED EVALUATION CONTEXT:
+
+### Phase Progress:
+- Completed: {', '.join(phase_analysis['completed_phases']) if phase_analysis['completed_phases'] else 'None'}
+- Current: {phase_analysis['current_phase'] or 'Unknown'}
+- Completion: {phase_analysis['completion_percentage']:.1f}%
+
+### Execution Summary:
+- Commands executed: {execution_analysis['execution_commands_count']}
+- Errors encountered: {execution_analysis['error_occurrences_count']}
+- Success indicators: {execution_analysis['success_indicators_count']}
+- Execution trend: {'Positive' if execution_analysis['overall_success_trend'] else 'Needs attention'}
+
+### Implementation Status:
+- Files implemented: {len(implementation_summary.get('completed_files', []))}
+- Technical decisions: {len(implementation_summary.get('technical_decisions', []))}
+- Dependencies tracked: {len(implementation_summary.get('dependency_analysis', []))}
+"""
+        
+        return original_summary + enhancement
+
+    def _generate_evaluation_fallback_summary(
+        self, implementation_summary: Dict[str, Any], phases_completed: Dict[str, bool]
+    ) -> str:
+        """Generate fallback summary for evaluation workflow"""
+        completed_count = sum(phases_completed.values())
+        
+        return f"""## EVALUATION WORKFLOW FALLBACK SUMMARY
+
+### Phase Status: {completed_count}/5 phases completed
+- Code Implementation: {'✅' if phases_completed.get('code_implementation', False) else '❌'}
+- Environment Setup: {'✅' if phases_completed.get('environment_setup', False) else '❌'}
+- Code Testing: {'✅' if phases_completed.get('code_testing', False) else '❌'}
+- Results Reproduction: {'✅' if phases_completed.get('results_reproduction', False) else '❌'}
+- Performance Evaluation: {'✅' if phases_completed.get('performance_evaluation', False) else '❌'}
+
+### Implementation Progress:
+- Files completed: {len(implementation_summary.get('completed_files', []))}
+- Technical decisions: {len(implementation_summary.get('technical_decisions', []))}
+- Architecture constraints: {len(implementation_summary.get('important_constraints', []))}
+
+### Next Actions: Continue with systematic phase progression and evaluation.
+"""
+
+    def _update_implementation_summary_with_phases(
+        self,
+        implementation_summary: Dict[str, Any],
+        summary_content: str,
+        message_count: int,
+        phases_completed: Dict[str, bool],
+    ):
+        """Update implementation summary with phase context"""
+        # Standard update
+        self._update_implementation_summary(implementation_summary, summary_content, message_count)
+        
+        # Add phase-specific tracking
+        if 'evaluation_context' not in implementation_summary:
+            implementation_summary['evaluation_context'] = {}
+        
+        implementation_summary['evaluation_context'].update({
+            'last_summary_phases': phases_completed.copy(),
+            'phases_completed_count': sum(phases_completed.values()),
+            'last_evaluation_summary_time': time.time()
+        })
+
     async def _call_llm_for_summary(
         self, client, client_type: str, summary_messages: List[Dict]
     ) -> Dict[str, Any]:

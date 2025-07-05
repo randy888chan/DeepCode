@@ -14,7 +14,7 @@ User interface components module for Streamlit application
 """
 
 __version__ = "1.0.0"
-__author__ = "Paper to Code Team"
+__author__ = "DeepCode Team"
 
 # 导入主要组件 / Import main components
 from .layout import main_layout
