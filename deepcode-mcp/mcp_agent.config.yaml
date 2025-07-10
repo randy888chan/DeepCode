@@ -51,33 +51,33 @@ mcp:
     #   env:
     #     GITHUB_TOKEN: "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"
     github-downloader:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/git_command.py"]
       env:
         PYTHONPATH: "."
     file-downloader:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/pdf_downloader.py"]
       env:
         PYTHONPATH: "."
     code-generator:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/code_generator.py"]
       env:
         PYTHONPATH: "."
     command-executor:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/command_executor.py"]
       env:
         PYTHONPATH: "."
     code-implementation:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/code_implementation_server.py"]
       env:
         PYTHONPATH: "."
       description: "论文代码复现工具服务器 - 提供文件操作、代码执行、搜索等功能"
     code-reference-indexer:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
+      command: "python3"
       args: ["tools/code_reference_indexer.py"]
       env:
         PYTHONPATH: "."

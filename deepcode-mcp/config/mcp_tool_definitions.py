@@ -25,12 +25,14 @@ class MCPToolDefinitions:
         Get tool definitions for code implementation
         """
         return [
-            MCPToolDefinitions._get_read_file_tool(),
+            # MCPToolDefinitions._get_read_file_tool(),
+            MCPToolDefinitions._get_read_code_mem_tool(),
             MCPToolDefinitions._get_write_file_tool(),
             MCPToolDefinitions._get_execute_python_tool(),
             MCPToolDefinitions._get_execute_bash_tool(),
             MCPToolDefinitions._get_search_code_tool(),
             MCPToolDefinitions._get_file_structure_tool(),
+            MCPToolDefinitions._get_set_workspace_tool(),
             MCPToolDefinitions._get_search_reference_code_tool(),
             MCPToolDefinitions._get_all_available_references_tool(),
             MCPToolDefinitions._get_set_indexes_directory_tool(),
@@ -60,6 +62,24 @@ class MCPToolDefinitions:
                 },
                 "required": ["file_path"],
             },
+        }
+
+    @staticmethod
+    def _get_read_code_mem_tool() -> Dict[str, Any]:
+        """Read code memory tool definition - reads from implement_code_summary.md"""
+        return {
+            "name": "read_code_mem",
+            "description": "Check if file summary exists in implement_code_summary.md before reading actual file. Returns summary if available, otherwise recommends using read_file.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "File path to check for summary information in implement_code_summary.md"
+                    }
+                },
+                "required": ["file_path"]
+            }
         }
 
     @staticmethod
@@ -223,6 +243,24 @@ class MCPToolDefinitions:
                 "type": "object",
                 "properties": {},
                 "required": []
+            }
+        }
+
+    @staticmethod
+    def _get_set_workspace_tool() -> Dict[str, Any]:
+        """Set workspace directory tool definition"""
+        return {
+            "name": "set_workspace",
+            "description": "Set the workspace directory for file operations",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "workspace_path": {
+                        "type": "string",
+                        "description": "Directory path for the workspace"
+                    }
+                },
+                "required": ["workspace_path"]
             }
         }
 

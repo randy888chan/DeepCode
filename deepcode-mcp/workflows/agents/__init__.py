@@ -4,10 +4,12 @@ Agents Package for Code Implementation Workflow
 
 This package contains specialized agents for different aspects of code implementation:
 - CodeImplementationAgent: Handles file-by-file code generation
-- SummaryAgent: Manages conversation summarization and memory optimization
+- MemoryAgent: Manages memory optimization and consistency across phases
+- SummaryAgent: Manages conversation summarization and memory optimization (legacy)
 """
 
 from .code_implementation_agent import CodeImplementationAgent
+from .memory_agent import MemoryAgent
 from .summary_agent import SummaryAgent
 
-__all__ = ["CodeImplementationAgent", "SummaryAgent"]
+__all__ = ["CodeImplementationAgent", "MemoryAgent", "SummaryAgent"]

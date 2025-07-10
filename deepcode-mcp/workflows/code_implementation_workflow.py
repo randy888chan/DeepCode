@@ -29,9 +29,14 @@ from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLL
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
 from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
-from workflows.agents import CodeImplementationAgent, SummaryAgent
+from workflows.agents import CodeImplementationAgent, MemoryAgent
+from workflows.agents.memory_agent_concise import ConciseMemoryAgent
 from config.mcp_tool_definitions import get_mcp_tools
+from utils.dialogue_logger import DialogueLogger, extract_paper_id_from_path
 
+
+os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+os.environ['http_proxy'] = 'http://127.0.0.1:7890'
 
 class CodeImplementationWorkflow:
     """
@@ -51,6 +56,8 @@ class CodeImplementationWorkflow:
         self.api_config = self._load_api_config()
         self.logger = self._create_logger()
         self.mcp_agent = None
+        self.dialogue_logger = None
+        self.enable_read_tools = True  # Default value, will be overridden by run_workflow parameter
 
     def _load_api_config(self) -> Dict[str, Any]:
         """Load API configuration from YAML file"""
@@ -63,12 +70,8 @@ class CodeImplementationWorkflow:
     def _create_logger(self) -> logging.Logger:
         """Create and configure logger"""
         logger = logging.getLogger(__name__)
-        if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger.setLevel(logging.INFO)
+        # Don't add handlers to child loggers - let them propagate to root
+        logger.setLevel(logging.INFO)
         return logger
 
     def _read_plan_file(self, plan_file_path: str) -> str:
@@ -87,16 +90,32 @@ class CodeImplementationWorkflow:
 
     # ==================== 2. Public Interface Methods (External API Layer) ====================
 
-    async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None, pure_code_mode: bool = False):
+    async def run_workflow(self, plan_file_path: str, target_directory: Optional[str] = None, pure_code_mode: bool = False, enable_read_tools: bool = True):
         """Run complete workflow - Main public interface"""
+        # Set the read tools configuration
+        self.enable_read_tools = enable_read_tools
+        
+        # Initialize dialogue logger first (outside try block)
+        paper_id = extract_paper_id_from_path(plan_file_path)
+        self.dialogue_logger = DialogueLogger(paper_id)
+        
         try:
             plan_content = self._read_plan_file(plan_file_path)
             
             if target_directory is None:
                 target_directory = str(Path(plan_file_path).parent)
             
-            self.logger.info(f"Starting workflow: {plan_file_path}")
-            self.logger.info(f"Target directory: {target_directory}")
+            # Calculate code directory for workspace alignment
+            code_directory = os.path.join(target_directory, "generate_code")
+            
+            self.logger.info("=" * 80)
+            self.logger.info("🚀 STARTING CODE IMPLEMENTATION WORKFLOW")
+            self.logger.info("=" * 80)
+            self.logger.info(f"📄 Plan file: {plan_file_path}")
+            self.logger.info(f"📂 Plan file parent: {target_directory}")
+            self.logger.info(f"🎯 Code directory (MCP workspace): {code_directory}")
+            self.logger.info(f"⚙️  Read tools: {'ENABLED' if self.enable_read_tools else 'DISABLED'}")
+            self.logger.info("=" * 80)
             
             results = {}
             
@@ -111,11 +130,16 @@ class CodeImplementationWorkflow:
             # Code implementation
             if pure_code_mode:
                 self.logger.info("Starting pure code implementation...")
-                results["code_implementation"] = await self.implement_code_pure(plan_content, target_directory)
+                results["code_implementation"] = await self.implement_code_pure(plan_content, target_directory, code_directory)
             else:
                 pass
             
             self.logger.info("Workflow execution successful")
+            
+            # Finalize dialogue logger
+            if self.dialogue_logger:
+                final_summary = f"Workflow completed successfully for paper {paper_id}. Results: {results}"
+                self.dialogue_logger.finalize_session(final_summary)
             
             return {
                 "status": "success",
@@ -128,6 +152,12 @@ class CodeImplementationWorkflow:
             
         except Exception as e:
             self.logger.error(f"Workflow execution failed: {e}")
+            
+            # Finalize dialogue logger with error information
+            if self.dialogue_logger:
+                error_summary = f"Workflow failed for paper {paper_id}. Error: {str(e)}"
+                self.dialogue_logger.finalize_session(error_summary)
+            
             return {"status": "error", "message": str(e), "plan_file": plan_file_path}
         finally:
             await self._cleanup_mcp_agent()
@@ -168,11 +198,16 @@ Requirements:
             self.logger.info("File tree structure creation completed")
             return result
 
-    async def implement_code_pure(self, plan_content: str, target_directory: str) -> str:
+    async def implement_code_pure(self, plan_content: str, target_directory: str, code_directory: str = None) -> str:
         """Pure code implementation - focus on code writing without testing"""
         self.logger.info("Starting pure code implementation (no testing)...")
         
-        code_directory = os.path.join(target_directory, "generate_code")
+        # Use provided code_directory or calculate it (for backwards compatibility)
+        if code_directory is None:
+            code_directory = os.path.join(target_directory, "generate_code")
+            
+        self.logger.info(f"🎯 Using code directory (MCP workspace): {code_directory}")
+        
         if not os.path.exists(code_directory):
             raise FileNotFoundError("File tree structure not found, please run file tree creation first")
         
@@ -196,7 +231,7 @@ Requirements:
             messages.append({"role": "user", "content": implementation_message})
             
             result = await self._pure_code_implementation_loop(
-                client, client_type, system_message, messages, tools
+                client, client_type, system_message, messages, tools, plan_content, target_directory
             )
             
             return result
@@ -206,9 +241,9 @@ Requirements:
 
     # ==================== 3. Core Business Logic (Implementation Layer) ====================
 
-    async def _pure_code_implementation_loop(self, client, client_type, system_message, messages, tools):
-        """Pure code implementation loop with sliding window and key information extraction"""
-        max_iterations = 50
+    async def _pure_code_implementation_loop(self, client, client_type, system_message, messages, tools, plan_content, target_directory):
+        """Pure code implementation loop with memory optimization and phase consistency"""
+        max_iterations = 100
         iteration = 0
         start_time = time.time()
         max_time = 2400  # 40 minutes
@@ -218,11 +253,34 @@ Requirements:
         SUMMARY_TRIGGER = 8
         
         # Initialize specialized agents
-        code_agent = CodeImplementationAgent(self.mcp_agent, self.logger)
-        summary_agent = SummaryAgent(self.logger)
+        code_agent = CodeImplementationAgent(self.mcp_agent, self.logger, self.enable_read_tools)
+        memory_agent = ConciseMemoryAgent(plan_content, self.logger, target_directory)
+        
+        # Log read tools configuration
+        read_tools_status = "ENABLED" if self.enable_read_tools else "DISABLED"
+        self.logger.info(f"🔧 Read tools (read_file, read_code_mem): {read_tools_status}")
+        if not self.enable_read_tools:
+            self.logger.info("🚫 No read mode: read_file and read_code_mem tools will be skipped")
+        
+        # Connect code agent with memory agent for summary generation
+        # Note: Concise memory agent doesn't need LLM client for summary generation
+        code_agent.set_memory_agent(memory_agent, client, client_type)
+        
+        # Initialize memory agent with iteration 0
+        memory_agent.start_new_round(iteration=0)
         
         # Preserve initial plan (never compressed)
         initial_plan_message = messages[0] if messages else None
+        
+        # Log initial system prompt if dialogue logger is available
+        if self.dialogue_logger and system_message:
+            self.dialogue_logger.log_complete_exchange(
+                system_prompt=system_message,
+                user_message=initial_plan_message['content'] if initial_plan_message else "",
+                round_type="initialization",
+                context={"max_iterations": max_iterations, "max_time": max_time},
+                summary="Initial workflow setup and system prompt configuration"
+            )
         
         while iteration < max_iterations:
             iteration += 1
@@ -232,10 +290,33 @@ Requirements:
                 self.logger.warning(f"Time limit reached: {elapsed_time:.2f}s")
                 break
             
-            self.logger.info(f"Pure code implementation iteration {iteration}: generating code")
+            # # Test simplified memory approach if we have files implemented
+            # if iteration == 5 and code_agent.get_files_implemented_count() > 0:
+            #     self.logger.info("🧪 Testing simplified memory approach...")
+            #     test_results = await memory_agent.test_simplified_memory_approach()
+            #     self.logger.info(f"Memory test results: {test_results}")
+            
+            # self.logger.info(f"Pure code implementation iteration {iteration}: generating code")
             
             messages = self._validate_messages(messages)
             current_system_message = code_agent.get_system_prompt()
+            
+            # Start logging round if dialogue logger is available
+            if self.dialogue_logger:
+                context = {
+                    "iteration": iteration,
+                    "elapsed_time": time.time() - start_time,
+                    "files_implemented": code_agent.get_files_implemented_count(),
+                    "message_count": len(messages)
+                }
+                self.dialogue_logger.start_new_round("implementation", context)
+                
+                # Log system prompt for this round
+                self.dialogue_logger.log_system_prompt(current_system_message, "implementation_system")
+                
+                # Log the last user message if available
+                if messages and messages[-1].get("role") == "user":
+                    self.dialogue_logger.log_user_message(messages[-1]["content"], "implementation_guidance")
             
             # Call LLM
             response = await self._call_llm_with_tools(
@@ -248,9 +329,34 @@ Requirements:
             
             messages.append({"role": "assistant", "content": response_content})
             
+            # Log assistant response
+            if self.dialogue_logger:
+                self.dialogue_logger.log_assistant_response(response_content, "implementation_response")
+            
             # Handle tool calls
             if response.get("tool_calls"):
+                # Log tool calls
+                if self.dialogue_logger:
+                    self.dialogue_logger.log_tool_calls(response["tool_calls"])
+                
                 tool_results = await code_agent.execute_tool_calls(response["tool_calls"])
+                
+                # Record essential tool results in concise memory agent
+                for tool_call, tool_result in zip(response["tool_calls"], tool_results):
+                    memory_agent.record_tool_result(
+                        tool_name=tool_call["name"],
+                        tool_input=tool_call["input"],
+                        tool_result=tool_result.get("result")
+                    )
+                
+                # NEW LOGIC: Check if write_file was called and trigger memory optimization immediately
+                write_file_detected = any(tool_call["name"] == "write_file" for tool_call in response["tool_calls"])
+                # if write_file_detected:
+                #     self.logger.info(f"🔄 write_file detected - preparing memory optimization for next round")
+                
+                # Log tool results
+                if self.dialogue_logger:
+                    self.dialogue_logger.log_tool_results(tool_results)
                 
                 # Determine guidance based on results
                 has_error = self._check_tool_results_for_errors(tool_results)
@@ -264,33 +370,109 @@ Requirements:
                 compiled_response = self._compile_user_response(tool_results, guidance)
                 messages.append({"role": "user", "content": compiled_response})
                 
+                # Log the compiled user response
+                if self.dialogue_logger:
+                    self.dialogue_logger.log_user_message(compiled_response, "tool_results_feedback")
+                
+                # NEW LOGIC: Apply memory optimization immediately after write_file detection
+                if memory_agent.should_trigger_memory_optimization(messages, code_agent.get_files_implemented_count()):
+                    # Capture messages before optimization
+                    messages_before_optimization = messages.copy()
+                    messages_before_count = len(messages)
+                    
+                    # Log memory optimization round
+                    if self.dialogue_logger:
+                        memory_context = {
+                            "trigger_reason": "write_file_detected",
+                            "message_count_before": len(messages),
+                            "files_implemented": code_agent.get_files_implemented_count(),
+                            "approach": "clear_after_write_file"
+                        }
+                        self.dialogue_logger.start_new_round("memory_optimization", memory_context)
+                    
+                    # Apply concise memory optimization
+                    files_implemented_count = code_agent.get_files_implemented_count()
+                    current_system_message = code_agent.get_system_prompt()
+                    messages = memory_agent.apply_memory_optimization(current_system_message, messages, files_implemented_count)
+                    messages_after_count = len(messages)
+                    
+                    compression_ratio = (messages_before_count - messages_after_count) / messages_before_count * 100 if messages_before_count > 0 else 0
+                    
+                    # Log memory optimization with detailed content
+                    if self.dialogue_logger:
+                        memory_stats = memory_agent.get_memory_statistics(files_implemented_count)
+                        
+                        # Log the detailed memory optimization including message content
+                        self.dialogue_logger.log_memory_optimization(
+                            messages_before=messages_before_optimization,
+                            messages_after=messages,
+                            optimization_stats=memory_stats,
+                            approach="clear_after_write_file"
+                        )
+                        
+                        # Log additional metadata
+                        self.dialogue_logger.log_metadata("compression_ratio", f"{compression_ratio:.1f}%")
+                        self.dialogue_logger.log_metadata("messages_before", messages_before_count)
+                        self.dialogue_logger.log_metadata("messages_after", messages_after_count)
+                        self.dialogue_logger.log_metadata("approach", "clear_after_write_file")
+                        
+                        memory_round_summary = f"IMMEDIATE memory optimization after write_file. " + \
+                                              f"Messages: {messages_before_count} → {messages_after_count}, " + \
+                                              f"Files tracked: {memory_stats['implemented_files_tracked']}"
+                        self.dialogue_logger.complete_round(memory_round_summary)
+                
             else:
                 files_count = code_agent.get_files_implemented_count()
                 no_tools_guidance = self._generate_no_tools_guidance(files_count)
                 messages.append({"role": "user", "content": no_tools_guidance})
+                
+                # Log the no tools guidance
+                if self.dialogue_logger:
+                    self.dialogue_logger.log_user_message(no_tools_guidance, "no_tools_guidance")
             
-            # Sliding window + key information extraction based on token count
-            if code_agent.should_trigger_summary(SUMMARY_TRIGGER, messages):
-                current_token_count = code_agent.calculate_messages_token_count(messages) if code_agent.tokenizer else len(messages)
-                self.logger.info(f"Triggering summary: {code_agent.get_files_implemented_count()} files implemented, {current_token_count:,} tokens")
+            # Check for analysis loop and provide corrective guidance
+            if code_agent.is_in_analysis_loop():
+                analysis_loop_guidance = code_agent.get_analysis_loop_guidance()
+                messages.append({"role": "user", "content": analysis_loop_guidance})
+                self.logger.warning(f"Analysis loop detected and corrective guidance provided")
                 
-                analysis_before = summary_agent.analyze_message_patterns(messages)
-                
-                summary = await summary_agent.generate_conversation_summary(
-                    client, client_type, messages, code_agent.get_implementation_summary()
-                )
-                
-                messages = summary_agent.apply_sliding_window(
-                    messages, initial_plan_message, summary, WINDOW_SIZE
-                )
-                
-                analysis_after = summary_agent.analyze_message_patterns(messages)
-                compression_ratio = (analysis_before['total_messages'] - analysis_after['total_messages']) / analysis_before['total_messages'] * 100
-                token_reduction = analysis_before.get('total_tokens', 0) - analysis_after.get('total_tokens', 0)
-                self.logger.info(f"Compression ratio: {compression_ratio:.1f}%, token reduction: {token_reduction:,}")
-                
-                # Mark summary as triggered to prevent duplicate summaries
-                code_agent.mark_summary_triggered(messages)
+                # Log analysis loop detection
+                if self.dialogue_logger:
+                    self.dialogue_logger.log_user_message(analysis_loop_guidance, "analysis_loop_correction")
+            
+            # Complete the round with summary
+            if self.dialogue_logger:
+                files_count = code_agent.get_files_implemented_count()
+                round_summary = f"Iteration {iteration} completed. Files implemented: {files_count}. " + \
+                               f"Tool calls: {len(response.get('tool_calls', []))}. " + \
+                               f"Response length: {len(response_content)} chars."
+                self.dialogue_logger.log_metadata("files_implemented", files_count)
+                self.dialogue_logger.log_metadata("tool_calls_count", len(response.get('tool_calls', [])))
+                self.dialogue_logger.log_metadata("response_length", len(response_content))
+                self.dialogue_logger.complete_round(round_summary)
+            
+            # # Test summary functionality after every 10 iterations (reduced frequency)
+            # if iteration % 10 == 0 and code_agent.get_files_implemented_count() > 0:
+            #     self.logger.info(f"🧪 Testing summary functionality at iteration {iteration}")
+            #     optimization_success = await code_agent.test_summary_optimization()
+            #     if optimization_success:
+            #         self.logger.info("✅ Summary optimization working correctly")
+            #     else:
+            #         self.logger.warning("⚠️ Summary optimization may not be working")
+            
+            # Update memory agent state with current file implementations
+            files_implemented = code_agent.get_files_implemented_count()
+            # memory_agent.sync_with_code_agent(files_implemented)
+            
+            # Record file implementations in memory agent (for the current round)
+            for file_info in code_agent.get_implementation_summary()["completed_files"]:
+                memory_agent.record_file_implementation(file_info["file"])
+            
+            # REMOVED: Old memory optimization logic - now happens immediately after write_file
+            # Memory optimization is now triggered immediately after write_file detection
+            
+            # Start new round for next iteration, sync with workflow iteration
+            memory_agent.start_new_round(iteration=iteration)
             
             # Check completion
             if any(keyword in response_content.lower() for keyword in [
@@ -300,15 +482,66 @@ Requirements:
                 "reproduction plan fully implemented"
             ]):
                 self.logger.info("Code implementation declared complete")
+                
+                # Log completion
+                if self.dialogue_logger:
+                    completion_context = {
+                        "completion_reason": "implementation_complete",
+                        "final_files_count": code_agent.get_files_implemented_count(),
+                        "total_iterations": iteration,
+                        "total_time": time.time() - start_time
+                    }
+                    self.dialogue_logger.log_complete_exchange(
+                        user_message="Implementation completion detected",
+                        assistant_response=response_content,
+                        round_type="completion",
+                        context=completion_context,
+                        summary="Implementation workflow completed successfully"
+                    )
                 break
             
             # Emergency trim if too long
-            if len(messages) > 120:
-                self.logger.warning("Emergency message trim")
-                messages = summary_agent._emergency_message_trim(messages, initial_plan_message)
+            if len(messages) > 50:
+                self.logger.warning("Emergency message trim - applying concise memory optimization")
+                
+                # Capture messages before emergency optimization
+                messages_before_emergency = messages.copy()
+                messages_before_count = len(messages)
+                
+                # Log emergency memory optimization
+                if self.dialogue_logger:
+                    emergency_context = {
+                        "trigger_reason": "emergency_trim",
+                        "message_count_before": len(messages),
+                        "files_implemented": code_agent.get_files_implemented_count(),
+                        "approach": "emergency_memory_optimization"
+                    }
+                    self.dialogue_logger.start_new_round("emergency_memory_optimization", emergency_context)
+                
+                # Apply emergency memory optimization
+                current_system_message = code_agent.get_system_prompt()
+                files_implemented_count = code_agent.get_files_implemented_count()
+                messages = memory_agent.apply_memory_optimization(current_system_message, messages, files_implemented_count)
+                messages_after_count = len(messages)
+                
+                # Log emergency optimization details
+                if self.dialogue_logger:
+                    memory_stats = memory_agent.get_memory_statistics(files_implemented_count)
+                    
+                    # Log the detailed emergency memory optimization
+                    self.dialogue_logger.log_memory_optimization(
+                        messages_before=messages_before_emergency,
+                        messages_after=messages,
+                        optimization_stats=memory_stats,
+                        approach="emergency_memory_optimization"
+                    )
+                    
+                    emergency_summary = f"Emergency memory optimization triggered. " + \
+                                       f"Messages: {messages_before_count} → {messages_after_count}"
+                    self.dialogue_logger.complete_round(emergency_summary)
         
-        return await self._generate_pure_code_final_report_with_agents(
-            iteration, time.time() - start_time, code_agent, summary_agent
+        return await self._generate_pure_code_final_report_with_concise_agents(
+            iteration, time.time() - start_time, code_agent, memory_agent
         )
 
     # ==================== 4. MCP Agent and LLM Communication Management (Communication Layer) ====================
@@ -324,6 +557,13 @@ Requirements:
             
             await self.mcp_agent.__aenter__()
             llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+            
+            # Set workspace to the target code directory
+            workspace_result = await self.mcp_agent.call_tool(
+                "set_workspace", 
+                {"workspace_path": code_directory}
+            )
+            self.logger.info(f"Workspace setup result: {workspace_result}")
             
             return llm
                 
@@ -359,6 +599,7 @@ Requirements:
                 # Test connection
                 await client.messages.create(
                     model="claude-sonnet-4-20250514",
+                    # model="claude-3-5-sonnet-20241022",
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}]
                 )
@@ -386,7 +627,7 @@ Requirements:
         
         raise ValueError("No available LLM API")
 
-    async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=16384):
+    async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=8192):
         """Call LLM with tools"""
         try:
             if client_type == "anthropic":
@@ -408,6 +649,7 @@ Requirements:
         try:
             response = await client.messages.create(
                 model="claude-sonnet-4-20250514",
+                # model="claude-3-5-sonnet-20241022",
                 system=system_message,
                 messages=validated_messages,
                 tools=tools,
@@ -565,17 +807,17 @@ Requirements:
 
     # ==================== 7. Reporting and Output (Output Layer) ====================
 
-    async def _generate_pure_code_final_report_with_agents(
+    async def _generate_pure_code_final_report_with_concise_agents(
         self, 
         iterations: int, 
         elapsed_time: float, 
         code_agent: CodeImplementationAgent, 
-        summary_agent: SummaryAgent
+        memory_agent: ConciseMemoryAgent
     ):
-        """Generate final report using agent statistics"""
+        """Generate final report using concise agent statistics"""
         try:
             code_stats = code_agent.get_implementation_statistics()
-            summary_stats = summary_agent.get_summary_statistics()
+            memory_stats = memory_agent.get_memory_statistics(code_stats['files_implemented_count'])
             
             if self.mcp_agent:
                 history_result = await self.mcp_agent.call_tool("get_operation_history", {"last_n": 30})
@@ -593,7 +835,7 @@ Requirements:
                         files_created.append(file_path)
             
             report = f"""
-# Pure Code Implementation Completion Report
+# Pure Code Implementation Completion Report (Write-File-Based Memory Mode)
 
 ## Execution Summary
 - Implementation iterations: {iterations}
@@ -601,6 +843,11 @@ Requirements:
 - Files implemented: {code_stats['total_files_implemented']}
 - File write operations: {write_operations}
 - Total MCP operations: {history_data.get('total_operations', 0)}
+
+## Read Tools Configuration
+- Read tools enabled: {code_stats['read_tools_status']['read_tools_enabled']}
+- Status: {code_stats['read_tools_status']['status']}
+- Tools affected: {', '.join(code_stats['read_tools_status']['tools_affected'])}
 
 ## Agent Performance
 ### Code Implementation Agent
@@ -612,9 +859,14 @@ Requirements:
 - Files read for dependencies: {code_stats['files_read_for_dependencies']}
 - Last summary triggered at file count: {code_stats['last_summary_file_count']}
 
-### Summary Agent
-- Summaries generated: {summary_stats['total_summaries_generated']}
-- Average summary length: {summary_stats['average_summary_length']:.0f} characters
+### Concise Memory Agent (Write-File-Based)
+- Last write_file detected: {memory_stats['last_write_file_detected']}
+- Should clear memory next: {memory_stats['should_clear_memory_next']}
+- Files implemented count: {memory_stats['implemented_files_tracked']}
+- Current round: {memory_stats['current_round']}
+- Concise mode active: {memory_stats['concise_mode_active']}
+- Current round tool results: {memory_stats['current_round_tool_results']}
+- Essential tools recorded: {memory_stats['essential_tools_recorded']}
 
 ## Files Created
 """
@@ -626,14 +878,18 @@ Requirements:
             
             report += """
 ## Architecture Features
+✅ WRITE-FILE-BASED Memory Agent - Clear after each file generation
+✅ After write_file: Clear history → Keep system prompt + initial plan + tool results
+✅ Tool accumulation: read_code_mem, read_file, search_reference_code until next write_file
+✅ Clean memory cycle: write_file → clear → accumulate → write_file → clear
+✅ Essential tool recording with write_file detection
 ✅ Specialized agent separation for clean code organization
-✅ Sliding window memory optimization (70-80% token reduction)
-✅ Progress tracking and implementation statistics
 ✅ MCP-compliant tool execution
 ✅ Production-grade code with comprehensive type hints
 ✅ Intelligent dependency analysis and file reading
-✅ Cross-file consistency through smart dependency tracking
 ✅ Automated read_file usage for implementation context
+✅ Eliminates conversation clutter between file generations
+✅ Focused memory for efficient next file generation
 """
             return report
             
@@ -668,7 +924,8 @@ Requirements:
             
             # Test 2: Set indexes directory
             self.logger.info("\n📁 Test 2: Setting indexes directory...")
-            indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/indexes"
+            # indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/indexes"
+            indexes_path = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"  
             try:
                 set_dir_result = await self.mcp_agent.call_tool(
                     "set_indexes_directory", 
@@ -737,7 +994,14 @@ Requirements:
 
 async def main():
     """Main function for running the workflow"""
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+    # Configure root logger carefully to avoid duplicates
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+        handler.setFormatter(formatter)
+        root_logger.addHandler(handler)
+        root_logger.setLevel(logging.INFO)
     
     workflow = CodeImplementationWorkflow()
     
@@ -748,8 +1012,29 @@ async def main():
     print("1. Test Code Reference Indexer Integration")
     print("2. Run Full Implementation Workflow")
     print("3. Run Implementation with Pure Code Mode")
+    print("4. Test Read Tools Configuration")
+    
+    # mode_choice = input("Enter choice (1-4, default: 3): ").strip()
     
     # For testing purposes, we'll run the test first
+    # if mode_choice == "4":
+    #     print("Testing Read Tools Configuration...")
+        
+    #     # Create a test workflow normally
+    #     test_workflow = CodeImplementationWorkflow()
+        
+    #     # Create a mock code agent for testing
+    #     print("\n🧪 Testing with read tools DISABLED:")
+    #     test_agent_disabled = CodeImplementationAgent(None, enable_read_tools=False)
+    #     await test_agent_disabled.test_read_tools_configuration()
+        
+    #     print("\n🧪 Testing with read tools ENABLED:")
+    #     test_agent_enabled = CodeImplementationAgent(None, enable_read_tools=True)
+    #     await test_agent_enabled.test_read_tools_configuration()
+        
+    #     print("✅ Read tools configuration testing completed!")
+    #     return
+    
     print("Running Code Reference Indexer Integration Test...")
     # test_success = await workflow.test_code_reference_indexer()
     test_success = True
@@ -761,17 +1046,26 @@ async def main():
         # Ask if user wants to continue with actual workflow
         print("\nContinuing with workflow execution...")
         
-        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
+        # plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
+        plan_file = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
         
         print("Implementation Mode Selection:")
         print("1. Pure Code Implementation Mode (Recommended)")
         print("2. Iterative Implementation Mode")
         
         pure_code_mode = True
-        mode_name = "Pure Code Implementation Mode with Agent Architecture + Code Reference Indexer"
+        mode_name = "Pure Code Implementation Mode with Memory Agent Architecture + Code Reference Indexer"
         print(f"Using: {mode_name}")
         
-        result = await workflow.run_workflow(plan_file, pure_code_mode=pure_code_mode)
+        # Configure read tools - modify this parameter to enable/disable read tools
+        enable_read_tools = True  # Set to False to disable read_file and read_code_mem tools
+        read_tools_status = "ENABLED" if enable_read_tools else "DISABLED"
+        print(f"🔧 Read tools (read_file, read_code_mem): {read_tools_status}")
+        
+        # NOTE: To test without read tools, change the line above to:
+        # enable_read_tools = False
+        
+        result = await workflow.run_workflow(plan_file, pure_code_mode=pure_code_mode, enable_read_tools=enable_read_tools)
         
         print("=" * 60)
         print("Workflow Execution Results:")
@@ -786,7 +1080,7 @@ async def main():
             print(f"Error Message: {result['message']}")
         
         print("=" * 60)
-        print("✅ Using Standard MCP Architecture with Specialized Agents + Code Reference Indexer")
+        print("✅ Using Standard MCP Architecture with Memory Agent + Code Reference Indexer")
         
     else:
         print("\n" + "=" * 60)

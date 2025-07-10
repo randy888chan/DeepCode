@@ -60,17 +60,39 @@ CURRENT_FILES = {}
 
 
 def initialize_workspace(workspace_dir: str = None):
-    """初始化工作空间"""
+    """
+    初始化工作空间
+    
+    默认情况下，工作空间将通过 set_workspace 工具由工作流设置为:
+    {plan_file_parent}/generate_code
+    
+    Args:
+        workspace_dir: 可选的工作空间目录路径
+    """
     global WORKSPACE_DIR
     if workspace_dir is None:
-        # 默认使用当前目录下的generate_code目录
+        # 默认使用当前目录下的generate_code目录，但不立即创建
+        # 这个默认值将被工作流通过 set_workspace 工具覆盖
         WORKSPACE_DIR = Path.cwd() / "generate_code"
+        # logger.info(f"工作空间初始化 (默认值，将被工作流覆盖): {WORKSPACE_DIR}")
+        # logger.info("注意: 实际工作空间将由工作流通过 set_workspace 工具设置为 {plan_file_parent}/generate_code")
     else:
         WORKSPACE_DIR = Path(workspace_dir).resolve()
+        # 只有明确指定目录时才创建
+        WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+        logger.info(f"工作空间初始化: {WORKSPACE_DIR}")
 
-    # 确保工作空间目录存在
-    WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info(f"工作空间初始化: {WORKSPACE_DIR}")
+
+def ensure_workspace_exists():
+    """确保工作空间目录存在"""
+    global WORKSPACE_DIR
+    if WORKSPACE_DIR is None:
+        initialize_workspace()
+    
+    # 创建工作空间目录（如果不存在）
+    if not WORKSPACE_DIR.exists():
+        WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+        logger.info(f"工作空间目录已创建: {WORKSPACE_DIR}")
 
 
 def validate_path(path: str) -> Path:
@@ -256,6 +278,9 @@ async def execute_python(code: str, timeout: int = 30) -> str:
             temp_file = f.name
 
         try:
+            # 确保工作空间目录存在
+            ensure_workspace_exists()
+            
             # 执行Python代码
             result = subprocess.run(
                 [sys.executable, temp_file],
@@ -332,6 +357,9 @@ async def execute_bash(command: str, timeout: int = 30) -> str:
             )
             return json.dumps(result, ensure_ascii=False, indent=2)
 
+        # 确保工作空间目录存在
+        ensure_workspace_exists()
+        
         # 执行命令
         result = subprocess.run(
             command,
@@ -389,6 +417,238 @@ async def execute_bash(command: str, timeout: int = 30) -> str:
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
+@mcp.tool()
+async def read_code_mem(file_path: str) -> str:
+    """
+    Check if file summary exists in implement_code_summary.md
+    
+    Args:
+        file_path: File path to check for summary information in implement_code_summary.md
+        
+    Returns:
+        Summary information if available
+    """
+    try:
+        if not file_path:
+            result = {
+                "status": "error",
+                "message": "file_path parameter is required"
+            }
+            log_operation("read_code_mem_error", {"error": "missing_file_path"})
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        
+        # Ensure workspace exists
+        ensure_workspace_exists()
+        
+        # Look for implement_code_summary.md in the workspace
+        current_path = Path(WORKSPACE_DIR)
+        summary_file_path = current_path.parent / "implement_code_summary.md"
+        
+        if not summary_file_path.exists():
+            result = {
+                "status": "no_summary",
+                "file_path": file_path,
+                "message": f"No summary file found.",
+                # "recommendation": f"read_file(file_path='{file_path}')"
+            }
+            log_operation("read_code_mem", {"file_path": file_path, "status": "no_summary_file"})
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        
+        # Read the summary file
+        with open(summary_file_path, 'r', encoding='utf-8') as f:
+            summary_content = f.read()
+        
+        if not summary_content.strip():
+            result = {
+                "status": "no_summary",
+                "file_path": file_path,
+                "message": f"Summary file is empty.",
+                # "recommendation": f"read_file(file_path='{file_path}')"
+            }
+            log_operation("read_code_mem", {"file_path": file_path, "status": "empty_summary"})
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        
+        # Extract file-specific section from summary
+        file_section = _extract_file_section_from_summary(summary_content, file_path)
+        
+        if file_section:
+            result = {
+                "status": "summary_found",
+                "file_path": file_path,
+                "summary_content": file_section,
+                "message": f"Summary information found for {file_path} in implement_code_summary.md"
+            }
+            log_operation("read_code_mem", {"file_path": file_path, "status": "summary_found", "section_length": len(file_section)})
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        else:
+            result = {
+                "status": "no_summary",
+                "file_path": file_path,
+                "message": f"No summary found for {file_path} in implement_code_summary.md",
+                # "recommendation": f"Use read_file tool to read the actual file: read_file(file_path='{file_path}')"
+            }
+            log_operation("read_code_mem", {"file_path": file_path, "status": "no_match"})
+            return json.dumps(result, ensure_ascii=False, indent=2)
+            
+    except Exception as e:
+        result = {
+            "status": "error",
+            "message": f"Failed to check code memory: {str(e)}",
+            "file_path": file_path,
+            # "recommendation": "Use read_file tool instead"
+        }
+        log_operation("read_code_mem_error", {"file_path": file_path, "error": str(e)})
+        return json.dumps(result, ensure_ascii=False, indent=2)
+
+
+def _extract_file_section_from_summary(summary_content: str, target_file_path: str) -> str:
+    """
+    Extract the specific section for a file from the summary content
+    
+    Args:
+        summary_content: Full summary content
+        target_file_path: Path of the target file
+        
+    Returns:
+        File-specific section or None if not found
+    """
+    import re
+    
+    # Normalize the target path for comparison
+    normalized_target = _normalize_file_path(target_file_path)
+    
+    # Pattern to match implementation sections with separator lines
+    section_pattern = r'={80}\s*\n## IMPLEMENTATION File ([^;]+); ROUND \d+\s*\n={80}(.*?)(?=\n={80}|\Z)'
+    
+    matches = re.findall(section_pattern, summary_content, re.DOTALL)
+    
+    for file_path_in_summary, section_content in matches:
+        file_path_in_summary = file_path_in_summary.strip()
+        section_content = section_content.strip()
+        
+        # Normalize the path from summary for comparison
+        normalized_summary_path = _normalize_file_path(file_path_in_summary)
+        
+        # Check if paths match using multiple strategies
+        if _paths_match(normalized_target, normalized_summary_path, target_file_path, file_path_in_summary):
+            # Return the complete section with proper formatting
+            file_section = f"""================================================================================
+## IMPLEMENTATION File {file_path_in_summary}; ROUND [X]
+================================================================================
+
+{section_content}
+
+---
+*Extracted from implement_code_summary.md*"""
+            return file_section
+    
+    # If no section-based match, try alternative parsing method
+    return _extract_file_section_alternative(summary_content, target_file_path)
+
+
+def _normalize_file_path(file_path: str) -> str:
+    """Normalize file path for comparison"""
+    # Remove leading/trailing slashes and convert to lowercase
+    normalized = file_path.strip('/').lower()
+    # Replace backslashes with forward slashes
+    normalized = normalized.replace('\\', '/')
+    
+    # Remove common prefixes to make matching more flexible
+    common_prefixes = ['rice/', 'src/', './rice/', './src/', './']
+    for prefix in common_prefixes:
+        if normalized.startswith(prefix):
+            normalized = normalized[len(prefix):]
+            break
+    
+    return normalized
+
+
+def _paths_match(normalized_target: str, normalized_summary: str, original_target: str, original_summary: str) -> bool:
+    """Check if two file paths match using multiple strategies"""
+    
+    # Strategy 1: Exact normalized match
+    if normalized_target == normalized_summary:
+        return True
+    
+    # Strategy 2: Basename match (filename only)
+    target_basename = os.path.basename(original_target)
+    summary_basename = os.path.basename(original_summary)
+    if target_basename == summary_basename and len(target_basename) > 4:
+        return True
+    
+    # Strategy 3: Suffix match (remove common prefixes and compare)
+    target_suffix = _remove_common_prefixes(normalized_target)
+    summary_suffix = _remove_common_prefixes(normalized_summary)
+    if target_suffix == summary_suffix:
+        return True
+    
+    # Strategy 4: Ends with match
+    if normalized_target.endswith(normalized_summary) or normalized_summary.endswith(normalized_target):
+        return True
+    
+    # Strategy 5: Contains match for longer paths
+    if len(normalized_target) > 10 and normalized_target in normalized_summary:
+        return True
+    if len(normalized_summary) > 10 and normalized_summary in normalized_target:
+        return True
+    
+    return False
+
+
+def _remove_common_prefixes(file_path: str) -> str:
+    """Remove common prefixes from file path"""
+    prefixes_to_remove = ['rice/', 'src/', 'core/', './']
+    path = file_path
+    
+    for prefix in prefixes_to_remove:
+        if path.startswith(prefix):
+            path = path[len(prefix):]
+    
+    return path
+
+
+def _extract_file_section_alternative(summary_content: str, target_file_path: str) -> str:
+    """Alternative method to extract file section using simpler pattern matching"""
+    
+    # Get the basename for fallback matching
+    target_basename = os.path.basename(target_file_path)
+    
+    # Split by separator lines to get individual sections
+    sections = summary_content.split('=' * 80)
+    
+    for i, section in enumerate(sections):
+        if '## IMPLEMENTATION File' in section:
+            # Extract the file path from the header
+            lines = section.strip().split('\n')
+            for line in lines:
+                if '## IMPLEMENTATION File' in line:
+                    # Extract file path between "File " and "; ROUND"
+                    try:
+                        file_part = line.split('File ')[1].split('; ROUND')[0].strip()
+                        
+                        # Check if this matches our target
+                        if (_normalize_file_path(target_file_path) == _normalize_file_path(file_part) or
+                            target_basename == os.path.basename(file_part) or
+                            target_file_path in file_part or
+                            file_part.endswith(target_file_path)):
+                            
+                            # Get the next section which contains the content
+                            if i + 1 < len(sections):
+                                content_section = sections[i + 1].strip()
+                                return f"""================================================================================
+## IMPLEMENTATION File {file_part}
+================================================================================
+
+{content_section}
+
+---
+*Extracted from implement_code_summary.md using alternative method*"""
+                    except (IndexError, AttributeError):
+                        continue
+    
+    return None
+
+
 # ==================== 代码搜索工具 ====================
 
 
@@ -408,8 +668,7 @@ async def search_code(
         搜索结果的JSON字符串
     """
     try:
-        if WORKSPACE_DIR is None:
-            initialize_workspace()
+        ensure_workspace_exists()
 
         import glob
 
@@ -505,8 +764,7 @@ async def get_file_structure(directory: str = ".", max_depth: int = 5) -> str:
         文件结构的JSON字符串
     """
     try:
-        if WORKSPACE_DIR is None:
-            initialize_workspace()
+        ensure_workspace_exists()
 
         if directory == ".":
             target_dir = WORKSPACE_DIR
@@ -608,9 +866,12 @@ async def get_file_structure(directory: str = ".", max_depth: int = 5) -> str:
 async def set_workspace(workspace_path: str) -> str:
     """
     设置工作空间目录
+    
+    由工作流调用以将工作空间设置为: {plan_file_parent}/generate_code
+    这确保所有文件操作都相对于正确的项目目录执行
 
     Args:
-        workspace_path: 工作空间路径
+        workspace_path: 工作空间路径 (通常是 {plan_file_parent}/generate_code)
 
     Returns:
         操作结果的JSON字符串
@@ -625,10 +886,11 @@ async def set_workspace(workspace_path: str) -> str:
         old_workspace = WORKSPACE_DIR
         WORKSPACE_DIR = new_workspace
 
+        logger.info(f"New Workspace: {WORKSPACE_DIR}")
+
         result = {
             "status": "success",
-            "message": f"工作空间设置成功: {workspace_path}",
-            "old_workspace": str(old_workspace) if old_workspace else None,
+            "message": f"Workspace setup successful: {workspace_path}",
             "new_workspace": str(WORKSPACE_DIR),
         }
 
@@ -637,6 +899,7 @@ async def set_workspace(workspace_path: str) -> str:
             {
                 "old_workspace": str(old_workspace) if old_workspace else None,
                 "new_workspace": str(WORKSPACE_DIR),
+                "workspace_alignment": "plan_file_parent/generate_code",
             },
         )
 
@@ -694,7 +957,8 @@ def main():
     print("📝 论文代码复现工具服务器 / Paper Code Implementation Tool Server")
     print("")
     print("Available tools / 可用工具:")
-    print("  • read_file           - 读取文件内容 / Read file contents")
+    # print("  • read_file           - 读取文件内容 / Read file contents")
+    print("  • read_code_mem       - 读取代码摘要 / Read code summary from implement_code_summary.md")
     print("  • write_file          - 写入文件内容 / Write file contents")
     print("  • execute_python      - 执行Python代码 / Execute Python code")
     print("  • execute_bash        - 执行bash命令 / Execute bash commands")
@@ -707,7 +971,7 @@ def main():
 
     # 初始化默认工作空间
     initialize_workspace()
-
+    
     # 启动服务器
     mcp.run()
 
