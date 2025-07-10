@@ -366,27 +366,26 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
     
     # 步骤映射：将进度百分比映射到步骤索引 - 根据索引开关调整
     if not enable_indexing:
-        # 跳过索引相关步骤的进度映射
+        # 跳过索引相关步骤的进度映射 - 快速模式顺序：Initialize -> Analyze -> Download -> Plan -> Implement
         step_mapping = {
             5: 0,   # Initialize
             10: 1,  # Analyze
             25: 2,  # Download
-            45: 3,  # References
-            50: 4,  # Plan
-            85: 5,  # Implement (跳过 Repos 和 Index)
-            100: 5  # Complete
+            40: 3,  # Plan (现在优先于References，40%)
+            85: 4,  # Implement (跳过 References, Repos 和 Index)
+            100: 4  # Complete
         }
     else:
-        # 完整工作流的步骤映射
+        # 完整工作流的步骤映射 - 新顺序：Initialize -> Analyze -> Download -> Plan -> References -> Repos -> Index -> Implement
         step_mapping = {
             5: 0,   # Initialize
             10: 1,  # Analyze
             25: 2,  # Download
-            45: 3,  # References
-            50: 4,  # Plan
-            60: 5,  # Repos
-            70: 6,  # Index
-            85: 7,  # Implement
+            40: 3,  # Plan (现在在第4位，40%)
+            50: 4,  # References (现在在第5位，条件性，50%)
+            60: 5,  # Repos (GitHub下载)
+            70: 6,  # Index (代码索引)
+            85: 7,  # Implement (代码实现)
             100: 7  # Complete
         }
     

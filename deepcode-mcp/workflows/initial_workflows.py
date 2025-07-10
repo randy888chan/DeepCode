@@ -206,7 +206,7 @@ async def paper_code_analyzer(document, logger):
     
     # 设置更高的token输出量 / Set higher token output limit
     enhanced_params = RequestParams(
-        max_tokens=16384,  # 增加到16384 tokens以确保完整输出
+        max_tokens=50000,  # 增加到16384 tokens以确保完整输出
         temperature=0.3,   # 保持适中的创造性
     )
     
@@ -379,7 +379,7 @@ async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_cal
         str: Reference analysis result
     """
     if progress_callback:
-        progress_callback(45, "🔍 Analyzing paper references and related work...")
+        progress_callback(50, "🔍 Analyzing paper references and related work...")
     
     reference_path = dir_info['reference_path']
     
@@ -410,7 +410,7 @@ async def _execute_code_planning_phase(dir_info: dict, logger, progress_callback
         progress_callback: Progress callback function
     """
     if progress_callback:
-        progress_callback(50, "📋 Generating initial code implementation plan...")
+        progress_callback(40, "📋 Generating initial code implementation plan...")
     
     initial_plan_path = dir_info['initial_plan_path']
     
@@ -648,8 +648,8 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
     This is the main orchestration function that coordinates all research workflow phases:
     - Docker synchronization setup for seamless file access
     - Paper analysis and content extraction
-    - Reference analysis and GitHub repository discovery
     - Code planning and structure design
+    - Reference analysis and GitHub repository discovery (optional)
     - Codebase indexing and relationship analysis (optional)
     - Final code implementation
     
@@ -711,13 +711,20 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         
         dir_info = await _setup_paper_directory_structure(download_result, logger, sync_directory)
         
-        # Phase 4: Reference Analysis
-        # 阶段4：引用分析
-        reference_result = await _execute_reference_analysis_phase(dir_info, logger, progress_callback)
-        
-        # Phase 5: Code Planning
-        # 阶段5：代码规划
+        # Phase 4: Code Planning
+        # 阶段4：代码规划
         await _execute_code_planning_phase(dir_info, logger, progress_callback)
+        
+        # Phase 5: Reference Analysis (仅在启用索引时执行)
+        # 阶段5：引用分析（仅在启用索引时执行）
+        if enable_indexing:
+            reference_result = await _execute_reference_analysis_phase(dir_info, logger, progress_callback)
+        else:
+            logger.info("🔶 Skipping reference analysis (indexing disabled)")
+            # 创建一个空的引用分析结果以保持文件结构一致性
+            reference_result = "Reference analysis skipped - indexing disabled for faster processing"
+            with open(dir_info['reference_path'], 'w', encoding='utf-8') as f:
+                f.write(reference_result)
         
         # Phase 6: GitHub Repository Download (可选)
         # 阶段6：GitHub仓库下载（可选）

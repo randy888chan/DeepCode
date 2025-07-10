@@ -28,39 +28,99 @@ def display_header():
 
 def display_features():
     """
-    显示功能特性 / Display application features
+    显示功能特性 / Display DeepCode AI Agent capabilities
     """
-    st.markdown("### 🔮 Advanced Capabilities")
+    # AI Agent 核心能力展示区域 - 简化版，不与主header冲突
+    st.markdown("""
+    <div class="ai-capabilities-section">
+        <div class="neural-network">
+            <div class="neuron pulse-1"></div>
+            <div class="neuron pulse-2"></div>
+            <div class="neuron pulse-3"></div>
+        </div>
+        <h2 class="capabilities-title">🤖 AI Agent Capabilities</h2>
+        <p class="capabilities-subtitle">Advanced Neural Code Intelligence</p>
+    </div>
+    """, unsafe_allow_html=True)
     
+    # 核心功能模块
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        <div class="feature-card">
-            <h4>🧠 Quantum Document Analysis</h4>
-            <p>Advanced neural networks with deep semantic understanding and multi-modal content extraction</p>
+        <div class="feature-card primary">
+            <div class="card-glow"></div>
+            <div class="feature-icon">📄→🔬</div>
+            <h3 class="feature-title">Paper-to-Code Engine</h3>
+            <div class="feature-description">
+                <div class="typing-text">Advanced AI agent that transforms research papers into production-ready codebases</div>
+                <div class="tech-specs">
+                    <span class="spec-tag">Algorithm Extraction</span>
+                    <span class="spec-tag">Code Generation</span>
+                    <span class="spec-tag">Reproduction Validation</span>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("""
-        <div class="feature-card">
-            <h4>📡 Universal Format Intelligence</h4>
-            <p>PDF • DOCX • PPTX • HTML • TXT • LaTeX • arXiv</p>
+        <div class="feature-card secondary">
+            <div class="card-glow"></div>
+            <div class="feature-icon">🧠</div>
+            <h3 class="feature-title">Multi-Modal Intelligence</h3>
+            <div class="feature-description">
+                <div class="typing-text">PDF • LaTeX • arXiv • Images • Mathematical Formulas</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
-        <div class="feature-card">
-            <h4>🚀 Autonomous Code Genesis</h4>
-            <p>Intelligent repository creation with automated dependency management and architecture design</p>
+        <div class="feature-card accent">
+            <div class="card-glow"></div>
+            <div class="feature-icon">🚀</div>
+            <h3 class="feature-title">Next-Gen Vision</h3>
+            <div class="feature-description">
+                <div class="typing-text">One sentence → GitHub-level repository</div>
+                <div class="code-preview">
+                    <div class="code-line">> "Build a neural network for image classification"</div>
+                    <div class="code-line generating">Generating complete codebase...</div>
+                    <div class="code-progress">
+                        <div class="progress-dots">
+                            <span class="dot active"></span>
+                            <span class="dot active"></span>
+                            <span class="dot"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
         st.markdown("""
-        <div class="feature-card">
-            <h4>⚛️ Cutting-Edge Tech Stack</h4>
-            <p>Python • Transformer Models • MCP Protocol • Docling • Multi-Agent Systems</p>
+        <div class="feature-card tech">
+            <div class="card-glow"></div>
+            <div class="feature-icon">⚡</div>
+            <h3 class="feature-title">AI Architecture</h3>
+            <div class="feature-description">
+                <div class="tech-stack">
+                    <div class="stack-item">
+                        <span class="stack-icon">🔮</span>
+                        <span class="stack-name">Claude Sonnet</span>
+                    </div>
+                    <div class="stack-item">
+                        <span class="stack-icon">🌐</span>
+                        <span class="stack-name">MCP Protocol</span>
+                    </div>
+                    <div class="stack-item">
+                        <span class="stack-icon">🔗</span>
+                        <span class="stack-name">Multi-Agent</span>
+                    </div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -666,27 +726,26 @@ def enhanced_progress_display_component(enable_indexing: bool = True):
     progress_container = st.container()
     
     with progress_container:
-        # 工作流步骤定义 - 根据索引开关调整
+        # 工作流步骤定义 - 根据索引开关调整，并反映最新的phase顺序
         if enable_indexing:
             workflow_steps = [
                 ("🚀", "Initialize", "Setting up AI engine"),
                 ("📊", "Analyze", "Analyzing paper content"),
                 ("📥", "Download", "Processing document"),
-                ("🔍", "References", "Analyzing references"),
-                ("📋", "Plan", "Generating code plan"),
-                ("📦", "Repos", "Downloading repositories"),
-                ("🗂️", "Index", "Building code index"),
-                ("⚙️", "Implement", "Implementing code")
+                ("📋", "Plan", "Generating code plan"),        # Phase 3: 现在在Phase 4之前
+                ("🔍", "References", "Analyzing references"),   # Phase 4: 现在是条件性的
+                ("📦", "Repos", "Downloading repositories"),    # Phase 5: GitHub下载
+                ("🗂️", "Index", "Building code index"),        # Phase 6: 代码索引
+                ("⚙️", "Implement", "Implementing code")       # Phase 7: 代码实现
             ]
         else:
-            # 快速模式 - 跳过 Repos 和 Index 步骤
+            # 快速模式 - 跳过 References, Repos 和 Index 步骤
             workflow_steps = [
                 ("🚀", "Initialize", "Setting up AI engine"),
                 ("📊", "Analyze", "Analyzing paper content"),
                 ("📥", "Download", "Processing document"),
-                ("🔍", "References", "Analyzing references"),
-                ("📋", "Plan", "Generating code plan"),
-                ("⚙️", "Implement", "Implementing code")
+                ("📋", "Plan", "Generating code plan"),        # Phase 3: 代码规划优先
+                ("⚙️", "Implement", "Implementing code")       # 直接跳到实现
             ]
         
         # 创建步骤指示器容器
@@ -727,7 +786,7 @@ def enhanced_progress_display_component(enable_indexing: bool = True):
         
         # 显示模式信息
         if not enable_indexing:
-            st.info("⚡ Fast Mode: GitHub repository download and codebase indexing are disabled for faster processing.")
+            st.info("⚡ Fast Mode: Reference analysis, GitHub repository download and codebase indexing are disabled for faster processing.")
     
     return progress_bar, status_text, step_indicators, workflow_steps
 

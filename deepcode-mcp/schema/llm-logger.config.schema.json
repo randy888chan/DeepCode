@@ -21,6 +21,12 @@
           "default": true,
           "description": "是否启用LLM响应日志"
         },
+        "transport_type": {
+          "type": "string",
+          "enum": ["console", "file", "both"],
+          "default": "file",
+          "description": "日志传输类型：console=控制台, file=文件, both=两者"
+        },
         "output_format": {
           "type": "string",
           "enum": ["json", "text", "markdown"],
@@ -41,7 +47,38 @@
         "filename_pattern": {
           "type": "string",
           "default": "llm_responses_{timestamp}.jsonl",
-          "description": "文件命名模式"
+          "description": "文件命名模式，支持占位符: {timestamp}, {date}, {session_id}"
+        },
+        "file_settings": {
+          "type": "object",
+          "description": "文件操作配置",
+          "properties": {
+            "auto_create_directory": {
+              "type": "boolean",
+              "default": true,
+              "description": "自动创建目录"
+            },
+            "flush_interval": {
+              "type": "number",
+              "default": 2.0,
+              "description": "文件刷新间隔（秒）"
+            },
+            "batch_size": {
+              "type": "integer",
+              "default": 10,
+              "description": "批处理大小（条日志）"
+            },
+            "max_file_size_mb": {
+              "type": "integer",
+              "default": 100,
+              "description": "单个文件最大大小（MB）"
+            }
+          }
+        },
+        "timestamp_format": {
+          "type": "string",
+          "default": "%Y%m%d_%H%M%S",
+          "description": "时间戳格式，用于文件名和日志记录"
         },
         "include_models": {
           "type": "array",
