@@ -25,17 +25,17 @@ class MCPToolDefinitions:
         Get tool definitions for code implementation
         """
         return [
-            # MCPToolDefinitions._get_read_file_tool(),
+            MCPToolDefinitions._get_read_file_tool(),
             MCPToolDefinitions._get_read_code_mem_tool(),
             MCPToolDefinitions._get_write_file_tool(),
             MCPToolDefinitions._get_execute_python_tool(),
             MCPToolDefinitions._get_execute_bash_tool(),
-            MCPToolDefinitions._get_search_code_tool(),
-            MCPToolDefinitions._get_file_structure_tool(),
-            MCPToolDefinitions._get_set_workspace_tool(),
-            MCPToolDefinitions._get_search_reference_code_tool(),
-            MCPToolDefinitions._get_all_available_references_tool(),
-            MCPToolDefinitions._get_set_indexes_directory_tool(),
+            # MCPToolDefinitions._get_search_code_tool(),
+            # MCPToolDefinitions._get_file_structure_tool(),
+            # New unified code reference tools
+            MCPToolDefinitions._get_search_code_references_tool(),
+            # MCPToolDefinitions._get_get_indexes_overview_tool(),
+            # MCPToolDefinitions._get_set_workspace_tool(),
         ]
 
     @staticmethod
@@ -206,14 +206,18 @@ class MCPToolDefinitions:
         }
 
     @staticmethod
-    def _get_search_reference_code_tool() -> Dict[str, Any]:
-        """代码参考搜索工具定义"""
+    def _get_search_code_references_tool() -> Dict[str, Any]:
+        """统一代码参考搜索工具定义 - 合并了三个步骤为一个工具"""
         return {
-            "name": "search_reference_code",
-            "description": "Search relevant reference code from indexes folder for implementation guidance",
+            "name": "search_code_references",
+            "description": "UNIFIED TOOL: Search relevant reference code from index files. Combines directory setup, index loading, and searching in a single call.",
             "input_schema": {
                 "type": "object",
                 "properties": {
+                    "indexes_path": {
+                        "type": "string",
+                        "description": "Path to the indexes directory containing JSON index files"
+                    },
                     "target_file": {
                         "type": "string",
                         "description": "Target file path to be implemented"
@@ -229,20 +233,25 @@ class MCPToolDefinitions:
                         "default": 10
                     }
                 },
-                "required": ["target_file"]
+                "required": ["indexes_path", "target_file"]
             }
         }
 
     @staticmethod
-    def _get_all_available_references_tool() -> Dict[str, Any]:
-        """Get all available reference code overview tool definition"""
+    def _get_get_indexes_overview_tool() -> Dict[str, Any]:
+        """获取索引概览工具定义"""
         return {
-            "name": "get_all_available_references",
-            "description": "Get overview of all available reference code indexes and repositories",
+            "name": "get_indexes_overview",
+            "description": "Get overview of all available reference code index information from specified directory",
             "input_schema": {
                 "type": "object",
-                "properties": {},
-                "required": []
+                "properties": {
+                    "indexes_path": {
+                        "type": "string",
+                        "description": "Path to the indexes directory containing JSON index files"
+                    }
+                },
+                "required": ["indexes_path"]
             }
         }
 
@@ -264,23 +273,23 @@ class MCPToolDefinitions:
             }
         }
 
-    @staticmethod
-    def _get_set_indexes_directory_tool() -> Dict[str, Any]:
-        """Set indexes directory tool definition"""
-        return {
-            "name": "set_indexes_directory",
-            "description": "Set the directory path for code reference indexes",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "indexes_path": {
-                        "type": "string",
-                        "description": "Directory path containing index JSON files"
-                    }
-                },
-                "required": ["indexes_path"]
-            }
-        }
+    # @staticmethod
+    # def _get_set_indexes_directory_tool() -> Dict[str, Any]:
+    #     """Set indexes directory tool definition - DEPRECATED: Use unified search_code_references instead"""
+    #     return {
+    #         "name": "set_indexes_directory",
+    #         "description": "Set the directory path for code reference indexes",
+    #         "input_schema": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "indexes_path": {
+    #                     "type": "string",
+    #                     "description": "Directory path containing index JSON files"
+    #                 }
+    #             },
+    #             "required": ["indexes_path"]
+    #         }
+    #     }
     
     @staticmethod
     def get_available_tool_sets() -> Dict[str, str]:

@@ -1,0 +1,1724 @@
+{
+  "repo_name": "stable-baselines3",
+  "total_files": 105,
+  "file_summaries": [
+    {
+      "file_path": "stable-baselines3/tests/test_utils.py",
+      "file_type": "Unit test file for utility functions in a reinforcement learning library",
+      "main_functions": [
+        "test_make_vec_env",
+        "test_make_vec_env_func_checker",
+        "test_make_atari_env"
+      ],
+      "key_concepts": [
+        "vectorized environments",
+        "environment wrappers",
+        "Atari game environments",
+        "parametrized testing",
+        "environment factory functions",
+        "parallel environment execution",
+        "environment monitoring and statistics"
+      ],
+      "dependencies": [
+        "pytest",
+        "gymnasium",
+        "ale_py",
+        "numpy",
+        "torch",
+        "stable_baselines3",
+        "os",
+        "shutil"
+      ],
+      "summary": "This test file validates utility functions for creating and managing reinforcement learning environments, particularly focusing on vectorized environments and Atari game setups. It uses parametrized tests to verify different configurations of environment creation, wrapper applications, and parallel execution scenarios across various RL environment types.",
+      "lines_of_code": 516,
+      "last_modified": "2025-06-29T22:55:02.313436"
+    },
+    {
+      "file_path": "stable-baselines3/tests/test_run.py",
+      "file_type": "pytest test suite for reinforcement learning algorithms",
+      "main_functions": [
+        "test_deterministic_pg",
+        "test_a2c",
+        "test_advantage_normalization",
+        "test_ppo",
+        "test_sac",
+        "test_n_critics"
+      ],
+      "key_concepts": [
+        "reinforcement learning algorithms",
+        "parametrized testing",
+        "policy gradient methods",
+        "actor-critic methods",
+        "action noise injection",
+        "hyperparameter validation",
+        "advantage normalization",
+        "entropy coefficient tuning"
+      ],
+      "dependencies": [
+        "gymnasium",
+        "numpy",
+        "pytest",
+        "torch",
+        "stable_baselines3"
+      ],
+      "summary": "This is a comprehensive test suite that validates multiple reinforcement learning algorithms (A2C, DDPG, DQN, PPO, SAC, TD3) from the Stable Baselines3 library using parametrized tests. The tests cover various hyperparameter configurations, noise types, and edge cases to ensure proper algorithm functionality across different environments like CartPole and Pendulum.",
+      "lines_of_code": 212,
+      "last_modified": "2025-06-29T22:55:02.312593"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/torch_layers.py",
+      "file_type": "Neural network layer definitions for reinforcement learning feature extraction",
+      "main_functions": [
+        "BaseFeaturesExtractor",
+        "FlattenExtractor",
+        "NatureCNN"
+      ],
+      "key_concepts": [
+        "feature extraction",
+        "convolutional neural networks",
+        "observation space preprocessing",
+        "reinforcement learning architectures",
+        "image processing for RL",
+        "modular neural network design"
+      ],
+      "dependencies": [
+        "torch",
+        "gymnasium",
+        "stable_baselines3",
+        "typing"
+      ],
+      "summary": "This file defines modular feature extraction layers for reinforcement learning agents, including a base class, a simple flattening extractor, and a CNN implementation based on the DQN Nature paper. These extractors process different types of observation spaces (images, vectors) and convert them into feature representations that can be used by RL algorithms.",
+      "lines_of_code": 290,
+      "last_modified": "2025-06-29T22:55:02.304569"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/env_util.py",
+      "file_type": "Utility module for environment management and vectorization",
+      "main_functions": [
+        "unwrap_wrapper",
+        "is_wrapped",
+        "make_vec_env"
+      ],
+      "key_concepts": [
+        "Environment wrapping/unwrapping",
+        "Vectorized environments",
+        "Environment monitoring",
+        "Atari game support",
+        "Parallel environment execution",
+        "Environment factory pattern"
+      ],
+      "dependencies": [
+        "gymnasium",
+        "stable_baselines3.common.atari_wrappers",
+        "stable_baselines3.common.monitor",
+        "stable_baselines3.common.vec_env"
+      ],
+      "summary": "This utility module provides functions for creating and managing vectorized reinforcement learning environments. It includes functionality to wrap/unwrap environments, check for specific wrappers, and create parallel environments with monitoring capabilities for training RL agents.",
+      "lines_of_code": 153,
+      "last_modified": "2025-06-29T22:55:02.301733"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "file_type": "Reinforcement Learning evaluation utility module",
+      "main_functions": [
+        "evaluate_policy"
+      ],
+      "key_concepts": [
+        "policy evaluation",
+        "episode-based testing",
+        "vectorized environments",
+        "reward aggregation",
+        "deterministic vs stochastic evaluation",
+        "performance monitoring"
+      ],
+      "dependencies": [
+        "gymnasium",
+        "numpy",
+        "stable_baselines3.common.type_aliases",
+        "stable_baselines3.common.vec_env"
+      ],
+      "summary": "This module provides a comprehensive policy evaluation function that runs trained RL agents for multiple episodes and computes performance metrics. It supports both single and vectorized environments, handles deterministic/stochastic action selection, and returns statistical summaries of episode rewards and lengths with optional callback support for custom monitoring.",
+      "lines_of_code": 125,
+      "last_modified": "2025-06-29T22:55:02.302509"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/base_class.py",
+      "file_type": "Abstract base class definition for reinforcement learning algorithms",
+      "main_functions": [
+        "BaseAlgorithm",
+        "maybe_make_env"
+      ],
+      "key_concepts": [
+        "Abstract base class pattern",
+        "Reinforcement learning algorithm foundation",
+        "Environment management and wrapping",
+        "Policy-based learning framework",
+        "Callback system integration",
+        "Model serialization and loading",
+        "Learning rate scheduling",
+        "Vector environment handling"
+      ],
+      "dependencies": [
+        "gymnasium",
+        "torch",
+        "numpy",
+        "stable_baselines3.common.*",
+        "abc",
+        "pathlib",
+        "typing"
+      ],
+      "summary": "This file defines the abstract base class BaseAlgorithm that serves as the foundation for all reinforcement learning algorithms in the Stable Baselines3 library. It provides a standardized interface for policy-based RL algorithms with comprehensive support for environment management, callback systems, model persistence, and training infrastructure. The class establishes the core contract that all concrete RL algorithm implementations must follow.",
+      "lines_of_code": 763,
+      "last_modified": "2025-06-29T22:55:02.300864"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/logger.py",
+      "file_type": "Logging utility module with data classes for machine learning experiments",
+      "main_functions": [
+        "Video",
+        "Figure",
+        "Image",
+        "HParam",
+        "FormatUnsupportedError"
+      ],
+      "key_concepts": [
+        "Machine learning experiment logging",
+        "Multi-format data representation",
+        "TensorBoard integration",
+        "Data wrapper classes",
+        "Logging level constants",
+        "Error handling for unsupported formats"
+      ],
+      "dependencies": [
+        "torch",
+        "numpy",
+        "pandas",
+        "matplotlib",
+        "tensorboard",
+        "tqdm"
+      ],
+      "summary": "This module provides data wrapper classes for logging various types of ML experiment data (videos, images, figures, hyperparameters) with support for different output formats including TensorBoard. It defines standardized containers that encapsulate media data along with their metadata, enabling flexible logging across different visualization backends while handling format compatibility issues.",
+      "lines_of_code": 556,
+      "last_modified": "2025-06-29T22:55:02.302649"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/distributions.py",
+      "file_type": "Abstract base class module for probability distributions in reinforcement learning",
+      "main_functions": [
+        "Distribution",
+        "DiagGaussianDistribution",
+        "SquashedDiagGaussianDistribution",
+        "CategoricalDistribution",
+        "MultiCategoricalDistribution",
+        "BernoulliDistribution",
+        "StateDependentNoiseDistribution"
+      ],
+      "key_concepts": [
+        "abstract_base_class_pattern",
+        "probability_distributions",
+        "action_sampling",
+        "log_probability_computation",
+        "entropy_calculation",
+        "deterministic_vs_stochastic_actions",
+        "type_hints_with_self_references",
+        "reinforcement_learning_action_spaces"
+      ],
+      "dependencies": [
+        "abc",
+        "typing",
+        "numpy",
+        "torch",
+        "gymnasium",
+        "torch.nn",
+        "torch.distributions",
+        "stable_baselines3.common.preprocessing"
+      ],
+      "summary": "This file defines an abstract base class hierarchy for probability distributions used in reinforcement learning agents, providing a standardized interface for sampling actions, computing log probabilities, and calculating entropy. The Distribution ABC establishes the contract that concrete distribution classes must implement, supporting both deterministic and stochastic action selection from various probability distributions like Gaussian, Categorical, and Bernoulli.",
+      "lines_of_code": 586,
+      "last_modified": "2025-06-29T22:55:02.301396"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "file_type": "Utility module for reinforcement learning framework (Stable Baselines3)",
+      "main_functions": [
+        "set_random_seed",
+        "explained_variance",
+        "update_learning_rate",
+        "FloatSchedule"
+      ],
+      "key_concepts": [
+        "random seed management",
+        "variance calculation for model evaluation",
+        "learning rate scheduling",
+        "PyTorch optimizer manipulation",
+        "CUDA deterministic operations",
+        "schedule wrapper pattern"
+      ],
+      "dependencies": [
+        "torch",
+        "numpy",
+        "gymnasium",
+        "cloudpickle",
+        "stable_baselines3",
+        "tensorboard (optional)"
+      ],
+      "summary": "This utility module provides essential helper functions for reinforcement learning workflows, including random seed management across multiple libraries, model performance evaluation through explained variance calculation, and learning rate scheduling utilities. The FloatSchedule class demonstrates a wrapper pattern for ensuring consistent float output from various schedule types, making it a reusable component for parameter scheduling in ML training pipelines.",
+      "lines_of_code": 522,
+      "last_modified": "2025-06-29T22:55:02.304756"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "file_type": "Abstract base class definition for reinforcement learning callbacks",
+      "main_functions": [
+        "BaseCallback",
+        "init_callback",
+        "on_training_start",
+        "on_rollout_start",
+        "_on_step",
+        "training_env",
+        "logger"
+      ],
+      "key_concepts": [
+        "Abstract Base Class (ABC)",
+        "Callback pattern",
+        "Reinforcement Learning lifecycle hooks",
+        "Training event handling",
+        "Model-environment interaction tracking",
+        "Timestep and call counting",
+        "Verbosity control"
+      ],
+      "dependencies": [
+        "abc",
+        "gymnasium",
+        "numpy",
+        "stable_baselines3.common.logger",
+        "stable_baselines3.common.evaluation",
+        "stable_baselines3.common.vec_env",
+        "tqdm"
+      ],
+      "summary": "This file defines an abstract base class for implementing callbacks in reinforcement learning training pipelines. It provides a standardized interface for hooking into different phases of the training process (start, rollout, step) and maintains references to the RL model, training environment, and logging utilities. The callback system allows for extensible monitoring, evaluation, and control of the training process through inheritance and method overriding.",
+      "lines_of_code": 575,
+      "last_modified": "2025-06-29T22:55:02.301195"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/on_policy_algorithm.py",
+      "file_type": "Base class definition for on-policy reinforcement learning algorithms",
+      "main_functions": [
+        "OnPolicyAlgorithm"
+      ],
+      "key_concepts": [
+        "on-policy reinforcement learning",
+        "actor-critic architecture",
+        "rollout buffer management",
+        "generalized advantage estimation (GAE)",
+        "policy gradient methods",
+        "entropy regularization",
+        "value function learning",
+        "gradient clipping",
+        "state dependent exploration (SDE)"
+      ],
+      "dependencies": [
+        "numpy",
+        "torch",
+        "gymnasium",
+        "stable_baselines3.common.base_class",
+        "stable_baselines3.common.buffers",
+        "stable_baselines3.common.callbacks",
+        "stable_baselines3.common.policies",
+        "stable_baselines3.common.type_aliases",
+        "stable_baselines3.common.utils",
+        "stable_baselines3.common.vec_env"
+      ],
+      "summary": "This file defines the base class for on-policy reinforcement learning algorithms like A2C and PPO in the Stable Baselines3 library. It provides the foundational structure for algorithms that learn from experience collected through direct interaction with the environment, including rollout buffer management, advantage estimation, and policy/value function updates.",
+      "lines_of_code": 294,
+      "last_modified": "2025-06-29T22:55:02.303372"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "file_type": "Python module defining abstract base classes and concrete implementations for reinforcement learning policies",
+      "main_functions": [
+        "BaseModel",
+        "BernoulliDistribution",
+        "CategoricalDistribution",
+        "DiagGaussianDistribution",
+        "MultiCategoricalDistribution",
+        "StateDependentNoiseDistribution",
+        "BaseFeaturesExtractor",
+        "MlpExtractor",
+        "NatureCNN"
+      ],
+      "key_concepts": [
+        "reinforcement_learning_policies",
+        "neural_network_architectures",
+        "probability_distributions",
+        "feature_extraction",
+        "observation_preprocessing",
+        "action_space_handling",
+        "pytorch_optimization",
+        "gymnasium_integration"
+      ],
+      "dependencies": [
+        "numpy",
+        "torch",
+        "gymnasium",
+        "stable_baselines3.common.distributions",
+        "stable_baselines3.common.preprocessing",
+        "stable_baselines3.common.torch_layers",
+        "stable_baselines3.common.type_aliases",
+        "stable_baselines3.common.utils"
+      ],
+      "summary": "This file implements the core policy architecture for reinforcement learning agents, providing a BaseModel class that serves as the foundation for both policy and value function networks. It integrates various probability distributions, feature extractors, and preprocessing utilities to handle different observation and action spaces in RL environments.",
+      "lines_of_code": 858,
+      "last_modified": "2025-06-29T22:55:02.303504"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/common/buffers.py",
+      "file_type": "Abstract base class definition for reinforcement learning buffer implementations",
+      "main_functions": [
+        "BaseBuffer",
+        "swap_and_flatten",
+        "size",
+        "add",
+        "extend",
+        "reset",
+        "sample"
+      ],
+      "key_concepts": [
+        "Abstract base class pattern",
+        "Buffer management for RL",
+        "Experience replay storage",
+        "Rollout buffer functionality",
+        "Multi-environment support",
+        "Memory-efficient data handling",
+        "PyTorch tensor operations",
+        "Gymnasium space compatibility"
+      ],
+      "dependencies": [
+        "numpy",
+        "torch",
+        "gymnasium",
+        "stable_baselines3.common.preprocessing",
+        "stable_baselines3.common.type_aliases",
+        "stable_baselines3.common.utils",
+        "stable_baselines3.common.vec_env",
+        "psutil",
+        "abc",
+        "collections.abc",
+        "typing",
+        "warnings"
+      ],
+      "summary": "This file defines an abstract base class for reinforcement learning buffers that store and manage experience data from multiple parallel environments. It provides common functionality for buffer operations like adding experiences, sampling batches, and handling multi-dimensional observation/action spaces with PyTorch tensor support. The class serves as a foundation for implementing specific buffer types like replay buffers and rollout buffers used in RL algorithms.",
+      "lines_of_code": 810,
+      "last_modified": "2025-06-29T22:55:02.301004"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/ppo/ppo.py",
+      "file_type": "Machine Learning Algorithm Implementation - Reinforcement Learning",
+      "main_functions": [
+        "PPO",
+        "OnPolicyAlgorithm"
+      ],
+      "key_concepts": [
+        "Proximal Policy Optimization",
+        "Actor-Critic",
+        "Policy Gradient",
+        "Clipped Surrogate Loss",
+        "Generalized Advantage Estimation",
+        "Rollout Buffer",
+        "On-Policy Learning"
+      ],
+      "dependencies": [
+        "torch",
+        "numpy",
+        "gymnasium",
+        "stable_baselines3.common.buffers",
+        "stable_baselines3.common.on_policy_algorithm",
+        "stable_baselines3.common.policies",
+        "stable_baselines3.common.type_aliases",
+        "stable_baselines3.common.utils"
+      ],
+      "summary": "This file implements the Proximal Policy Optimization (PPO) algorithm, a state-of-the-art reinforcement learning method that uses clipped surrogate objectives to improve policy updates. It inherits from OnPolicyAlgorithm and provides a complete implementation of the PPO algorithm with configurable hyperparameters for learning rate, batch size, clipping ranges, and advantage normalization.",
+      "lines_of_code": 283,
+      "last_modified": "2025-06-29T22:55:02.308837"
+    },
+    {
+      "file_path": "stable-baselines3/stable_baselines3/ppo/policies.py",
+      "file_type": "Policy alias definition module",
+      "main_functions": [
+        "MlpPolicy",
+        "CnnPolicy",
+        "MultiInputPolicy"
+      ],
+      "key_concepts": [
+        "policy aliasing",
+        "actor-critic architecture",
+        "PPO algorithm compatibility",
+        "neural network policy types"
+      ],
+      "dependencies": [
+        "stable_baselines3.common.policies"
+      ],
+      "summary": "This file creates convenient aliases for different types of actor-critic policies specifically designed to work with the PPO (Proximal Policy Optimization) algorithm. It maps generic policy names (MlpPolicy, CnnPolicy, MultiInputPolicy) to their corresponding actor-critic implementations from stable-baselines3, providing a simplified interface for users to select appropriate policy architectures.",
+      "lines_of_code": 6,
+      "last_modified": "2025-06-29T22:55:02.308645"
+    }
+  ],
+  "relationships": [
+    {
+      "repo_file_path": "stable-baselines3/tests/test_utils.py",
+      "target_file_path": "tests/test_environment.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Environment creation and validation patterns",
+        "Vectorized environment testing approaches",
+        "Environment wrapper testing methodologies",
+        "Parametrized test structures for multiple environment configurations",
+        "Environment monitoring and statistics validation"
+      ],
+      "potential_contributions": [
+        "Test patterns for environment factory functions",
+        "Validation approaches for environment state management",
+        "Testing methodologies for parallel environment execution",
+        "Error handling patterns for environment creation failures"
+      ],
+      "usage_suggestions": "Adapt the vectorized environment testing patterns to validate RICE's environment_manager.py functionality. Use the parametrized testing approach to test different environment configurations and state reset scenarios. The environment wrapper testing patterns can be applied to test RICE's environment interface implementations."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_utils.py",
+      "target_file_path": "src/environment_manager.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Environment factory function patterns",
+        "Vectorized environment creation approaches",
+        "Environment wrapper application strategies",
+        "Environment monitoring and statistics collection",
+        "Parallel environment execution handling"
+      ],
+      "potential_contributions": [
+        "Design patterns for environment creation utilities",
+        "Approaches for managing multiple environment instances",
+        "Wrapper application strategies for environment enhancement",
+        "Environment state monitoring implementations"
+      ],
+      "usage_suggestions": "Use the environment creation patterns from test_make_vec_env to inform the design of environment factory functions in environment_manager.py. The vectorized environment handling approaches can guide the implementation of parallel environment management for RICE's exploration scenarios."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_utils.py",
+      "target_file_path": "src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Environment configuration validation patterns",
+        "Utility function testing approaches",
+        "Parameter validation and error handling",
+        "Environment setup and teardown procedures"
+      ],
+      "potential_contributions": [
+        "Configuration validation utilities for environment setup",
+        "Error handling patterns for utility functions",
+        "Environment parameter validation approaches",
+        "Logging and monitoring utility patterns"
+      ],
+      "usage_suggestions": "Extract the configuration validation and error handling patterns to enhance RICE's utils.py with robust environment configuration utilities. The parameter validation approaches can be adapted for RICE's hyperparameter and environment configuration management."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_utils.py",
+      "target_file_path": "tests/test_rice_system.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Integration testing patterns for environment components",
+        "End-to-end environment workflow testing",
+        "Environment state consistency validation",
+        "Multi-component interaction testing approaches"
+      ],
+      "potential_contributions": [
+        "Integration test patterns for environment-algorithm interactions",
+        "End-to-end testing approaches for RICE system components",
+        "Environment state consistency validation in complex workflows"
+      ],
+      "usage_suggestions": "Adapt the integration testing patterns to validate how RICE's environment_manager.py interacts with the core algorithms. Use the multi-component testing approaches to ensure proper integration between environment handling and the PPO-enhanced exploration system."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_run.py",
+      "target_file_path": "tests/test_core.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "PPO testing framework and parametrized test structure",
+        "Hyperparameter validation patterns for RL algorithms",
+        "Environment setup and testing methodology",
+        "Policy gradient algorithm testing approaches",
+        "Advantage normalization testing techniques"
+      ],
+      "potential_contributions": [
+        "Testing framework for PPO enhanced with exploration bonuses",
+        "Parametrized test patterns for mask network validation",
+        "Hyperparameter testing methodology for RND exploration",
+        "Environment interaction testing patterns",
+        "Algorithm convergence and stability testing approaches"
+      ],
+      "usage_suggestions": "Adapt the PPO testing framework to validate the enhanced PPO implementation with exploration bonuses. Use the parametrized testing structure to test different mask network configurations and RND hyperparameters. Leverage the advantage normalization tests for validating the exploration bonus integration."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_run.py",
+      "target_file_path": "tests/test_rice_system.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Multi-algorithm testing patterns across different environments",
+        "Integration testing methodology for RL systems",
+        "Deterministic testing approaches for reproducibility",
+        "Noise injection and robustness testing",
+        "Cross-algorithm validation techniques"
+      ],
+      "potential_contributions": [
+        "System-level integration testing patterns for RICE components",
+        "End-to-end testing methodology for the complete RICE pipeline",
+        "Reproducibility testing for the orchestrated system",
+        "Performance validation across different environment configurations"
+      ],
+      "usage_suggestions": "Use the multi-algorithm testing patterns to create comprehensive integration tests for the RICE system. Adapt the deterministic testing approaches to ensure reproducible results across the mask network, RND exploration, and PPO components. Implement similar noise injection tests to validate system robustness."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_run.py",
+      "target_file_path": "tests/test_environment.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Environment setup and configuration testing",
+        "CartPole and Pendulum environment handling patterns",
+        "Action space and observation space validation",
+        "Environment reset and step testing methodology"
+      ],
+      "potential_contributions": [
+        "Environment interface testing patterns",
+        "State reset functionality validation",
+        "Environment compatibility testing for RICE components",
+        "Action and observation space validation methods"
+      ],
+      "usage_suggestions": "Extract the environment setup and validation patterns to test the environment_manager.py functionality. Use the environment reset testing methodology to validate the mixed initial state distribution implementation. Adapt the action/observation space tests for RICE-specific environment requirements."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_run.py",
+      "target_file_path": "src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "PPO algorithm testing and validation patterns",
+        "Hyperparameter testing for policy gradient methods",
+        "Entropy coefficient and learning rate validation",
+        "Algorithm stability and convergence testing"
+      ],
+      "potential_contributions": [
+        "Validation patterns for PPO enhancements",
+        "Testing methodology for exploration bonus integration",
+        "Hyperparameter sensitivity testing approaches",
+        "Performance benchmarking patterns"
+      ],
+      "usage_suggestions": "Use the PPO testing patterns as a reference for validating the enhanced PPO implementation. Adapt the hyperparameter testing methodology to validate exploration bonus coefficients and integration parameters. Implement similar stability tests to ensure the enhanced PPO maintains convergence properties."
+    },
+    {
+      "repo_file_path": "stable-baselines3/tests/test_run.py",
+      "target_file_path": "config.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Hyperparameter configuration patterns from test cases",
+        "Algorithm-specific parameter validation approaches",
+        "Environment-specific configuration testing",
+        "Parameter range and boundary testing"
+      ],
+      "potential_contributions": [
+        "Hyperparameter validation patterns for configuration",
+        "Default parameter testing methodology",
+        "Configuration boundary testing approaches",
+        "Parameter compatibility validation"
+      ],
+      "usage_suggestions": "Extract the hyperparameter patterns and validation approaches to inform the configuration structure. Use the parameter testing methodology to validate default configurations and parameter ranges for RICE components. Implement similar boundary testing for critical hyperparameters."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/torch_layers.py",
+      "target_file_path": "rice/src/core/mask_network.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "BaseFeaturesExtractor base class for modular neural network design",
+        "Observation space preprocessing patterns",
+        "Feature extraction architecture for different input types",
+        "Modular design principles for RL components"
+      ],
+      "potential_contributions": [
+        "Base class structure for StateMask feature extraction",
+        "Observation space handling patterns",
+        "Modular neural network component design",
+        "Feature extraction preprocessing utilities"
+      ],
+      "usage_suggestions": "Use BaseFeaturesExtractor as a template for implementing feature extraction components in the StateMask network. The observation space preprocessing patterns and modular design can inform how the mask network processes different types of state representations before applying masking logic."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/torch_layers.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "NatureCNN implementation for processing visual observations",
+        "Feature extraction patterns for neural network architectures",
+        "Convolutional layer design for RL applications",
+        "Modular neural network component structure"
+      ],
+      "potential_contributions": [
+        "CNN architecture patterns for RND target and predictor networks",
+        "Feature extraction components for exploration bonus computation",
+        "Neural network layer organization and design patterns",
+        "Observation preprocessing for visual inputs"
+      ],
+      "usage_suggestions": "Adapt the NatureCNN architecture and BaseFeaturesExtractor patterns for implementing the target and predictor networks in Random Network Distillation. The modular design can help create separate feature extraction components for computing exploration bonuses based on state novelty."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/torch_layers.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Feature extraction integration patterns with RL algorithms",
+        "Observation space preprocessing for policy networks",
+        "Modular neural network design for RL agents",
+        "CNN and flattening layer implementations"
+      ],
+      "potential_contributions": [
+        "Feature extraction components for enhanced PPO policy and value networks",
+        "Observation preprocessing utilities",
+        "Neural network architecture patterns for RL algorithms",
+        "Modular component integration examples"
+      ],
+      "usage_suggestions": "Reference the feature extraction patterns when implementing the enhanced PPO algorithm. Use the BaseFeaturesExtractor design principles to create modular feature extraction components that can be easily integrated with PPO's policy and value networks, especially when processing different observation types."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/torch_layers.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Neural network utility functions and patterns",
+        "Observation space handling utilities",
+        "Feature extraction helper functions",
+        "Modular component initialization patterns"
+      ],
+      "potential_contributions": [
+        "Utility functions for neural network component initialization",
+        "Observation space preprocessing helpers",
+        "Feature extraction utility functions",
+        "Common neural network patterns and helpers"
+      ],
+      "usage_suggestions": "Extract utility functions and patterns from the torch_layers implementation to create helper functions in utils.py. This could include observation space validation, feature extractor initialization utilities, and common neural network component patterns that can be reused across the RICE system components."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/env_util.py",
+      "target_file_path": "rice/src/environment_manager.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "Environment wrapping/unwrapping functionality",
+        "Vectorized environment creation patterns",
+        "Environment monitoring and logging setup",
+        "Factory pattern for environment instantiation",
+        "Parallel environment execution management"
+      ],
+      "potential_contributions": [
+        "Provide vectorized environment support for RICE training",
+        "Enable parallel environment execution for faster data collection",
+        "Implement environment monitoring for training diagnostics",
+        "Support environment wrapper management for state masking",
+        "Facilitate environment reset and state distribution management"
+      ],
+      "usage_suggestions": "Adapt the make_vec_env function to create vectorized environments for RICE training, modify environment wrapping utilities to support StateMask integration, and use the monitoring capabilities to track environment statistics during mixed initial state distribution sampling. The unwrap_wrapper and is_wrapped functions can help manage environment wrapper chains when applying state masking."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/env_util.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Environment utility functions",
+        "Wrapper detection and management",
+        "Environment factory patterns",
+        "Monitoring and logging setup utilities"
+      ],
+      "potential_contributions": [
+        "Provide utility functions for environment management",
+        "Support configuration of vectorized environments",
+        "Enable environment wrapper utilities for debugging",
+        "Contribute to logging and monitoring infrastructure"
+      ],
+      "usage_suggestions": "Extract utility functions like unwrap_wrapper and is_wrapped to support environment debugging and wrapper management in the RICE system. The environment factory patterns can be adapted for creating consistent environment configurations across different RICE components."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/env_util.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Vectorized environment integration patterns",
+        "Environment monitoring for training metrics",
+        "Parallel environment execution for PPO",
+        "Environment wrapper management during training"
+      ],
+      "potential_contributions": [
+        "Support vectorized training environments for enhanced PPO",
+        "Enable parallel data collection for exploration bonus computation",
+        "Provide environment monitoring for PPO training diagnostics",
+        "Support wrapper management for state masking during training"
+      ],
+      "usage_suggestions": "Reference the vectorized environment patterns when implementing PPO training with exploration bonuses. Use the monitoring capabilities to track environment statistics relevant to RND exploration bonuses and ensure proper environment wrapper management when applying state masks during PPO updates."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/env_util.py",
+      "target_file_path": "rice/tests/test_environment.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Environment testing patterns",
+        "Vectorized environment validation",
+        "Wrapper functionality testing",
+        "Environment monitoring verification"
+      ],
+      "potential_contributions": [
+        "Provide testing patterns for environment management",
+        "Support validation of vectorized environment setup",
+        "Enable testing of environment wrapper functionality",
+        "Contribute to environment monitoring test cases"
+      ],
+      "usage_suggestions": "Use the testing patterns and utilities as reference for creating comprehensive tests for the RICE environment management system. Adapt the vectorized environment testing approaches to validate proper integration with StateMask and mixed initial state distribution components."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Policy evaluation framework for RICE algorithm performance assessment",
+        "Episode-based testing with statistical aggregation",
+        "Support for deterministic and stochastic evaluation modes",
+        "Vectorized environment compatibility",
+        "Callback system for custom monitoring during evaluation"
+      ],
+      "potential_contributions": [
+        "Evaluate RICE-trained policies across multiple episodes",
+        "Measure exploration effectiveness through reward statistics",
+        "Compare performance between different RICE configurations",
+        "Monitor training progress with periodic policy evaluation",
+        "Validate state mask effectiveness through performance metrics"
+      ],
+      "usage_suggestions": "Integrate evaluate_policy function into RICE algorithm orchestration for periodic performance assessment during training. Use it to evaluate the effectiveness of exploration bonuses and state masking by comparing reward distributions across different hyperparameter configurations. The callback system can be leveraged to log RICE-specific metrics like exploration bonus values and state coverage statistics."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "target_file_path": "rice/src/environment_manager.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Environment interface abstraction for evaluation",
+        "Vectorized environment handling",
+        "Episode management and reset functionality",
+        "Environment state monitoring capabilities"
+      ],
+      "potential_contributions": [
+        "Standardized evaluation interface for different environment types",
+        "Environment reset and episode boundary handling",
+        "Performance monitoring across environment variations",
+        "Integration point for evaluation workflows"
+      ],
+      "usage_suggestions": "Use the evaluation patterns and environment handling logic as reference for implementing environment_manager.py. The evaluate_policy function demonstrates best practices for managing environment resets, episode boundaries, and vectorized environment interactions that should be incorporated into the RICE environment management system."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Statistical aggregation and logging patterns",
+        "Performance monitoring utilities",
+        "Configuration handling for evaluation parameters",
+        "Callback system implementation patterns"
+      ],
+      "potential_contributions": [
+        "Evaluation logging and metrics collection utilities",
+        "Statistical analysis functions for performance assessment",
+        "Configuration management for evaluation parameters",
+        "Monitoring and callback infrastructure"
+      ],
+      "usage_suggestions": "Extract and adapt the statistical aggregation, logging, and callback patterns from evaluate_policy to create utility functions in utils.py. These can support RICE-specific evaluation needs like tracking exploration metrics, state coverage statistics, and performance comparisons across different algorithm configurations."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "target_file_path": "rice/examples/demo_rice.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Complete evaluation workflow demonstration",
+        "Policy testing and performance measurement examples",
+        "Statistical reporting and visualization patterns",
+        "Best practices for evaluation setup and execution"
+      ],
+      "potential_contributions": [
+        "Demonstration of RICE policy evaluation in action",
+        "Example evaluation workflows for different scenarios",
+        "Performance comparison and benchmarking examples",
+        "Visualization of evaluation results and statistics"
+      ],
+      "usage_suggestions": "Use evaluate_policy as a reference implementation for creating comprehensive evaluation demonstrations in demo_rice.py. Show how to evaluate RICE-trained policies, compare performance with and without exploration bonuses, and demonstrate the effectiveness of state masking through statistical analysis of evaluation results."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/evaluation.py",
+      "target_file_path": "rice/tests/test_rice_system.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Systematic policy evaluation testing patterns",
+        "Performance validation methodologies",
+        "Statistical testing and assertion patterns",
+        "Integration testing approaches for RL systems"
+      ],
+      "potential_contributions": [
+        "Test framework for RICE system performance validation",
+        "Automated evaluation and performance regression testing",
+        "Statistical validation of algorithm improvements",
+        "Integration testing patterns for RL evaluation workflows"
+      ],
+      "usage_suggestions": "Adapt the evaluation patterns and statistical validation approaches from evaluate_policy to create comprehensive integration tests for the RICE system. Use the function's testing methodology to validate that RICE improvements (exploration bonuses, state masking) actually improve performance through statistical comparison of evaluation results."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/base_class.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.95,
+      "helpful_aspects": [
+        "Abstract base class pattern for RL algorithms",
+        "Policy-based learning framework structure",
+        "Environment management and wrapping utilities",
+        "Model serialization and loading mechanisms",
+        "Learning rate scheduling infrastructure",
+        "Callback system integration patterns"
+      ],
+      "potential_contributions": [
+        "Provides foundational architecture for PPO enhancement",
+        "Offers standardized interface for RL algorithm implementation",
+        "Supplies environment handling and vector environment support",
+        "Delivers model persistence and checkpoint management",
+        "Establishes callback system for training monitoring"
+      ],
+      "usage_suggestions": "Use BaseAlgorithm as the parent class for PPO_Enhanced implementation. Inherit the core training loop structure, environment management utilities, and callback system. Extend the base class methods to incorporate exploration bonuses and RICE-specific enhancements while maintaining the standardized interface for consistency with other RL algorithms."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/base_class.py",
+      "target_file_path": "rice/src/environment_manager.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Environment wrapping and management utilities",
+        "Vector environment handling capabilities",
+        "Environment reset and state management",
+        "maybe_make_env function for environment creation"
+      ],
+      "potential_contributions": [
+        "Provides environment creation and wrapping utilities",
+        "Offers vector environment management patterns",
+        "Supplies environment reset and state handling logic",
+        "Delivers standardized environment interface management"
+      ],
+      "usage_suggestions": "Extract and adapt the environment management utilities from BaseAlgorithm, particularly the maybe_make_env function and vector environment handling. Use these patterns to implement RICE-specific environment management, including state reset mechanisms and environment interface standardization for the mixed initial state distribution system."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/base_class.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Algorithm orchestration patterns",
+        "Training loop structure and management",
+        "Model loading and saving infrastructure",
+        "Callback system for monitoring and control"
+      ],
+      "potential_contributions": [
+        "Provides high-level algorithm orchestration patterns",
+        "Offers training coordination and management structure",
+        "Supplies model persistence and checkpoint handling",
+        "Delivers monitoring and callback integration framework"
+      ],
+      "usage_suggestions": "Reference the BaseAlgorithm's orchestration patterns for implementing the main RICE algorithm coordination. Use the training loop structure, model management, and callback system as templates for orchestrating the interaction between StateMask, RND exploration, and PPO components in the RICE refiner."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/base_class.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Configuration management patterns",
+        "Logging and monitoring utilities",
+        "Model serialization utilities",
+        "Learning rate scheduling mechanisms"
+      ],
+      "potential_contributions": [
+        "Provides configuration management patterns",
+        "Offers logging and monitoring utility structures",
+        "Supplies serialization and persistence utilities",
+        "Delivers scheduling and parameter management tools"
+      ],
+      "usage_suggestions": "Extract utility functions from BaseAlgorithm for configuration management, logging, and model persistence. Adapt these utilities for RICE-specific needs, including hyperparameter management, training progress logging, and component state serialization for the integrated RICE system."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/logger.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Data wrapper classes for experiment logging",
+        "Multi-format output support (TensorBoard, console, etc.)",
+        "Standardized logging interface for ML experiments",
+        "Error handling for unsupported formats",
+        "Media data encapsulation (videos, images, figures)"
+      ],
+      "potential_contributions": [
+        "Provide structured logging classes for RICE experiment tracking",
+        "Enable TensorBoard integration for visualizing training progress",
+        "Support logging of exploration bonuses and state mask visualizations",
+        "Standardize hyperparameter logging across RICE components",
+        "Handle multi-format output for different deployment scenarios"
+      ],
+      "usage_suggestions": "Extract the data wrapper classes (Video, Figure, Image, HParam) and logging utilities to create a comprehensive logging system for RICE. Integrate with the PPO enhanced training loop to log exploration bonuses, state mask activations, and RND network outputs. Use the TensorBoard integration to visualize the mixed initial state distribution and mask network performance over time."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/logger.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Experiment logging patterns for RL training",
+        "Data structures for tracking training metrics",
+        "Integration patterns with visualization backends",
+        "Hyperparameter logging methodology"
+      ],
+      "potential_contributions": [
+        "Provide logging infrastructure for PPO training metrics",
+        "Enable visualization of exploration bonus distributions",
+        "Support tracking of policy gradient statistics",
+        "Facilitate hyperparameter sensitivity analysis"
+      ],
+      "usage_suggestions": "Reference the logging patterns to implement comprehensive metric tracking in the enhanced PPO algorithm. Use the HParam class to log exploration bonus coefficients, learning rates, and other hyperparameters. Implement custom logging for exploration bonus magnitudes and their impact on policy updates."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/logger.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Structured experiment logging approach",
+        "Multi-component system logging patterns",
+        "Error handling for logging operations",
+        "Format-agnostic data representation"
+      ],
+      "potential_contributions": [
+        "Provide orchestration-level logging capabilities",
+        "Enable end-to-end experiment tracking",
+        "Support logging of system-wide metrics and performance",
+        "Facilitate reproducibility through structured logging"
+      ],
+      "usage_suggestions": "Use the logging framework to track the overall RICE algorithm performance, including coordination between mask networks, RND exploration, and PPO training. Implement system-level metrics logging to monitor the interaction between different components and their collective impact on learning efficiency."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/logger.py",
+      "target_file_path": "rice/examples/demo_rice.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Demonstration-friendly logging output",
+        "Visual data representation capabilities",
+        "Multi-format export for different audiences",
+        "Real-time logging during demonstrations"
+      ],
+      "potential_contributions": [
+        "Provide rich visualization for RICE demonstrations",
+        "Enable real-time monitoring of algorithm performance",
+        "Support export of demonstration results in multiple formats",
+        "Facilitate educational and presentation materials creation"
+      ],
+      "usage_suggestions": "Integrate the logging utilities to create compelling demonstrations of RICE performance. Use the Video and Figure classes to capture and display the agent's learning progress, state mask evolution, and exploration behavior in real-time during demonstrations."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/distributions.py",
+      "target_file_path": "rice/src/core/mixed_distribution.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "abstract_base_class_pattern",
+        "probability_distributions",
+        "action_sampling",
+        "log_probability_computation",
+        "entropy_calculation"
+      ],
+      "potential_contributions": [
+        "provide_base_distribution_class_structure",
+        "implement_mixed_distribution_inheriting_from_distribution_abc",
+        "standardize_probability_computation_interface",
+        "enable_entropy_based_exploration_metrics"
+      ],
+      "usage_suggestions": "Use the Distribution ABC as a base class for implementing the mixed initial state distribution. The existing DiagGaussianDistribution and CategoricalDistribution implementations can serve as templates for creating a custom MixedDistribution class that combines multiple distribution types for diverse initial state sampling in RICE."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/distributions.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.8,
+      "helpful_aspects": [
+        "probability_distributions",
+        "log_probability_computation",
+        "entropy_calculation",
+        "deterministic_vs_stochastic_actions"
+      ],
+      "potential_contributions": [
+        "provide_action_distribution_classes_for_ppo",
+        "enable_entropy_bonus_computation",
+        "support_policy_gradient_calculations",
+        "standardize_action_sampling_interface"
+      ],
+      "usage_suggestions": "Import and use the distribution classes (DiagGaussianDistribution, CategoricalDistribution) in the enhanced PPO implementation for policy networks. The entropy calculation methods can be directly used for entropy bonuses, and the log probability computation is essential for PPO's policy gradient updates."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/distributions.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "entropy_calculation",
+        "probability_distributions",
+        "action_sampling"
+      ],
+      "potential_contributions": [
+        "provide_entropy_metrics_for_exploration",
+        "enable_stochastic_action_sampling_for_rnd",
+        "support_uncertainty_quantification"
+      ],
+      "usage_suggestions": "Utilize the entropy calculation methods from distribution classes to measure action uncertainty in RND exploration. The distribution classes can help quantify the stochasticity of the policy, which can be used as an additional signal for exploration bonus computation alongside the RND intrinsic reward."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/distributions.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "abstract_base_class_pattern",
+        "standardized_interface_for_distributions",
+        "type_hints_with_self_references"
+      ],
+      "potential_contributions": [
+        "provide_consistent_distribution_interface_across_components",
+        "enable_modular_distribution_swapping",
+        "support_type_safe_distribution_handling"
+      ],
+      "usage_suggestions": "Import the distribution module in the main RICE orchestration to ensure consistent probability distribution handling across all components. Use the abstract base class pattern to enable flexible switching between different distribution types during algorithm refinement and experimentation."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.95,
+      "helpful_aspects": [
+        "set_random_seed function for reproducible experiments",
+        "explained_variance for model evaluation metrics",
+        "update_learning_rate for dynamic learning rate adjustment",
+        "FloatSchedule wrapper pattern for parameter scheduling"
+      ],
+      "potential_contributions": [
+        "Provide reproducible random seed management across numpy, torch, and random libraries",
+        "Enable model performance evaluation through explained variance calculation",
+        "Support dynamic learning rate scheduling for PPO training",
+        "Offer reusable schedule wrapper pattern for hyperparameter scheduling"
+      ],
+      "usage_suggestions": "Directly adapt this file as the foundation for rice/src/utils.py. The set_random_seed function is essential for reproducible RICE experiments, explained_variance can evaluate the effectiveness of exploration bonuses, and the scheduling utilities can manage hyperparameters like exploration bonus weights and learning rates during training."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "update_learning_rate function for PPO optimizer management",
+        "FloatSchedule for exploration bonus weight scheduling",
+        "explained_variance for training progress evaluation"
+      ],
+      "potential_contributions": [
+        "Enable dynamic learning rate adjustment during PPO training",
+        "Support scheduled exploration bonus weight decay",
+        "Provide training progress metrics through variance explanation"
+      ],
+      "usage_suggestions": "Import and use the update_learning_rate function to dynamically adjust PPO learning rates based on training progress. Use FloatSchedule to implement exploration bonus weight scheduling that decreases over time as the agent becomes more confident. Leverage explained_variance to monitor how well the value function explains state value variance."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "target_file_path": "rice/config.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "FloatSchedule pattern for configurable parameter scheduling",
+        "Learning rate scheduling concepts",
+        "Random seed configuration patterns"
+      ],
+      "potential_contributions": [
+        "Inform hyperparameter configuration structure",
+        "Guide schedule-based parameter design",
+        "Establish reproducibility configuration patterns"
+      ],
+      "usage_suggestions": "Reference the FloatSchedule implementation when designing configurable parameter schedules in config.py. Use the learning rate scheduling patterns to structure exploration bonus schedules, curiosity weight decay, and other time-varying hyperparameters. Incorporate random seed configuration patterns for experiment reproducibility."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "set_random_seed for reproducible RND network initialization",
+        "FloatSchedule for exploration bonus weight scheduling",
+        "explained_variance for intrinsic reward evaluation"
+      ],
+      "potential_contributions": [
+        "Ensure reproducible random network initialization",
+        "Enable scheduled exploration bonus weight adjustment",
+        "Provide metrics for intrinsic reward effectiveness"
+      ],
+      "usage_suggestions": "Use set_random_seed to ensure reproducible RND target network initialization. Apply FloatSchedule to implement exploration bonus weight scheduling that adapts based on training progress or environment complexity. Utilize explained_variance to evaluate how well intrinsic rewards correlate with actual learning progress."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/utils.py",
+      "target_file_path": "rice/tests/test_core.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "set_random_seed for reproducible test environments",
+        "explained_variance for testing model evaluation metrics",
+        "FloatSchedule testing patterns"
+      ],
+      "potential_contributions": [
+        "Enable deterministic testing with controlled randomness",
+        "Provide evaluation metrics for test validation",
+        "Support testing of scheduling components"
+      ],
+      "usage_suggestions": "Import set_random_seed in test setup to ensure reproducible test conditions across different runs. Use explained_variance to validate that core algorithms produce expected performance metrics. Test FloatSchedule behavior to ensure parameter scheduling works correctly across different schedule types and edge cases."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Abstract callback pattern for training lifecycle hooks",
+        "Standardized interface for monitoring and logging",
+        "Verbosity control mechanisms",
+        "Training event handling structure",
+        "Model-environment interaction tracking"
+      ],
+      "potential_contributions": [
+        "Provide callback base class for RICE training monitoring",
+        "Enable structured logging and evaluation during training",
+        "Support custom callbacks for exploration bonus tracking",
+        "Facilitate integration with existing RL training pipelines"
+      ],
+      "usage_suggestions": "Adapt the BaseCallback class to create RICE-specific callbacks for monitoring exploration bonuses, state mask updates, and RND network training progress. The callback pattern would integrate well with the configuration and logging utilities in utils.py, providing a clean separation of concerns for training instrumentation."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Training lifecycle management through callbacks",
+        "Standardized hooks for training phases",
+        "Model and environment reference handling",
+        "Timestep and episode counting mechanisms"
+      ],
+      "potential_contributions": [
+        "Provide callback infrastructure for RICE algorithm orchestration",
+        "Enable modular monitoring of different RICE components",
+        "Support evaluation callbacks during training",
+        "Facilitate debugging and performance tracking"
+      ],
+      "usage_suggestions": "Use the callback pattern to implement monitoring and evaluation hooks within the main RICE algorithm orchestration. Create specific callbacks for tracking RND network updates, state mask evolution, and exploration bonus effectiveness, integrating them into the main training loop in rice_refiner.py."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "RL training callback integration patterns",
+        "Model reference management",
+        "Training event hooks for algorithm customization",
+        "Logging and monitoring infrastructure"
+      ],
+      "potential_contributions": [
+        "Provide callback hooks for PPO enhancement monitoring",
+        "Enable tracking of exploration bonus integration",
+        "Support custom evaluation during PPO training",
+        "Facilitate debugging of enhanced PPO behavior"
+      ],
+      "usage_suggestions": "Integrate callback functionality into the enhanced PPO implementation to monitor exploration bonus effectiveness, track policy updates influenced by RND rewards, and evaluate the impact of state masking on learning progress. This would provide valuable insights into the enhanced PPO's behavior."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Callback pattern for monitoring network training",
+        "Standardized logging interface",
+        "Training phase hooks",
+        "Performance tracking mechanisms"
+      ],
+      "potential_contributions": [
+        "Enable monitoring of RND network training progress",
+        "Support logging of exploration bonus statistics",
+        "Provide hooks for RND network evaluation",
+        "Facilitate debugging of exploration behavior"
+      ],
+      "usage_suggestions": "Create RND-specific callbacks to monitor the training of predictor and target networks, track exploration bonus magnitudes, and evaluate the effectiveness of curiosity-driven exploration. These callbacks would help tune RND hyperparameters and understand exploration dynamics."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/callbacks.py",
+      "target_file_path": "rice/tests/test_rice_system.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Callback testing patterns",
+        "Training lifecycle verification",
+        "Mock callback implementations",
+        "Integration testing support"
+      ],
+      "potential_contributions": [
+        "Provide testing framework for RICE callbacks",
+        "Enable verification of callback integration",
+        "Support mock callbacks for testing",
+        "Facilitate system integration testing"
+      ],
+      "usage_suggestions": "Use the callback structure to create test callbacks that verify proper integration of monitoring and evaluation functionality within the RICE system. Implement mock callbacks to test training lifecycle management and ensure callbacks are properly triggered during system integration tests."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/on_policy_algorithm.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.95,
+      "helpful_aspects": [
+        "Complete on-policy algorithm foundation with rollout buffer management",
+        "Built-in GAE (Generalized Advantage Estimation) implementation",
+        "Policy gradient computation and optimization framework",
+        "Value function learning infrastructure",
+        "Entropy regularization mechanisms",
+        "Gradient clipping and training stability features"
+      ],
+      "potential_contributions": [
+        "Provides the core PPO algorithm structure that can be extended with exploration bonuses",
+        "Offers proven rollout collection and advantage estimation methods",
+        "Supplies policy and value network training procedures",
+        "Includes hyperparameter management and logging infrastructure"
+      ],
+      "usage_suggestions": "Use this as the base class for PPO_Enhanced by inheriting from OnPolicyAlgorithm. Override the collect_rollouts() method to incorporate RND exploration bonuses into the reward calculation, and extend the train() method to handle the additional exploration reward components while maintaining the core PPO update mechanics."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/on_policy_algorithm.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Algorithm orchestration patterns and training loop structure",
+        "Model saving and loading mechanisms",
+        "Training progress monitoring and logging",
+        "Hyperparameter configuration handling",
+        "Environment interaction patterns"
+      ],
+      "potential_contributions": [
+        "Provides proven patterns for coordinating multiple algorithm components",
+        "Offers structured approach to training loop management",
+        "Supplies model persistence and checkpoint functionality",
+        "Includes performance monitoring and evaluation frameworks"
+      ],
+      "usage_suggestions": "Reference the algorithm orchestration patterns from OnPolicyAlgorithm when designing the RICE main algorithm coordinator. Adapt the training loop structure to manage the interaction between PPO, RND, and StateMask components, using similar model management and progress tracking approaches."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/on_policy_algorithm.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Experience collection and buffer management for exploration",
+        "Reward computation and normalization techniques",
+        "Network training and optimization procedures",
+        "State preprocessing and feature extraction patterns"
+      ],
+      "potential_contributions": [
+        "Provides experience buffer management that can be adapted for RND target/predictor training",
+        "Offers reward normalization and scaling techniques for exploration bonuses",
+        "Supplies network training patterns that can be applied to RND networks",
+        "Includes state processing approaches for feature learning"
+      ],
+      "usage_suggestions": "Adapt the rollout buffer and experience collection mechanisms from OnPolicyAlgorithm for RND implementation. Use the reward normalization and network training patterns to implement the RND predictor and target networks, ensuring proper integration with the main PPO training loop."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/on_policy_algorithm.py",
+      "target_file_path": "rice/src/environment_manager.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Environment interaction and episode management",
+        "State observation handling and preprocessing",
+        "Reward collection and processing",
+        "Environment reset and initialization procedures"
+      ],
+      "potential_contributions": [
+        "Provides structured environment interaction patterns",
+        "Offers observation and reward processing utilities",
+        "Supplies episode management and reset functionality",
+        "Includes environment wrapper and interface patterns"
+      ],
+      "usage_suggestions": "Use the environment interaction patterns from OnPolicyAlgorithm as a reference for implementing the EnvironmentManager. Adapt the observation processing and episode management approaches to handle state masking and mixed initial state distributions required by the RICE algorithm."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.95,
+      "helpful_aspects": [
+        "BaseModel class provides foundation for policy networks",
+        "Probability distributions (Categorical, DiagGaussian) for action sampling",
+        "MlpExtractor for policy/value network architectures",
+        "Feature extraction utilities for observation preprocessing",
+        "PyTorch optimization integration"
+      ],
+      "potential_contributions": [
+        "Policy network architecture base classes",
+        "Action distribution handling for continuous/discrete spaces",
+        "Value function network implementations",
+        "Observation preprocessing pipelines"
+      ],
+      "usage_suggestions": "Import BaseModel as the foundation for PPO policy networks, use the distribution classes for action sampling in the enhanced PPO implementation, and leverage MlpExtractor for shared feature extraction between policy and value networks. The existing architecture can be extended to incorporate exploration bonuses while maintaining compatibility with gymnasium environments."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/core/mask_network.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "BaseModel architecture for neural network foundations",
+        "Feature extraction patterns from BaseFeaturesExtractor",
+        "PyTorch module structure and initialization",
+        "Observation preprocessing utilities"
+      ],
+      "potential_contributions": [
+        "Neural network base class structure",
+        "Feature extraction methodology",
+        "Network initialization patterns",
+        "Input preprocessing approaches"
+      ],
+      "usage_suggestions": "Extend BaseModel or use similar architectural patterns for implementing the StateMask network. Adapt the feature extraction patterns from BaseFeaturesExtractor to handle state masking requirements, and use the established PyTorch module structure for consistency with the broader RL framework."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/core/mixed_distribution.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Probability distribution implementations (Categorical, DiagGaussian)",
+        "Distribution sampling and log probability methods",
+        "Parameter handling for different distribution types",
+        "Integration with PyTorch tensors"
+      ],
+      "potential_contributions": [
+        "Distribution sampling methodologies",
+        "Log probability computation patterns",
+        "Parameter management for mixed distributions",
+        "Tensor handling best practices"
+      ],
+      "usage_suggestions": "Reference the existing distribution classes to implement mixed initial state distributions. Use the sampling patterns from CategoricalDistribution and DiagGaussianDistribution as templates for creating composite distributions that can handle mixed discrete/continuous state initialization in the RICE algorithm."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/core/rnd_exploration.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Neural network architecture patterns from BaseModel",
+        "Feature extraction approaches",
+        "Network initialization and forward pass structure",
+        "PyTorch integration patterns"
+      ],
+      "potential_contributions": [
+        "Network architecture foundations",
+        "Feature processing methodologies",
+        "Module initialization patterns",
+        "Forward pass implementation structure"
+      ],
+      "usage_suggestions": "Use BaseModel or similar architectural patterns as the foundation for Random Network Distillation networks. Adapt the feature extraction and network initialization approaches to create target and predictor networks for intrinsic motivation, maintaining consistency with the established PyTorch patterns."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/environment_manager.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Gymnasium environment integration patterns",
+        "Observation space handling utilities",
+        "Action space preprocessing approaches",
+        "Environment compatibility checks"
+      ],
+      "potential_contributions": [
+        "Environment interface patterns",
+        "Observation/action space handling",
+        "Compatibility validation methods",
+        "State preprocessing utilities"
+      ],
+      "usage_suggestions": "Reference the gymnasium integration patterns and observation/action space handling utilities when implementing environment management. Use the established preprocessing approaches for different observation types and action spaces to ensure compatibility with the RICE algorithm's requirements."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/policies.py",
+      "target_file_path": "rice/src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Network initialization utilities",
+        "PyTorch tensor handling patterns",
+        "Configuration management approaches",
+        "Logging integration patterns"
+      ],
+      "potential_contributions": [
+        "Network initialization functions",
+        "Tensor manipulation utilities",
+        "Configuration validation methods",
+        "Logging helper functions"
+      ],
+      "usage_suggestions": "Extract utility functions for network initialization, tensor operations, and configuration management from the policies module. These can be adapted to support RICE-specific requirements while maintaining consistency with the established patterns for PyTorch operations and parameter management."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/buffers.py",
+      "target_file_path": "src/core/ppo_enhanced.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Abstract buffer interface design patterns",
+        "Multi-environment data handling",
+        "PyTorch tensor operations for RL data",
+        "Experience storage and sampling mechanisms",
+        "Memory-efficient buffer management"
+      ],
+      "potential_contributions": [
+        "Provide foundation for rollout buffer implementation in PPO",
+        "Guide experience collection and batch sampling design",
+        "Inform multi-environment trajectory storage",
+        "Support exploration bonus data management"
+      ],
+      "usage_suggestions": "Use BaseBuffer as a reference for implementing PPO's rollout buffer that stores trajectories with exploration bonuses. Adapt the abstract interface to handle advantage estimates, value targets, and RND intrinsic rewards alongside standard PPO data (states, actions, rewards, log_probs). The swap_and_flatten utility will be particularly useful for converting multi-environment rollout data into training batches."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/buffers.py",
+      "target_file_path": "src/environment_manager.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Multi-environment support patterns",
+        "Gymnasium space compatibility",
+        "Buffer reset and initialization logic",
+        "Experience data structure handling"
+      ],
+      "potential_contributions": [
+        "Inform multi-environment coordination design",
+        "Guide experience collection from parallel environments",
+        "Support state reset and buffer management integration"
+      ],
+      "usage_suggestions": "Leverage the multi-environment handling patterns from BaseBuffer to design the environment manager's interface with parallel environments. Use the buffer's space compatibility checks and reset mechanisms as reference for managing environment state resets and coordinating data collection across multiple environment instances."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/buffers.py",
+      "target_file_path": "src/core/rnd_exploration.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Experience data storage patterns",
+        "Batch sampling for neural network training",
+        "PyTorch tensor handling",
+        "Memory management for large datasets"
+      ],
+      "potential_contributions": [
+        "Guide RND training data management",
+        "Support efficient batch creation for network updates",
+        "Inform experience replay for RND target network training"
+      ],
+      "usage_suggestions": "Apply the buffer's batch sampling and tensor handling patterns to manage RND training data. Use the memory-efficient storage concepts to maintain a buffer of recent experiences for training the RND predictor network, ensuring efficient batch creation for network updates while managing memory usage for intrinsic reward computation."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/common/buffers.py",
+      "target_file_path": "src/utils.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Tensor operation utilities (swap_and_flatten)",
+        "Memory management patterns",
+        "Data structure handling utilities"
+      ],
+      "potential_contributions": [
+        "Provide tensor manipulation utility functions",
+        "Support data preprocessing and formatting",
+        "Guide memory-efficient data handling utilities"
+      ],
+      "usage_suggestions": "Extract and adapt utility functions like swap_and_flatten for general tensor operations in the RICE system. These utilities can support data preprocessing, batch formatting, and memory-efficient operations across different components of the system, particularly for handling multi-environment data structures."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/ppo.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.95,
+      "helpful_aspects": [
+        "Complete PPO algorithm implementation with actor-critic architecture",
+        "On-policy learning framework with rollout buffer management",
+        "Clipped surrogate loss function for stable policy updates",
+        "Generalized Advantage Estimation (GAE) implementation",
+        "Configurable hyperparameters for learning rate, batch size, and clipping",
+        "Policy and value network training procedures",
+        "Experience collection and batch processing logic"
+      ],
+      "potential_contributions": [
+        "Serve as the base PPO implementation for enhancement with exploration bonuses",
+        "Provide the core policy gradient optimization mechanics",
+        "Supply the actor-critic network architecture and training loops",
+        "Offer the rollout buffer and experience management system",
+        "Contribute the advantage estimation and policy update mechanisms"
+      ],
+      "usage_suggestions": "Use this PPO implementation as the foundation for ppo_enhanced.py by extending the OnPolicyAlgorithm class to incorporate exploration bonuses from RND. Modify the advantage calculation to include intrinsic rewards, adapt the loss function to handle both extrinsic and intrinsic rewards, and integrate with the StateMask network for state-dependent exploration. The existing PPO structure provides the perfect base for adding RICE-specific enhancements while maintaining the proven PPO optimization mechanics."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/ppo.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "PPO algorithm orchestration and training loop management",
+        "Policy update scheduling and hyperparameter management",
+        "Integration patterns for combining multiple RL components",
+        "Model saving and loading functionality",
+        "Training progress monitoring and logging"
+      ],
+      "potential_contributions": [
+        "Provide reference implementation for algorithm orchestration patterns",
+        "Supply training loop structure for coordinating multiple components",
+        "Offer model management and checkpointing strategies",
+        "Contribute hyperparameter scheduling and adaptation logic"
+      ],
+      "usage_suggestions": "Reference the PPO class structure and training orchestration patterns when implementing the main RICE algorithm coordination. Use the PPO's training loop design, model management, and hyperparameter handling as templates for orchestrating the interaction between StateMask, RND exploration, and enhanced PPO components in the rice_refiner.py main algorithm."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/ppo.py",
+      "target_file_path": "rice/config.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Comprehensive PPO hyperparameter definitions and default values",
+        "Learning rate scheduling and adaptation parameters",
+        "Network architecture configuration options",
+        "Training batch size and buffer size specifications",
+        "Clipping range and advantage normalization settings"
+      ],
+      "potential_contributions": [
+        "Provide proven PPO hyperparameter defaults and ranges",
+        "Supply configuration structure for RL algorithm parameters",
+        "Offer parameter validation and type checking patterns",
+        "Contribute optimization-related configuration options"
+      ],
+      "usage_suggestions": "Extract the PPO hyperparameter definitions and default values to inform the RICE configuration structure. Use the PPO parameter organization as a template for structuring RICE-specific hyperparameters, ensuring compatibility between the base PPO parameters and the additional RICE components (StateMask, RND, exploration bonuses) in the unified configuration system."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/policies.py",
+      "target_file_path": "rice/src/core/ppo_enhanced.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "PPO-specific policy architecture definitions",
+        "Actor-critic policy implementations",
+        "Policy aliasing pattern for clean interfaces",
+        "Neural network policy type abstractions"
+      ],
+      "potential_contributions": [
+        "Provide foundation for PPO policy architecture in enhanced PPO implementation",
+        "Offer policy type selection patterns for different observation spaces",
+        "Supply actor-critic policy structure templates",
+        "Enable consistent policy interface design"
+      ],
+      "usage_suggestions": "Use this file as a template for creating policy aliases in ppo_enhanced.py. The MlpPolicy, CnnPolicy, and MultiInputPolicy patterns can be adapted to work with the exploration bonus mechanisms. Consider creating similar aliases that wrap the enhanced actor-critic policies with RND integration, maintaining the same clean interface while adding exploration capabilities."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/policies.py",
+      "target_file_path": "rice/src/rice_refiner.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Policy selection and instantiation patterns",
+        "Clean interface design for algorithm components",
+        "PPO algorithm integration approach"
+      ],
+      "potential_contributions": [
+        "Inform policy selection logic in main RICE orchestration",
+        "Provide patterns for component interface design",
+        "Guide integration of PPO policies with other RICE components"
+      ],
+      "usage_suggestions": "Reference the policy aliasing approach when designing the main RICE algorithm orchestration. The clean separation between policy types can inform how rice_refiner.py handles different policy architectures and integrates them with the mask network, RND exploration, and mixed distribution components."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/policies.py",
+      "target_file_path": "rice/config.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Policy type configuration patterns",
+        "Architecture selection parameters",
+        "PPO-specific policy settings"
+      ],
+      "potential_contributions": [
+        "Inform policy architecture configuration options",
+        "Guide hyperparameter organization for different policy types",
+        "Provide structure for policy selection parameters"
+      ],
+      "usage_suggestions": "Use the policy type distinctions (MLP, CNN, MultiInput) to structure configuration parameters in config.py. Create configuration sections that allow users to select and tune different policy architectures, following the same categorical approach used in the policy aliases."
+    },
+    {
+      "repo_file_path": "stable-baselines3/stable_baselines3/ppo/policies.py",
+      "target_file_path": "rice/examples/demo_rice.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Policy instantiation examples",
+        "Clean API usage patterns",
+        "Policy type selection demonstrations"
+      ],
+      "potential_contributions": [
+        "Provide examples of policy selection and usage",
+        "Demonstrate clean API patterns for policy instantiation",
+        "Show how different policy types work with different environments"
+      ],
+      "usage_suggestions": "Incorporate the policy selection patterns into the demonstration script to show users how to choose appropriate policy architectures for different types of environments (continuous control with MLP, image-based with CNN, mixed observations with MultiInput)."
+    }
+  ],
+  "analysis_metadata": {
+    "analysis_date": "2025-06-29T23:34:21.343241",
+    "target_structure_analyzed": "rice/\n\u251c\u2500\u2500 src/\n\u2502   \u251c\u2500\u2500 __init__.py\n\u2502   \u251c\u2500\u2500 core/\n\u2502   \u2502   \u251c\u2500\u2500 __init__.py\n\u2502   \u2502   \u251c\u2500\u2500 mask_network.py           # StateMask implementation\n\u2502   \u2502   \u251c\u2500\u2500 mixed_distribution.py     # Mixed initial state di...",
+    "total_relationships_found": 65,
+    "high_confidence_relationships": 29,
+    "analyzer_version": "1.3.0",
+    "pre_filtering_enabled": true,
+    "files_before_filtering": 105,
+    "files_after_filtering": 15,
+    "filtering_efficiency": 85.71,
+    "config_file_used": null,
+    "min_confidence_score": 0.3,
+    "high_confidence_threshold": 0.7,
+    "concurrent_analysis_used": false,
+    "content_caching_enabled": false,
+    "cache_hits": 0
+  }
+}

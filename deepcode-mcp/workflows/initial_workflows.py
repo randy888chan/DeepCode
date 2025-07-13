@@ -104,37 +104,94 @@ async def run_paper_analyzer(prompt_text, logger):
     Returns:
         str: The analysis result from the agent
     """
-    analyzer_agent = Agent(
-        name="PaperInputAnalyzerAgent",
-        instruction=PAPER_INPUT_ANALYZER_PROMPT,
-        server_names=["brave"],
-    )
-    
-    async with analyzer_agent:
-        logger.info("analyzer: Connected to server, calling list_tools...")
-        tools = await analyzer_agent.list_tools()
-        logger.info("Tools available:", data=tools.model_dump())
+    try:
+        # Log input information for debugging
+        print(f"📊 Starting paper analysis...")
+        print(f"Input prompt length: {len(prompt_text) if prompt_text else 0}")
+        print(f"Input preview: {prompt_text[:200] if prompt_text else 'None'}...")
         
+        if not prompt_text or prompt_text.strip() == "":
+            raise ValueError("Empty or None prompt_text provided to run_paper_analyzer")
         
-        analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
-        
-        # 为论文分析设置更高的token输出量 / Set higher token output for paper analysis
-        analysis_params = RequestParams(
-            max_tokens=6144,  # 为论文分析设置6144 tokens
-            temperature=0.3,  # 适中的创造性用于分析
+        analyzer_agent = Agent(
+            name="PaperInputAnalyzerAgent",
+            instruction=PAPER_INPUT_ANALYZER_PROMPT,
+            server_names=["brave"],
         )
         
-        raw_result = await analyzer.generate_str(
-            message=prompt_text,
-            request_params=analysis_params
-        )
-        
-        # 清理LLM输出，确保只返回纯净的JSON
-        clean_result = extract_clean_json(raw_result)
-        logger.info(f"Raw LLM output: {raw_result}")
-        logger.info(f"Cleaned JSON output: {clean_result}")
-        
-        return clean_result
+        async with analyzer_agent:
+            print("analyzer: Connected to server, calling list_tools...")
+            try:
+                tools = await analyzer_agent.list_tools()
+                print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
+            except Exception as e:
+                print(f"Failed to list tools: {e}")
+            
+            try:
+                analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
+                print("✅ LLM attached successfully")
+            except Exception as e:
+                print(f"❌ Failed to attach LLM: {e}")
+                raise
+            
+            # 为论文分析设置更高的token输出量 / Set higher token output for paper analysis
+            analysis_params = RequestParams(
+                max_tokens=6144,  # 为论文分析设置6144 tokens
+                temperature=0.3,  # 适中的创造性用于分析
+            )
+            
+            print(f"🔄 Making LLM request with params: max_tokens={analysis_params.max_tokens}, temperature={analysis_params.temperature}")
+            
+            try:
+                raw_result = await analyzer.generate_str(
+                    message=prompt_text,
+                    request_params=analysis_params
+                )
+                
+                print(f"✅ LLM request completed")
+                print(f"Raw result type: {type(raw_result)}")
+                print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+                
+                if not raw_result:
+                    print("❌ CRITICAL: raw_result is empty or None!")
+                    print("This could indicate:")
+                    print("1. LLM API call failed silently")
+                    print("2. API rate limiting or quota exceeded")
+                    print("3. Network connectivity issues")
+                    print("4. MCP server communication problems")
+                    raise ValueError("LLM returned empty result")
+                
+            except Exception as e:
+                print(f"❌ LLM generation failed: {e}")
+                print(f"Exception type: {type(e)}")
+                raise
+            
+            # 清理LLM输出，确保只返回纯净的JSON
+            try:
+                clean_result = extract_clean_json(raw_result)
+                print(f"Raw LLM output: {raw_result}")
+                print(f"Cleaned JSON output: {clean_result}")
+                
+                # Log to SimpleLLMLogger
+                if hasattr(logger, 'log_response'):
+                    logger.log_response(clean_result, model="PaperInputAnalyzer", agent="PaperInputAnalyzerAgent")
+                
+                if not clean_result or clean_result.strip() == "":
+                    print("❌ CRITICAL: clean_result is empty after JSON extraction!")
+                    print(f"Original raw_result was: {raw_result}")
+                    raise ValueError("JSON extraction resulted in empty output")
+                
+                return clean_result
+                
+            except Exception as e:
+                print(f"❌ JSON extraction failed: {e}")
+                print(f"Raw result was: {raw_result}")
+                raise
+            
+    except Exception as e:
+        print(f"❌ run_paper_analyzer failed: {e}")
+        print(f"Exception details: {type(e).__name__}: {str(e)}")
+        raise
 
 async def run_paper_downloader(analysis_result, logger):
     """
@@ -154,9 +211,9 @@ async def run_paper_downloader(analysis_result, logger):
     )
     
     async with downloader_agent:
-        logger.info("downloader: Connected to server, calling list_tools...")
+        print("downloader: Connected to server, calling list_tools...")
         tools = await downloader_agent.list_tools()
-        logger.info("Tools available:", data=tools.model_dump())
+        print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
         
         downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
         
@@ -206,7 +263,7 @@ async def paper_code_analyzer(document, logger):
     
     # 设置更高的token输出量 / Set higher token output limit
     enhanced_params = RequestParams(
-        max_tokens=50000,  # 增加到16384 tokens以确保完整输出
+        max_tokens=26384,  # 增加到16384 tokens以确保完整输出
         temperature=0.3,   # 保持适中的创造性
     )
     
@@ -214,7 +271,7 @@ async def paper_code_analyzer(document, logger):
         message=document,
         request_params=enhanced_params
     )
-    logger.info(f"Code analysis result: {result}")
+    print(f"Code analysis result: {result}")
     return result
 
 async def github_repo_download(search_result, paper_dir, logger):
@@ -236,7 +293,7 @@ async def github_repo_download(search_result, paper_dir, logger):
     )
     
     async with github_download_agent:
-        logger.info("GitHub downloader: Downloading repositories...")
+        print("GitHub downloader: Downloading repositories...")
         downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
         
         # 为GitHub下载设置更高的token输出量 / Set higher token output for GitHub download
@@ -269,12 +326,12 @@ async def paper_reference_analyzer(analysis_result, logger):
     )
     
     async with reference_analysis_agent:
-        logger.info("Reference analyzer: Connected to server, analyzing references...")
+        print("Reference analyzer: Connected to server, analyzing references...")
         analyzer = await reference_analysis_agent.attach_llm(AnthropicAugmentedLLM)
         
         # 为引用分析设置更高的token输出量 / Set higher token output for reference analysis
         reference_params = RequestParams(
-            max_tokens=6144,  # 为引用分析设置6144 tokens
+            max_tokens=30000,  # 为引用分析设置6144 tokens
             temperature=0.2,  # 引用分析需要更精确
         )
         
@@ -350,9 +407,9 @@ async def _setup_paper_directory_structure(download_result: str, logger, sync_di
     paper_dir = result['paper_dir']
     
     # Log directory structure setup
-    logger.info(f"📁 Paper directory structure:")
-    logger.info(f"   Base sync directory: {sync_directory or 'default'}")
-    logger.info(f"   Paper directory: {paper_dir}")
+    print(f"📁 Paper directory structure:")
+    print(f"   Base sync directory: {sync_directory or 'default'}")
+    print(f"   Paper directory: {paper_dir}")
     
     return {
         'paper_dir': paper_dir,
@@ -385,7 +442,7 @@ async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_cal
     
     # Check if reference analysis already exists
     if os.path.exists(reference_path):
-        logger.info(f"Found existing reference analysis at {reference_path}")
+        print(f"Found existing reference analysis at {reference_path}")
         with open(reference_path, 'r', encoding='utf-8') as f:
             return f.read()
     
@@ -395,7 +452,7 @@ async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_cal
     # Save reference analysis result
     with open(reference_path, 'w', encoding='utf-8') as f:
         f.write(reference_result)
-    logger.info(f"Reference analysis saved to {reference_path}")
+    print(f"Reference analysis saved to {reference_path}")
     
     return reference_result
 
@@ -419,7 +476,7 @@ async def _execute_code_planning_phase(dir_info: dict, logger, progress_callback
         initial_plan_result = await paper_code_analyzer(dir_info['standardized_text'], logger)
         with open(initial_plan_path, 'w', encoding='utf-8') as f:
             f.write(initial_plan_result)
-        logger.info(f"Initial plan saved to {initial_plan_path}")
+        print(f"Initial plan saved to {initial_plan_path}")
 
 async def _execute_github_download_phase(reference_result: str, dir_info: dict, logger, progress_callback=None):
     """
@@ -443,7 +500,7 @@ async def _execute_github_download_phase(reference_result: str, dir_info: dict, 
         # Save download results
         with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
             f.write(download_result)
-        logger.info(f"GitHub download results saved to {dir_info['download_path']}")
+        print(f"GitHub download results saved to {dir_info['download_path']}")
         
         # Verify if any repositories were actually downloaded
         code_base_path = os.path.join(dir_info['paper_dir'], 'code_base')
@@ -454,23 +511,23 @@ async def _execute_github_download_phase(reference_result: str, dir_info: dict, 
             ]
             
             if downloaded_repos:
-                logger.info(f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}")
+                print(f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}")
             else:
-                logger.warning("GitHub download phase completed, but no repositories were found in the code_base directory")
-                logger.info("This might indicate:")
-                logger.info("1. No relevant repositories were identified in the reference analysis")
-                logger.info("2. Repository downloads failed due to access permissions or network issues")
-                logger.info("3. The download agent encountered errors during the download process")
+                print("GitHub download phase completed, but no repositories were found in the code_base directory")
+                print("This might indicate:")
+                print("1. No relevant repositories were identified in the reference analysis")
+                print("2. Repository downloads failed due to access permissions or network issues")
+                print("3. The download agent encountered errors during the download process")
         else:
-            logger.warning(f"Code base directory was not created: {code_base_path}")
+            print(f"Code base directory was not created: {code_base_path}")
             
     except Exception as e:
-        logger.error(f"Error during GitHub repository download: {e}")
+        print(f"Error during GitHub repository download: {e}")
         # Still save the error information
         error_message = f"GitHub download failed: {str(e)}"
         with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
             f.write(error_message)
-        logger.info(f"GitHub download error saved to {dir_info['download_path']}")
+        print(f"GitHub download error saved to {dir_info['download_path']}")
         raise e  # Re-raise to be handled by the main pipeline
 
 async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_callback=None) -> dict:
@@ -489,13 +546,13 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
     if progress_callback:
         progress_callback(70, "🗂️ Building codebase index and analyzing relationships...")
     
-    logger.info("Starting codebase indexing to build relationships between downloaded code and target structure...")
+    print("Starting codebase indexing to build relationships between downloaded code and target structure...")
     await asyncio.sleep(2)  # Brief pause before starting indexing
     
     # Check if code_base directory exists and has content
     code_base_path = os.path.join(dir_info['paper_dir'], 'code_base')
     if not os.path.exists(code_base_path):
-        logger.warning(f"Code base directory not found: {code_base_path}")
+        print(f"Code base directory not found: {code_base_path}")
         return {'status': 'skipped', 'message': 'No code base directory found - skipping indexing'}
     
     # Check if there are any repositories in the code_base directory
@@ -506,12 +563,12 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
         ]
         
         if not repo_dirs:
-            logger.warning(f"No repositories found in {code_base_path}")
-            logger.info("This might be because:")
-            logger.info("1. GitHub download phase didn't complete successfully")
-            logger.info("2. No relevant repositories were identified for download")
-            logger.info("3. Repository download failed due to access issues")
-            logger.info("Continuing with code implementation without codebase indexing...")
+            print(f"No repositories found in {code_base_path}")
+            print("This might be because:")
+            print("1. GitHub download phase didn't complete successfully")
+            print("2. No relevant repositories were identified for download")
+            print("3. Repository download failed due to access issues")
+            print("Continuing with code implementation without codebase indexing...")
             
             # Save a report about the skipped indexing
             skip_report = {
@@ -527,18 +584,18 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
             
             with open(dir_info['index_report_path'], 'w', encoding='utf-8') as f:
                 f.write(str(skip_report))
-            logger.info(f"Indexing skip report saved to {dir_info['index_report_path']}")
+            print(f"Indexing skip report saved to {dir_info['index_report_path']}")
             
             return skip_report
             
     except Exception as e:
-        logger.error(f"Error checking code base directory: {e}")
+        print(f"Error checking code base directory: {e}")
         return {'status': 'error', 'message': f'Error checking code base directory: {str(e)}'}
     
     try:
         from workflows.codebase_index_workflow import run_codebase_indexing
         
-        logger.info(f"Found {len(repo_dirs)} repositories to index: {repo_dirs}")
+        print(f"Found {len(repo_dirs)} repositories to index: {repo_dirs}")
         
         # Run codebase index workflow
         index_result = await run_codebase_indexing(
@@ -550,25 +607,25 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
         
         # Log indexing results
         if index_result['status'] == 'success':
-            logger.info("Code indexing completed successfully!")
-            logger.info(f"Indexed {index_result['statistics']['total_repositories'] if index_result.get('statistics') else len(index_result['output_files'])} repositories")
-            logger.info(f"Generated {len(index_result['output_files'])} index files")
+            print("Code indexing completed successfully!")
+            print(f"Indexed {index_result['statistics']['total_repositories'] if index_result.get('statistics') else len(index_result['output_files'])} repositories")
+            print(f"Generated {len(index_result['output_files'])} index files")
             
             # Save indexing results to file
             with open(dir_info['index_report_path'], 'w', encoding='utf-8') as f:
                 f.write(str(index_result))
-            logger.info(f"Indexing report saved to {dir_info['index_report_path']}")
+            print(f"Indexing report saved to {dir_info['index_report_path']}")
             
         elif index_result['status'] == 'warning':
-            logger.warning(f"Code indexing completed with warnings: {index_result['message']}")
+            print(f"Code indexing completed with warnings: {index_result['message']}")
         else:
-            logger.error(f"Code indexing failed: {index_result['message']}")
+            print(f"Code indexing failed: {index_result['message']}")
             
         return index_result
         
     except Exception as e:
-        logger.error(f"Error during codebase indexing workflow: {e}")
-        logger.info("Continuing with code implementation despite indexing failure...")
+        print(f"Error during codebase indexing workflow: {e}")
+        print("Continuing with code implementation despite indexing failure...")
         
         # Save error report
         error_report = {
@@ -580,7 +637,7 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
         
         with open(dir_info['index_report_path'], 'w', encoding='utf-8') as f:
             f.write(str(error_report))
-        logger.info(f"Indexing error report saved to {dir_info['index_report_path']}")
+        print(f"Indexing error report saved to {dir_info['index_report_path']}")
         
         return error_report
 
@@ -600,7 +657,7 @@ async def _execute_code_implementation_phase(dir_info: dict, logger, progress_ca
     if progress_callback:
         progress_callback(85, "⚙️ Implementing code based on the generated plan...")
     
-    logger.info("Starting code implementation based on the initial plan...")
+    print("Starting code implementation based on the initial plan...")
     await asyncio.sleep(3)  # Brief pause before starting implementation
     
     try:
@@ -609,7 +666,7 @@ async def _execute_code_implementation_phase(dir_info: dict, logger, progress_ca
         
         # Check if initial plan file exists
         if os.path.exists(dir_info['initial_plan_path']):
-            logger.info(f"Using initial plan from {dir_info['initial_plan_path']}")
+            print(f"Using initial plan from {dir_info['initial_plan_path']}")
             
             # Run code implementation workflow with pure code mode
             implementation_result = await code_workflow.run_workflow(
@@ -620,24 +677,24 @@ async def _execute_code_implementation_phase(dir_info: dict, logger, progress_ca
             
             # Log implementation results
             if implementation_result['status'] == 'success':
-                logger.info("Code implementation completed successfully!")
-                logger.info(f"Code directory: {implementation_result['code_directory']}")
+                print("Code implementation completed successfully!")
+                print(f"Code directory: {implementation_result['code_directory']}")
                 
                 # Save implementation results to file
                 with open(dir_info['implementation_report_path'], 'w', encoding='utf-8') as f:
                     f.write(str(implementation_result))
-                logger.info(f"Implementation report saved to {dir_info['implementation_report_path']}")
+                print(f"Implementation report saved to {dir_info['implementation_report_path']}")
                 
             else:
-                logger.error(f"Code implementation failed: {implementation_result.get('message', 'Unknown error')}")
+                print(f"Code implementation failed: {implementation_result.get('message', 'Unknown error')}")
                 
             return implementation_result
         else:
-            logger.warning(f"Initial plan file not found at {dir_info['initial_plan_path']}, skipping code implementation")
+            print(f"Initial plan file not found at {dir_info['initial_plan_path']}, skipping code implementation")
             return {'status': 'warning', 'message': 'Initial plan not found - code implementation skipped'}
             
     except Exception as e:
-        logger.error(f"Error during code implementation workflow: {e}")
+        print(f"Error during code implementation workflow: {e}")
         return {'status': 'error', 'message': str(e)}
 
 async def execute_multi_agent_research_pipeline(input_source, logger, progress_callback=None, enable_indexing=True):
@@ -668,28 +725,28 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         if progress_callback:
             progress_callback(5, "🔄 Setting up Docker synchronization for seamless file access...")
         
-        logger.info("🚀 Starting multi-agent research pipeline with Docker sync support")
+        print("🚀 Starting multi-agent research pipeline with Docker sync support")
         
         # Setup Docker synchronization
         sync_result = await setup_docker_sync(logger=logger)
         sync_directory = get_sync_directory()
         
-        logger.info(f"📁 Sync environment: {sync_result['environment']}")
-        logger.info(f"📂 Sync directory: {sync_directory}")
-        logger.info(f"✅ Sync status: {sync_result['message']}")
+        print(f"📁 Sync environment: {sync_result['environment']}")
+        print(f"📂 Sync directory: {sync_directory}")
+        print(f"✅ Sync status: {sync_result['message']}")
         
         # 记录索引功能状态
         if enable_indexing:
-            logger.info("🗂️ Codebase indexing enabled - full workflow")
+            print("🗂️ Codebase indexing enabled - full workflow")
         else:
-            logger.info("⚡ Fast mode - codebase indexing disabled")
+            print("⚡ Fast mode - codebase indexing disabled")
         
         # Update file processor to use sync directory
         if sync_result['environment'] == 'docker':
-            logger.info("🐳 Running in Docker container - files will sync to local machine")
+            print("🐳 Running in Docker container - files will sync to local machine")
         else:
-            logger.info("💻 Running locally - use Docker container for full sync experience")
-            logger.info("💡 Tip: Run 'python start_docker_sync.py' for Docker sync mode")
+            print("💻 Running locally - use Docker container for full sync experience")
+            print("💡 Tip: Run 'python start_docker_sync.py' for Docker sync mode")
         
         # Continue with original pipeline phases...
         # Phase 1: Input Processing and Validation
@@ -710,6 +767,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
             progress_callback(40, "🔧 Starting comprehensive code preparation workflow...")
         
         dir_info = await _setup_paper_directory_structure(download_result, logger, sync_directory)
+        await asyncio.sleep(30)
         
         # Phase 4: Code Planning
         # 阶段4：代码规划
@@ -720,7 +778,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         if enable_indexing:
             reference_result = await _execute_reference_analysis_phase(dir_info, logger, progress_callback)
         else:
-            logger.info("🔶 Skipping reference analysis (indexing disabled)")
+            print("🔶 Skipping reference analysis (indexing disabled)")
             # 创建一个空的引用分析结果以保持文件结构一致性
             reference_result = "Reference analysis skipped - indexing disabled for faster processing"
             with open(dir_info['reference_path'], 'w', encoding='utf-8') as f:
@@ -731,7 +789,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         if enable_indexing:
             await _execute_github_download_phase(reference_result, dir_info, logger, progress_callback)
         else:
-            logger.info("🔶 Skipping GitHub repository download (indexing disabled)")
+            print("🔶 Skipping GitHub repository download (indexing disabled)")
             # 创建一个空的下载结果文件以保持文件结构一致性
             with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
                 f.write("GitHub repository download skipped - indexing disabled for faster processing")
@@ -741,7 +799,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         if enable_indexing:
             index_result = await _execute_codebase_indexing_phase(dir_info, logger, progress_callback)
         else:
-            logger.info("🔶 Skipping codebase indexing (indexing disabled)")
+            print("🔶 Skipping codebase indexing (indexing disabled)")
             # 创建一个跳过索引的结果
             index_result = {
                 'status': 'skipped',
@@ -785,7 +843,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
             return pipeline_summary
         
     except Exception as e:
-        logger.error(f"Error in execute_multi_agent_research_pipeline: {e}")
+        print(f"Error in execute_multi_agent_research_pipeline: {e}")
         raise e
 
 # Backward compatibility alias (deprecated)
@@ -795,5 +853,5 @@ async def paper_code_preparation(input_source, logger, progress_callback=None):
     Deprecated: Use execute_multi_agent_research_pipeline instead.
     已弃用：请使用 execute_multi_agent_research_pipeline 替代。
     """
-    logger.warning("paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead.")
+    print("paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead.")
     return await execute_multi_agent_research_pipeline(input_source, logger, progress_callback)

@@ -1,0 +1,162 @@
+# RICE Reinforcement Learning Code Reproduction Plan
+
+## SECTION 1: SCOPE & GUIDELINES
+
+**Core Reproduction Targets:**
+1. **Improved StateMask Algorithm** - Simplified objective function for critical state identification
+2. **Mixed Initial State Distribution** - Combining default and critical states with mixing coefficient β
+3. **RND-Enhanced Policy Refining** - PPO training with exploration bonuses and state reset capabilities
+4. **Critical State Identification Pipeline** - Using mask network importance scores to find bottleneck states
+5. **Theoretical Sub-optimality Bounds** - Mathematical guarantees for mixed distribution performance
+
+**Validation Standards:**
+- Success criteria: Consistent improvement trends over baselines (PPO fine-tuning, StateMask-R, JSRL) across multiple environments
+- Performance thresholds: Relative improvement rather than exact numerical reproduction
+- Trend matching: Focus on convergence patterns and final performance gaps rather than absolute values
+
+**Scope Boundaries:**
+- **In-scope**: Core RICE algorithm, mask network training, mixed distribution construction, RND exploration
+- **Out-of-scope**: Extensive multi-environment evaluation, real-world applications (selfish mining, malware), ablation studies
+
+## SECTION 2: ALGORITHM DETAILS
+
+**Core Algorithms:**
+
+1. **Mask Network Training**
+   - Input: Pre-trained policy π, initial distribution ρ, episode length T
+   - Procedure: Train binary mask network π̃ with reward bonus α for blinding actions
+   - Output: Trained mask network for critical state identification
+   - Complexity: O(T·episodes·network_updates)
+
+2. **RICE Refining Algorithm**
+   - Input: Pre-trained policy π, mask network π̃, reset probability p, exploration coefficient λ
+   - Procedure: Sample mixed initial states, apply RND exploration bonus, update policy via PPO
+   - Output: Refined policy π'
+   - Complexity: O((p·K + T)·episodes·network_updates)
+
+3. **Critical State Identification**
+   - Input: Trajectory τ, trained mask network π̃
+   - Procedure: Calculate importance scores as 1 - prob_blind, select argmax
+   - Output: Most critical state in trajectory
+   - Complexity: O(T)
+
+**Mathematical Operations:**
+- Action masking: `a_final = a_t ⊙ a^m_t`
+- Modified reward: `R'(s_t, a_t) = R(s_t, a_t) + α·a^m_t`
+- Mixed distribution: `μ(s) = β·d^π̂_ρ(s) + (1-β)·ρ(s)`
+- RND bonus: `R^RND_t = ||f(s_{t+1}) - f̂(s_{t+1})||^2`
+- Performance bound: `V^π*(ρ) - V^π'(ρ) ≤ (1-γ)^{-1} · ||d^π*_ρ / d^π'_μ||_∞`
+
+**Data Processing:**
+- Trajectory sampling with environment reset capabilities
+- State importance scoring using mask network probabilities
+- Mixed initial state distribution construction
+- RND feature extraction and novelty detection
+
+## SECTION 3: CONFIGURATION
+
+**Network Architecture:**
+- Policy networks: 4-layer MLP with hidden sizes [128, 128, 128, 128]
+- Mask network: Same architecture as policy, binary output actions
+- RND networks: Feature extractor f and predictor f̂ with matching dimensions
+- Activation functions: ReLU for hidden layers, softmax/sigmoid for outputs
+
+**Technical Stack:**
+- Python 3.8+
+- PyTorch 1.12+
+- OpenAI Gym/Gymnasium
+- NumPy, SciPy for mathematical operations
+- Matplotlib for visualization
+- Pytest for testing
+
+**Key Hyperparameters:**
+- Reset probability: p = 0.25-0.5
+- Exploration coefficient: λ = 0.01
+- Reward bonus: α = 0.01
+- Mixing coefficient: β = 0.5
+- Discount factor: γ = 0.99
+- PPO learning rate: 3e-4
+
+## SECTION 4: FILE STRUCTURE
+
+```
+rice/
+├── src/
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── assumptions.py          # Theoretical assumptions validation
+│   │   ├── bounds.py              # Sub-optimality bound calculations
+│   │   └── config.py              # Configuration and hyperparameters
+│   ├── explanation/
+│   │   ├── __init__.py
+│   │   ├── mask_network.py        # Improved StateMask implementation
+│   │   ├── base_explainer.py      # Abstract explanation interface
+│   │   └── state_importance.py    # Critical state identification
+│   ├── distribution/
+│   │   ├── __init__.py
+│   │   ├── state_mixer.py         # Mixed initial distribution
+│   │   └── sampling_strategies.py # State sampling methods
+│   ├── exploration/
+│   │   ├── __init__.py
+│   │   ├── rnd_bonus.py          # Random Network Distillation
+│   │   └── novelty_detection.py  # State novelty assessment
+│   ├── training/
+│   │   ├── __init__.py
+│   │   ├── policy_refiner.py     # Main RICE training coordinator
+│   │   ├── ppo_trainer.py        # PPO implementation
+│   │   └── environment_reset.py  # State restoration capabilities
+│   └── utils/
+│       ├── __init__.py
+│       ├── trajectory_utils.py    # Trajectory processing
+│       └── evaluation_utils.py    # Performance evaluation
+├── tests/
+│   ├── __init__.py
+│   ├── test_mask_network.py
+│   ├── test_state_mixer.py
+│   ├── test_rnd_bonus.py
+│   └── test_integration.py
+├── examples/
+│   ├── __init__.py
+│   ├── basic_demo.py
+│   └── mujoco_example.py
+├── requirements.txt
+├── setup.py
+└── README.md
+```
+
+## SECTION 5: IMPLEMENTATION PHASES
+
+**Phase 1 (Foundation - 6 files):**
+- `src/core/config.py` - Hyperparameters and configuration
+- `src/utils/trajectory_utils.py` - Basic trajectory processing
+- `src/utils/evaluation_utils.py` - Performance metrics
+- `src/core/assumptions.py` - Theoretical validation
+- `src/core/bounds.py` - Mathematical bounds
+- `src/explanation/base_explainer.py` - Abstract interfaces
+
+**Phase 2 (Core Implementation - 10 files):**
+- `src/explanation/mask_network.py` - StateMask algorithm
+- `src/explanation/state_importance.py` - Critical state identification
+- `src/distribution/state_mixer.py` - Mixed distribution construction
+- `src/distribution/sampling_strategies.py` - State sampling methods
+- `src/exploration/rnd_bonus.py` - RND exploration bonus
+- `src/exploration/novelty_detection.py` - State novelty assessment
+- `src/training/policy_refiner.py` - Main RICE coordinator
+- `src/training/ppo_trainer.py` - PPO implementation
+- `src/training/environment_reset.py` - State reset capabilities
+- `setup.py` - Package configuration
+
+**Phase 3 (Integration & Validation - 6 files):**
+- `tests/test_mask_network.py` - Mask network unit tests
+- `tests/test_state_mixer.py` - Distribution mixing tests
+- `tests/test_rnd_bonus.py` - RND exploration tests
+- `tests/test_integration.py` - End-to-end integration test
+- `examples/basic_demo.py` - Simple demonstration
+- `examples/mujoco_example.py` - MuJoCo environment example
+
+## SECTION 6: SUCCESS CRITERIA
+
+**Quantitative Metrics:**
+- Relative improvement over PPO fine-tuning baseline: >10% in final performance
+- Convergence speed: Faster than baseline methods by 20-30% in training episodes
+- Sample efficiency: Reduced sample complexity

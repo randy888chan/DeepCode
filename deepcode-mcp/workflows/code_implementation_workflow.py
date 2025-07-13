@@ -35,8 +35,8 @@ from config.mcp_tool_definitions import get_mcp_tools
 from utils.dialogue_logger import DialogueLogger, extract_paper_id_from_path
 
 
-os.environ['https_proxy'] = 'http://127.0.0.1:7890'
-os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+# os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+# os.environ['http_proxy'] = 'http://127.0.0.1:7890'
 
 class CodeImplementationWorkflow:
     """
@@ -97,7 +97,7 @@ class CodeImplementationWorkflow:
         
         # Initialize dialogue logger first (outside try block)
         paper_id = extract_paper_id_from_path(plan_file_path)
-        self.dialogue_logger = DialogueLogger(paper_id)
+        self.dialogue_logger = DialogueLogger(paper_id,target_directory)
         
         try:
             plan_content = self._read_plan_file(plan_file_path)
@@ -219,14 +219,28 @@ Requirements:
             system_message = PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
             messages = []
             
-            implementation_message = f"""**Task: Implement code based on the following reproduction plan**
+            implementation_message = f"""**TASK: Implement Research Paper Reproduction Code**
 
-**Code Reproduction Plan:**
-{plan_content}
+You are implementing a complete, working codebase that reproduces the core algorithms, experiments, and methods described in a research paper. Your goal is to create functional code that can replicate the paper's key results and contributions.
 
-**Working Directory:** {code_directory}
+**What you need to do:**
+- Analyze the paper content and reproduction plan to understand requirements
+- Implement all core algorithms mentioned in the main body of the paper
+- Create the necessary components following the planned architecture
+- Test each component to ensure functionality
+- Integrate components into a cohesive, executable system
+- Focus on reproducing main contributions rather than appendix-only experiments
 
-**Current Objective:** Begin implementation by analyzing the plan structure, examining the current project layout, and implementing the first foundation file according to the plan's priority order."""
+**RESOURCES:**
+- **Paper & Reproduction Plan**: `{target_directory}/` (contains .md paper files and initial_plan.txt with detailed implementation guidance)
+- **Reference Code Indexes**: `{target_directory}/indexes/` (JSON files with implementation patterns from related codebases)
+- **Implementation Directory**: `{code_directory}/` (your working directory for all code files)
+
+**CURRENT OBJECTIVE:** 
+Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) to understand the implementation strategy, then examine the paper content to identify the first priority component to implement. Use the search_code tool to find relevant reference implementations from the indexes directory (`{target_directory}/indexes/*.json`) before coding.
+
+---
+**START:** Review the plan above and begin implementation."""
             
             messages.append({"role": "user", "content": implementation_message})
             
@@ -762,7 +776,7 @@ Requirements:
 🎯 **Next Action:** Continue with dependency-aware implementation workflow.
 
 ⚡ **Quick Reminder:**
-- Use search_reference_code for unfamiliar file types
+- Use search_code for unfamiliar file types before implementing dependent files
 - Read related files before implementing dependent files
 - Implement exactly ONE complete file per response"""
 
@@ -914,71 +928,72 @@ Requirements:
             #     self.logger.error("Failed to initialize MCP agent")
             #     return False
             
-            # Test 1: Check available references
-            self.logger.info("\n🔍 Test 1: Getting all available references...")
-            try:
-                refs_result = await self.mcp_agent.call_tool("get_all_available_references", {})
-                self.logger.info(f"✅ get_all_available_references result: {refs_result}")
-            except Exception as e:
-                self.logger.error(f"❌ get_all_available_references failed: {e}")
+            # Test 1: Get indexes overview with new unified approach
+            self.logger.info("\n📁 Test 1: Getting indexes overview...")
+            indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/indexes"
+            # indexes_path = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"  
+            # try:
+            #     overview_result = await self.mcp_agent.call_tool(
+            #         "get_indexes_overview", 
+            #         {"indexes_path": indexes_path}
+            #     )
+            #     self.logger.info(f"✅ get_indexes_overview result: {overview_result}")
+            # except Exception as e:
+            #     self.logger.error(f"❌ get_indexes_overview failed: {e}")
             
-            # Test 2: Set indexes directory
-            self.logger.info("\n📁 Test 2: Setting indexes directory...")
-            # indexes_path = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/indexes"
-            indexes_path = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/indexes"  
-            try:
-                set_dir_result = await self.mcp_agent.call_tool(
-                    "set_indexes_directory", 
-                    {"indexes_path": indexes_path}
-                )
-                self.logger.info(f"✅ set_indexes_directory result: {set_dir_result}")
-            except Exception as e:
-                self.logger.error(f"❌ set_indexes_directory failed: {e}")
-            
-            # Test 3: Search reference code
-            self.logger.info("\n🔍 Test 3: Searching reference code...")
+            # # Test 2: Search reference code with unified tool (combines all three previous steps)
+            # self.logger.info("\n🔍 Test 2: Searching reference code with unified tool...")
             try:
                 search_result = await self.mcp_agent.call_tool(
-                    "search_reference_code", 
+                    "search_code_references", 
                     {
+                        "indexes_path": indexes_path,
                         "target_file": "models/transformer.py",
                         "keywords": "transformer,attention,pytorch",
                         "max_results": 5
                     }
                 )
-                self.logger.info(f"✅ search_reference_code result length: {len(str(search_result))}")
+                self.logger.info(f"✅ search_code_references result length: {len(str(search_result))}")
                 
                 # Parse and display summary
                 if isinstance(search_result, str):
                     import json
                     try:
                         parsed_result = json.loads(search_result)
-                        self.logger.info(f"📊 Search Summary:")
+                        self.logger.info(f"📊 Unified Search Summary:")
                         self.logger.info(f"  - Status: {parsed_result.get('status', 'unknown')}")
                         self.logger.info(f"  - Target File: {parsed_result.get('target_file', 'unknown')}")
+                        self.logger.info(f"  - Indexes Path: {parsed_result.get('indexes_path', 'unknown')}")
                         self.logger.info(f"  - References Found: {parsed_result.get('total_references_found', 0)}")
                         self.logger.info(f"  - Relationships Found: {parsed_result.get('total_relationships_found', 0)}")
                         self.logger.info(f"  - Indexes Loaded: {parsed_result.get('indexes_loaded', [])}")
+                        self.logger.info(f"  - Total Indexes: {parsed_result.get('total_indexes_loaded', 0)}")
                     except json.JSONDecodeError:
                         self.logger.info(f"Raw result preview: {str(search_result)[:200]}...")
                         
             except Exception as e:
-                self.logger.error(f"❌ search_reference_code failed: {e}")
+                self.logger.error(f"❌ search_code_references failed: {e}")
             
-            # Test 4: Check MCP tool definitions
-            self.logger.info("\n🛠️ Test 4: Checking MCP tool definitions...")
+            # Test 3: Check MCP tool definitions for new unified tools
+            self.logger.info("\n🛠️ Test 3: Checking MCP tool definitions...")
             try:
                 from config.mcp_tool_definitions import get_mcp_tools
                 tools = get_mcp_tools("code_implementation")
-                reference_tools = [tool for tool in tools if 'reference' in tool['name']]
+                reference_tools = [tool for tool in tools if any(keyword in tool['name'] for keyword in ['reference', 'indexes', 'code_references'])]
                 self.logger.info(f"✅ Reference tools found: {len(reference_tools)}")
                 for tool in reference_tools:
-                    self.logger.info(f"  - {tool['name']}: {tool['description']}")
+                    self.logger.info(f"  - {tool['name']}: {tool['description'][:100]}...")
+                    # Show unified tool parameters
+                    if tool['name'] == 'search_code_references':
+                        required_params = tool['input_schema']['required']
+                        self.logger.info(f"    Required parameters: {required_params}")
             except Exception as e:
                 self.logger.error(f"❌ Tool definitions check failed: {e}")
             
             self.logger.info("\n" + "=" * 60)
-            self.logger.info("✅ CODE REFERENCE INDEXER TESTING COMPLETED")
+            self.logger.info("✅ UNIFIED CODE REFERENCE INDEXER TESTING COMPLETED")
+            self.logger.info("🔧 New unified approach: One tool call instead of three")
+            self.logger.info("📋 Tools tested: get_indexes_overview, search_code_references")
             self.logger.info("=" * 60)
             
             return True
@@ -1006,7 +1021,7 @@ async def main():
     workflow = CodeImplementationWorkflow()
     
     print("=" * 60)
-    print("Code Implementation Workflow with Reference Indexer")
+    print("Code Implementation Workflow with UNIFIED Reference Indexer")
     print("=" * 60)
     print("Select mode:")
     print("1. Test Code Reference Indexer Integration")
@@ -1035,20 +1050,21 @@ async def main():
     #     print("✅ Read tools configuration testing completed!")
     #     return
     
-    print("Running Code Reference Indexer Integration Test...")
-    # test_success = await workflow.test_code_reference_indexer()
+    # print("Running Code Reference Indexer Integration Test...")
+    test_success = await workflow.test_code_reference_indexer()
     test_success = True
     if test_success:
         print("\n" + "=" * 60)
-        print("🎉 Code Reference Indexer Integration Test PASSED!")
+        print("🎉 UNIFIED Code Reference Indexer Integration Test PASSED!")
+        print("🔧 Three-step process successfully merged into ONE tool")
         print("=" * 60)
         
         # Ask if user wants to continue with actual workflow
         print("\nContinuing with workflow execution...")
         
-        # plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
-        plan_file = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
-        
+        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
+        # plan_file = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
+        target_directory = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/"
         print("Implementation Mode Selection:")
         print("1. Pure Code Implementation Mode (Recommended)")
         print("2. Iterative Implementation Mode")
@@ -1065,7 +1081,7 @@ async def main():
         # NOTE: To test without read tools, change the line above to:
         # enable_read_tools = False
         
-        result = await workflow.run_workflow(plan_file, pure_code_mode=pure_code_mode, enable_read_tools=enable_read_tools)
+        result = await workflow.run_workflow(plan_file, target_directory=target_directory, pure_code_mode=pure_code_mode, enable_read_tools=enable_read_tools)
         
         print("=" * 60)
         print("Workflow Execution Results:")

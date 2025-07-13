@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-Code Reference Indexer MCP Tool
+Code Reference Indexer MCP Tool - Unified Version
 
 Specialized MCP tool for searching relevant index content in indexes folder 
 and formatting it for LLM code implementation reference.
 
 Core Features:
-1. Search all JSON files in indexes folder
+1. **UNIFIED TOOL**: Combined search_code_references that handles directory setup, loading, and searching in one call
 2. Match relevant reference code based on target file path and functionality requirements  
 3. Format output of relevant code examples, functions and concepts
 4. Provide structured reference information for LLM use
+
+Key Improvement:
+- Single tool call that handles all steps internally
+- Agent only needs to provide indexes_path and target_file
+- No dependency on calling order or global state management
 """
 
 import os
@@ -31,10 +36,6 @@ logger = logging.getLogger(__name__)
 
 # Create FastMCP server instance
 mcp = FastMCP("code-reference-indexer")
-
-# Global variables: index cache
-INDEX_CACHE = {}
-INDEXES_DIRECTORY = None
 
 
 @dataclass
@@ -63,44 +64,27 @@ class RelationshipInfo:
     usage_suggestions: str
 
 
-def initialize_indexes_directory(indexes_dir: str = None):
-    """Initialize indexes directory"""
-    global INDEXES_DIRECTORY
-    if indexes_dir is None:
-        # Default to deepcode_lab/papers/1/indexes directory
-        current_dir = Path.cwd()
-        INDEXES_DIRECTORY = current_dir / "deepcode_lab" / "papers" / "1" / "indexes"
-    else:
-        INDEXES_DIRECTORY = Path(indexes_dir).resolve()
+def load_index_files_from_directory(indexes_directory: str) -> Dict[str, Dict]:
+    """Load all index files from specified directory"""
+    indexes_path = Path(indexes_directory).resolve()
     
-    if not INDEXES_DIRECTORY.exists():
-        logger.warning(f"Indexes directory does not exist: {INDEXES_DIRECTORY}")
-    else:
-        logger.info(f"Indexes directory initialized: {INDEXES_DIRECTORY}")
-
-
-def load_index_files() -> Dict[str, Dict]:
-    """Load all index files to cache"""
-    global INDEX_CACHE
-    
-    if INDEXES_DIRECTORY is None:
-        initialize_indexes_directory()
-    
-    if not INDEXES_DIRECTORY.exists():
+    if not indexes_path.exists():
+        logger.warning(f"Indexes directory does not exist: {indexes_path}")
         return {}
     
-    INDEX_CACHE = {}
+    index_cache = {}
     
-    for index_file in INDEXES_DIRECTORY.glob("*.json"):
+    for index_file in indexes_path.glob("*.json"):
         try:
             with open(index_file, 'r', encoding='utf-8') as f:
                 index_data = json.load(f)
-                INDEX_CACHE[index_file.stem] = index_data
+                index_cache[index_file.stem] = index_data
                 logger.info(f"Loaded index file: {index_file.name}")
         except Exception as e:
             logger.error(f"Failed to load index file {index_file.name}: {e}")
     
-    return INDEX_CACHE
+    logger.info(f"Loaded {len(index_cache)} index files from {indexes_path}")
+    return index_cache
 
 
 def extract_code_references(index_data: Dict) -> List[CodeReference]:
@@ -185,19 +169,17 @@ def calculate_relevance_score(target_file: str, reference: CodeReference, keywor
     return min(score, 1.0)
 
 
-def find_relevant_references(
+def find_relevant_references_in_cache(
     target_file: str, 
+    index_cache: Dict[str, Dict],
     keywords: List[str] = None, 
     max_results: int = 10
 ) -> List[Tuple[CodeReference, float]]:
-    """Find reference code relevant to target file"""
-    if not INDEX_CACHE:
-        load_index_files()
-    
+    """Find reference code relevant to target file from provided cache"""
     all_references = []
     
     # Collect reference information from all index files
-    for repo_name, index_data in INDEX_CACHE.items():
+    for repo_name, index_data in index_cache.items():
         references = extract_code_references(index_data)
         for ref in references:
             relevance_score = calculate_relevance_score(target_file, ref, keywords)
@@ -210,18 +192,15 @@ def find_relevant_references(
     return all_references[:max_results]
 
 
-def find_direct_relationships(target_file: str) -> List[RelationshipInfo]:
-    """Find direct relationships with target file"""
-    if not INDEX_CACHE:
-        load_index_files()
-    
+def find_direct_relationships_in_cache(target_file: str, index_cache: Dict[str, Dict]) -> List[RelationshipInfo]:
+    """Find direct relationships with target file from provided cache"""
     relationships = []
     
     # Normalize target file path (remove rice/ prefix if exists)
     normalized_target = target_file.replace("rice/", "").strip("/")
     
     # Collect relationship information from all index files
-    for repo_name, index_data in INDEX_CACHE.items():
+    for repo_name, index_data in index_cache.items():
         repo_relationships = extract_relationships(index_data)
         for rel in repo_relationships:
             # Normalize target file path in relationship
@@ -326,15 +305,18 @@ def format_reference_output(
 # ==================== MCP Tool Definitions ====================
 
 @mcp.tool()
-async def search_reference_code(
+async def search_code_references(
+    indexes_path: str,
     target_file: str,
     keywords: str = "",
     max_results: int = 10
 ) -> str:
     """
-    Search relevant reference code from index files for target file implementation
+    **UNIFIED TOOL**: Search relevant reference code from index files for target file implementation.
+    This tool combines directory setup, index loading, and searching in a single call.
     
     Args:
+        indexes_path: Path to the indexes directory containing JSON index files
         target_file: Target file path (file to be implemented)
         keywords: Search keywords, comma-separated
         max_results: Maximum number of results to return
@@ -343,57 +325,86 @@ async def search_reference_code(
         Formatted reference code information JSON string
     """
     try:
-        # Parse keywords
+        # Step 1: Load index files from specified directory
+        logger.info(f"Loading index files from: {indexes_path}")
+        index_cache = load_index_files_from_directory(indexes_path)
+        
+        if not index_cache:
+            result = {
+                "status": "error",
+                "message": f"No index files found or failed to load from: {indexes_path}",
+                "target_file": target_file,
+                "indexes_path": indexes_path
+            }
+            return json.dumps(result, ensure_ascii=False, indent=2)
+        
+        # Step 2: Parse keywords
         keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()] if keywords else []
         
-        # Find relevant reference code
-        relevant_refs = find_relevant_references(target_file, keyword_list, max_results)
+        # Step 3: Find relevant reference code
+        relevant_refs = find_relevant_references_in_cache(target_file, index_cache, keyword_list, max_results)
         
-        # Find direct relationships
-        relationships = find_direct_relationships(target_file)
+        # Step 4: Find direct relationships
+        relationships = find_direct_relationships_in_cache(target_file, index_cache)
         
-        # Format output
+        # Step 5: Format output
         formatted_output = format_reference_output(target_file, relevant_refs, relationships)
         
         result = {
             "status": "success",
             "target_file": target_file,
+            "indexes_path": indexes_path,
             "keywords_used": keyword_list,
             "total_references_found": len(relevant_refs),
             "total_relationships_found": len(relationships),
             "formatted_content": formatted_output,
-            "indexes_loaded": list(INDEX_CACHE.keys())
+            "indexes_loaded": list(index_cache.keys()),
+            "total_indexes_loaded": len(index_cache)
         }
         
+        logger.info(f"Successfully found {len(relevant_refs)} references and {len(relationships)} relationships for {target_file}")
         return json.dumps(result, ensure_ascii=False, indent=2)
         
     except Exception as e:
+        logger.error(f"Error in search_code_references: {str(e)}")
         result = {
             "status": "error",
             "message": f"Failed to search reference code: {str(e)}",
-            "target_file": target_file
+            "target_file": target_file,
+            "indexes_path": indexes_path
         }
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
-async def get_all_available_references() -> str:
+async def get_indexes_overview(indexes_path: str) -> str:
     """
-    Get all available reference code index information
+    Get overview of all available reference code index information from specified directory
+    
+    Args:
+        indexes_path: Path to the indexes directory containing JSON index files
     
     Returns:
         Overview information of all available reference code JSON string
     """
     try:
-        if not INDEX_CACHE:
-            load_index_files()
+        # Load index files from specified directory
+        index_cache = load_index_files_from_directory(indexes_path)
+        
+        if not index_cache:
+            result = {
+                "status": "error",
+                "message": f"No index files found in: {indexes_path}",
+                "indexes_path": indexes_path
+            }
+            return json.dumps(result, ensure_ascii=False, indent=2)
         
         overview = {
-            "total_repos": len(INDEX_CACHE),
+            "total_repos": len(index_cache),
             "repositories": {}
         }
         
-        for repo_name, index_data in INDEX_CACHE.items():
+        for repo_name, index_data in index_cache.items():
             repo_info = {
                 "repo_name": index_data.get("repo_name", repo_name),
                 "total_files": index_data.get("total_files", 0),
@@ -419,7 +430,8 @@ async def get_all_available_references() -> str:
         result = {
             "status": "success",
             "overview": overview,
-            "indexes_directory": str(INDEXES_DIRECTORY) if INDEXES_DIRECTORY else "Not set"
+            "indexes_directory": str(Path(indexes_path).resolve()),
+            "total_indexes_loaded": len(index_cache)
         }
         
         return json.dumps(result, ensure_ascii=False, indent=2)
@@ -427,61 +439,18 @@ async def get_all_available_references() -> str:
     except Exception as e:
         result = {
             "status": "error",
-            "message": f"Failed to get reference code overview: {str(e)}"
-        }
-        return json.dumps(result, ensure_ascii=False, indent=2)
-
-
-@mcp.tool()
-async def set_indexes_directory(indexes_path: str) -> str:
-    """
-    Set indexes directory path
-    
-    Args:
-        indexes_path: Indexes directory path
-    
-    Returns:
-        Setting result JSON string
-    """
-    try:
-        global INDEXES_DIRECTORY, INDEX_CACHE
-        
-        INDEXES_DIRECTORY = Path(indexes_path).resolve()
-        
-        if not INDEXES_DIRECTORY.exists():
-            result = {
-                "status": "error",
-                "message": f"Indexes directory does not exist: {indexes_path}"
-            }
-        else:
-            # Reload index files
-            INDEX_CACHE = {}
-            load_index_files()
-            
-            result = {
-                "status": "success",
-                "indexes_directory": str(INDEXES_DIRECTORY),
-                "loaded_indexes": list(INDEX_CACHE.keys()),
-                "total_loaded": len(INDEX_CACHE)
-            }
-        
-        return json.dumps(result, ensure_ascii=False, indent=2)
-        
-    except Exception as e:
-        result = {
-            "status": "error",
-            "message": f"Failed to set indexes directory: {str(e)}"
+            "message": f"Failed to get indexes overview: {str(e)}",
+            "indexes_path": indexes_path
         }
         return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def main():
     """Main function"""
-    # Initialize indexes directory
-    initialize_indexes_directory()
-    
-    # Preload index files
-    load_index_files()
+    logger.info("Starting unified Code Reference Indexer MCP server")
+    logger.info("Available tools:")
+    logger.info("1. search_code_references(indexes_path, target_file, keywords, max_results) - UNIFIED TOOL")
+    logger.info("2. get_indexes_overview(indexes_path) - Get overview of available indexes")
     
     # Run MCP server
     mcp.run()

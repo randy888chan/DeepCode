@@ -16,6 +16,7 @@ llm_logger:
   min_response_length: 50  # 只记录50字符以上的响应
 
 
+
 mcp:
   servers:
     brave:
@@ -51,33 +52,33 @@ mcp:
     #   env:
     #     GITHUB_TOKEN: "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"
     github-downloader:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/git_command.py"]
       env:
         PYTHONPATH: "."
     file-downloader:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/pdf_downloader.py"]
       env:
         PYTHONPATH: "."
     code-generator:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/code_generator.py"]
       env:
         PYTHONPATH: "."
     command-executor:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/command_executor.py"]
       env:
         PYTHONPATH: "."
     code-implementation:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/code_implementation_server.py"]
       env:
         PYTHONPATH: "."
       description: "论文代码复现工具服务器 - 提供文件操作、代码执行、搜索等功能"
     code-reference-indexer:
-      command: "python3"
+      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/code_reference_indexer.py"]
       env:
         PYTHONPATH: "."
@@ -89,5 +90,5 @@ openai:
   default_model: "gpt-4.1"
 
 anthropic:
-  default_model: "claude-sonnet-4-20250514"
-  # default_model: "claude-sonnet-3.5-20241022"
+  # default_model: "claude-sonnet-4-20250514"
+  default_model: "claude-3-5-sonnet-latest"

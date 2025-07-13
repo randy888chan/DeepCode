@@ -1,0 +1,98 @@
+I'll analyze the RICE paper to identify 5 most relevant references with GitHub repositories, following the specified criteria.
+[Calling tool filesystem_read_file with args {'path': 'rice_paper.md'}]
+Let me start by searching for relevant references from the paper content provided. I'll analyze the references and then search for their GitHub implementations.
+[Calling tool brave_brave_web_search with args {'query': '"Random Network Distillation" "Burda et al. 2018" GitHub implementation'}]
+[Calling tool brave_brave_web_search with args {'query': '"Random Network Distillation" RND GitHub repository implementation'}]
+[Calling tool fetch_fetch with args {'url': 'https://github.com/openai/random-network-distillation'}]
+[Calling tool brave_brave_web_search with args {'query': '"Jump-Start Reinforcement Learning" "Uchendu et al. 2023" GitHub implementation'}]
+[Calling tool brave_brave_web_search with args {'query': '"Jump-Start Reinforcement Learning" JSRL GitHub repository'}]
+[Calling tool fetch_fetch with args {'url': 'https://github.com/steventango/jumpstart-rl'}]
+[Calling tool brave_brave_web_search with args {'query': '"Proximal Policy Optimization" "Schulman et al. 2017" PPO GitHub implementation'}]
+[Calling tool brave_brave_web_search with args {'query': '"Proximal Policy Optimization" PPO stable-baselines3 GitHub'}]
+**Note: This analysis may be incomplete due to reaching the maximum number of tool usage iterations. To provide a more complete answer, I would have needed to:**
+- Search for more references mentioned in the RICE paper (SAC, GAIL, StateMask, etc.)
+- Analyze repository quality metrics (stars, maintenance, documentation)
+- Verify implementation details and community adoption
+- Cross-reference with Papers with Code for additional implementations
+
+Based on the analysis conducted, here are the most relevant references with GitHub repositories:
+
+```json
+{
+    "selected_references": [
+        {
+            "rank": 1,
+            "title": "Exploration by Random Network Distillation",
+            "authors": ["Yuri Burda", "Harri Edwards", "Amos Storkey", "Oleg Klimov"],
+            "year": "2018",
+            "relevance_score": 0.95,
+            "citation_context": "Core exploration method used in RICE for encouraging agent exploration from critical states via intrinsic rewards",
+            "key_contributions": ["Curiosity-driven exploration", "Intrinsic motivation via prediction error", "Scalable exploration bonus"],
+            "implementation_value": "Essential for RICE's exploration component - provides the RND bonus mechanism that enables agents to explore novel states when resetting from critical states",
+            "github_info": {
+                "repository_url": "https://github.com/openai/random-network-distillation",
+                "stars_count": "1,900+",
+                "last_updated": "Archive status (code provided as-is)",
+                "repository_quality": "High - Official OpenAI implementation with clean code structure",
+                "key_features": ["Atari environment support", "MPI for multi-GPU training", "Montezuma's Revenge implementation"],
+                "documentation_quality": "Good - Clear installation instructions and usage examples",
+                "community_activity": "Strong - Multiple community implementations and derivatives available"
+            },
+            "original_reference": "Burda, Y., Edwards, H., Storkey, A., and Klimov, O. Exploration by random network distillation. In Proc. of ICLR, 2018."
+        },
+        {
+            "rank": 2,
+            "title": "Jump-Start Reinforcement Learning",
+            "authors": ["Ikechukwu Uchendu", "Ted Xiao", "Yao Lu", "Banghua Zhu", "Mengyuan Yan", "Joséphine Simon", "Matthew Bennice", "Chuyuan Fu", "Cong Ma", "Jiantao Jiao", "Sergey Levine", "Karol Hausman"],
+            "year": "2023",
+            "relevance_score": 0.90,
+            "citation_context": "Primary baseline comparison method in RICE - uses pre-trained policies to guide exploration but with random frontier selection",
+            "key_contributions": ["Policy reuse framework", "Curriculum-based exploration", "Guide policy integration"],
+            "implementation_value": "Direct baseline for RICE - shows how explanation-based frontier selection outperforms random selection in policy refinement",
+            "github_info": {
+                "repository_url": "https://github.com/steventango/jumpstart-rl",
+                "stars_count": "50+",
+                "last_updated": "Recent activity",
+                "repository_quality": "Good - Well-structured implementation with Stable Baselines3 integration",
+                "key_features": ["TD3 + JSRL implementation", "PointMaze environment support", "Curriculum and random training modes"],
+                "documentation_quality": "Moderate - Basic examples provided, could use more detailed documentation",
+                "community_activity": "Moderate - Active development and community interest"
+            },
+            "original_reference": "Uchendu, I., Xiao, T., Lu, Y., Zhu, B., Yan, M., Simon, J., Bennice, M., Fu, C., Ma, C., Jiao, J., et al. Jump-start reinforcement learning. In Proc. of ICML, 2023."
+        },
+        {
+            "rank": 3,
+            "title": "Proximal Policy Optimization Algorithms",
+            "authors": ["John Schulman", "Filip Wolski", "Prafulla Dhariwal", "Alec Radford", "Oleg Klimov"],
+            "year": "2017",
+            "relevance_score": 0.85,
+            "citation_context": "Core training algorithm used in RICE for both pre-training and refinement phases",
+            "key_contributions": ["Policy gradient with clipping", "Trust region optimization", "Stable policy updates"],
+            "implementation_value": "Fundamental to RICE's training process - the refinement algorithm relies on PPO's monotonic improvement guarantees",
+            "github_info": {
+                "repository_url": "https://github.com/DLR-RM/stable-baselines3",
+                "stars_count": "8,000+",
+                "last_updated": "Very active - regular updates",
+                "repository_quality": "Excellent - Professional implementation with comprehensive testing",
+                "key_features": ["Complete PPO implementation", "Multi-environment support", "Extensive documentation"],
+                "documentation_quality": "Excellent - Comprehensive documentation, tutorials, and examples",
+                "community_activity": "Very high - Large community, regular contributions, widely adopted"
+            },
+            "original_reference": "Schulman, J., Wolski, F., Dhariwal, P., Radford, A., and Klimov, O. Proximal policy optimization algorithms. arXiv preprint arXiv:1707.06347, 2017."
+        }
+    ],
+    "analysis_summary": "Analysis focused on core algorithmic components of RICE. RND provides the exploration mechanism that's central to RICE's ability to break through training bottlenecks. JSRL serves as the primary baseline, demonstrating the value of explanation-based vs. random frontier selection. PPO is the foundational training algorithm that enables RICE's refinement process. Due to iteration limits, additional relevant references (SAC, GAIL, StateMask) could not be fully analyzed for GitHub implementations.",
+    "github_repositories_found": "3 primary repositories identified with varying quality levels"
+}
+```
+
+**Key Findings:**
+1. **Random Network Distillation** emerged as the most relevant reference, being directly integrated into RICE's core exploration mechanism
+2. **Jump-Start Reinforcement Learning** provides the closest methodological comparison, with RICE improving upon its random frontier selection
+3. **Proximal Policy Optimization** forms the algorithmic foundation that enables RICE's refinement guarantees
+
+**Limitations of this analysis:**
+- Could not analyze all referenced methods (SAC, GAIL, StateMask implementations)
+- Repository metrics (exact star counts, recent activity) need verification
+- Some implementations may exist in different repositories not discovered in initial search
+- Quality assessments are based on limited repository exploration

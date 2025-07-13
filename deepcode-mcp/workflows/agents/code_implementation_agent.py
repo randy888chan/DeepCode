@@ -495,6 +495,7 @@ class CodeImplementationAgent:
         except Exception as e:
             self.logger.warning(f"Failed to track dependency analysis: {e}")
 
+    
     def calculate_messages_token_count(self, messages: List[Dict]) -> int:
         """
         Calculate total token count for a list of messages

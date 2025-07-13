@@ -654,7 +654,10 @@ def _extract_file_section_alternative(summary_content: str, target_file_path: st
 
 @mcp.tool()
 async def search_code(
-    pattern: str, file_pattern: str = "*.py", use_regex: bool = False
+    pattern: str, 
+    file_pattern: str = "*.json", 
+    use_regex: bool = False,
+    search_directory: str = None
 ) -> str:
     """
     在代码文件中搜索模式
@@ -663,17 +666,38 @@ async def search_code(
         pattern: 搜索模式
         file_pattern: 文件模式（如 '*.py'）
         use_regex: 是否使用正则表达式
+        search_directory: 指定搜索目录（可选，如果不指定则使用WORKSPACE_DIR）
 
     Returns:
         搜索结果的JSON字符串
     """
     try:
-        ensure_workspace_exists()
+        # 确定搜索目录
+        if search_directory:
+            # 如果指定了搜索目录，使用指定的目录
+            if os.path.isabs(search_directory):
+                search_path = Path(search_directory)
+            else:
+                # 相对路径，相对于当前工作目录
+                search_path = Path.cwd() / search_directory
+        else:
+            # 如果没有指定搜索目录，使用默认的WORKSPACE_DIR
+            ensure_workspace_exists()
+            search_path = WORKSPACE_DIR
+        
+        # 检查搜索目录是否存在
+        if not search_path.exists():
+            result = {
+                "status": "error",
+                "message": f"搜索目录不存在: {search_path}",
+                "pattern": pattern,
+            }
+            return json.dumps(result, ensure_ascii=False, indent=2)
 
         import glob
 
         # 获取匹配的文件
-        file_paths = glob.glob(str(WORKSPACE_DIR / "**" / file_pattern), recursive=True)
+        file_paths = glob.glob(str(search_path / "**" / file_pattern), recursive=True)
 
         matches = []
         total_files_searched = 0
@@ -684,7 +708,7 @@ async def search_code(
                     lines = f.readlines()
 
                 total_files_searched += 1
-                relative_path = os.path.relpath(file_path, WORKSPACE_DIR)
+                relative_path = os.path.relpath(file_path, search_path)
 
                 for line_num, line in enumerate(lines, 1):
                     if use_regex:
@@ -717,6 +741,7 @@ async def search_code(
             "pattern": pattern,
             "file_pattern": file_pattern,
             "use_regex": use_regex,
+            "search_directory": str(search_path),
             "total_matches": len(matches),
             "total_files_searched": total_files_searched,
             "matches": matches[:50],  # 限制返回前50个匹配
@@ -731,6 +756,7 @@ async def search_code(
                 "pattern": pattern,
                 "file_pattern": file_pattern,
                 "use_regex": use_regex,
+                "search_directory": str(search_path),
                 "total_matches": len(matches),
                 "files_searched": total_files_searched,
             },
