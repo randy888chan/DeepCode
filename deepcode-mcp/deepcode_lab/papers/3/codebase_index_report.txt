@@ -1,0 +1,1 @@
+{'status': 'skipped', 'reason': 'indexing_disabled', 'message': 'Codebase indexing skipped for faster processing'}

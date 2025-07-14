@@ -211,312 +211,531 @@ Output Format:
 """
 
 # Code Analysis Prompts
-PAPER_ALGORITHM_ANALYSIS_PROMPT = """You are a technical expert extracting implementation details from academic papers. Focus on the METHOD sections to extract algorithms, formulas, and technical specifications.
+PAPER_ALGORITHM_ANALYSIS_PROMPT = """You are extracting COMPLETE implementation details from a research paper. Your goal is to capture EVERY algorithm, formula, and technical detail needed for perfect reproduction.
 
-# OBJECTIVE
-Extract ALL technical details needed for implementation by carefully analyzing the paper's method sections, including algorithms, formulas, parameters, and dependencies.
+# CRITICAL INSTRUCTION
+Read the ENTIRE paper, especially ALL method/algorithm sections. Extract EVERY piece of information that would be needed to write code.
 
-# ANALYSIS PROTOCOL
+# DETAILED EXTRACTION PROTOCOL
 
-## 1. METHOD SECTION SCAN
-First, identify ALL method-related sections (usually Section 3, 4, or titled "Method", "Approach", "Algorithm", etc.) and read them IN ORDER.
+## 1. COMPLETE PAPER SCAN
+Read these sections IN FULL:
+- Abstract (for overview)
+- ALL Method/Algorithm sections (usually 3-5)
+- Implementation Details section (if exists)
+- Experiments section (for hyperparameters)
+- Appendix (for additional details)
 
-## 2. ALGORITHM EXTRACTION (Follow Paper's Presentation Order)
-For EACH algorithm/method presented:
-- **Name**: Exact name as given in paper
-- **Location**: Section number where described
-- **Purpose**: What this algorithm does
-- **Mathematical Formulation**: Extract equations EXACTLY as written
-- **Implementation Steps**: Convert descriptions to clear steps
+## 2. ALGORITHM DEEP EXTRACTION
+For EVERY algorithm/method/procedure mentioned:
 
-## 3. TECHNICAL SPECIFICATIONS
-Extract EVERY mentioned:
-- **Network Architecture**: Layer types, sizes, activation functions
-- **Hyperparameters**: Learning rates, batch sizes, epochs, etc.
-- **Optimization Details**: Optimizer type, schedules, regularization
-- **Data Processing**: Preprocessing steps, augmentation, normalization
-
-## 4. DEPENDENCY & ENVIRONMENT
-Search the ENTIRE paper (including appendix, footnotes) for:
-- **Framework**: PyTorch/TensorFlow/JAX version if mentioned
-- **Libraries**: Specific packages with versions (e.g., "numpy 1.19")
-- **Hardware**: GPU requirements, memory needs
-- **Dataset Details**: Exact dataset versions, splits, sources
-- **Random Seeds**: Any mentioned for reproducibility
-
-## 5. FORMULA DETAILS
-For EACH mathematical formula:
-- **Equation Number**: If provided
-- **Variables**: Define what each symbol means
-- **Constraints**: Value ranges, conditions
-- **Computational Order**: How to implement the math
-
-# OUTPUT FORMAT
+### Algorithm Structure
 ```yaml
-technical_details:
-  algorithms:  # IN ORDER OF PAPER PRESENTATION
-    - name: "[Algorithm name from paper]"
-      section: "[Section number]"
-      purpose: "[What it does]"
-      
-      formulas:
-        - equation: "[LaTeX formula exactly as in paper]"
-          variables:
-            - "[symbol]: [meaning] (range: [if specified])"
-          implementation_note: "[How to code this]"
-      
-      steps:
-        1. "[Step 1 from paper description]"
-        2. "[Step 2 from paper description]"
-        # ... follow paper's order
-      
-      parameters:
-        - name: "[parameter name]"
-          value: "[value/range from paper]"
-          default: "[if mentioned]"
-  
-  model_architecture:
-    framework: "[PyTorch/TensorFlow/etc. with version if mentioned]"
+algorithm_name: "[Exact name from paper]"
+section: "[e.g., Section 3.2]"
+algorithm_box: "[e.g., Algorithm 1 on page 4]"
+
+pseudocode: |
+  [COPY THE EXACT PSEUDOCODE FROM PAPER]
+  Input: ...
+  Output: ...
+  1. Initialize ...
+  2. For each ...
+     2.1 Calculate ...
+  [Keep exact formatting and numbering]
+
+mathematical_formulation:
+  - equation: "[Copy formula EXACTLY, e.g., L = L_task + λ*L_explain]"
+    equation_number: "[e.g., Eq. 3]"
+    where:
+      L_task: "task loss"
+      L_explain: "explanation loss"  
+      λ: "weighting parameter (default: 0.5)"
     
-    network:
-      - layer: "[layer type]"
-        size: "[dimensions]"
-        activation: "[activation function]"
-        notes: "[any special details]"
-    
-    training:
-      optimizer: "[type and parameters]"
-      learning_rate: "[value/schedule]"
-      batch_size: "[value]"
-      epochs: "[number]"
-      regularization: "[L1/L2/dropout values]"
+step_by_step_breakdown:
+  1. "[Detailed explanation of what step 1 does]"
+  2. "[What step 2 computes and why]"
   
-  dependencies:
-    framework_version: "[e.g., pytorch==1.8.0 if specified]"
-    required_libraries:
-      - "[library==version or just library name]"
-    compute_requirements: "[GPU memory, type if mentioned]"
-  
-  dataset:
-    name: "[exact dataset name]"
-    version: "[if specified]"
-    preprocessing: 
-      - "[preprocessing step 1]"
-      - "[preprocessing step 2]"
-    split: "[train/val/test split details]"
-  
-  evaluation:
-    metrics:
-      - name: "[metric name]"
-        formula: "[if provided]"
-        implementation: "[how to calculate]"
-    
-    baselines:
-      - name: "[baseline method name]"
-        source: "[paper/repository if mentioned]"
-        notes: "[any implementation hints]"
-  
-  reproducibility:
-    random_seed: "[if mentioned]"
-    deterministic: "[true/false if mentioned]"
-    numerical_precision: "[float32/float64 if specified]"
-    
-missing_details:  # CRITICAL: What's NOT specified but needed
-  - "[Missing detail 1, e.g., learning rate not specified]"
-  - "[Missing detail 2, e.g., batch size not mentioned]"
+implementation_details:
+  - "Uses softmax temperature τ = 0.1"
+  - "Gradient clipping at norm 1.0"
+  - "Initialize weights with Xavier uniform"
 ```
 
-Extract EVERYTHING technical. If unsure whether a detail matters, INCLUDE IT. Follow the paper's section order to ensure nothing is missed."""
+## 3. COMPONENT EXTRACTION
+For EVERY component/module mentioned:
 
-PAPER_CONCEPT_ANALYSIS_PROMPT = """You are an academic researcher analyzing papers for reproduction. Focus on understanding WHAT the paper achieves and WHY it matters.
+### Component Details
+```yaml
+component_name: "[e.g., Mask Network, Critic Network]"
+purpose: "[What this component does in the system]"
+architecture:
+  input: "[shape and meaning]"
+  layers:
+    - "[Conv2d(3, 64, kernel=3, stride=1)]"
+    - "[ReLU activation]"
+    - "[BatchNorm2d(64)]"
+  output: "[shape and meaning]"
+  
+special_features:
+  - "[Any unique aspects]"
+  - "[Special initialization]"
+```
 
-# OBJECTIVE
-Extract the core innovation and research contribution by carefully reading the Abstract and Introduction sections.
+## 4. TRAINING PROCEDURE
+Extract the COMPLETE training process:
 
-# ANALYSIS STEPS
+```yaml
+training_loop:
+  outer_iterations: "[number or condition]"
+  inner_iterations: "[number or condition]"
+  
+  steps:
+    1. "Sample batch of size B from buffer"
+    2. "Compute importance weights using..."
+    3. "Update policy with loss..."
+    
+  loss_functions:
+    - name: "policy_loss"
+      formula: "[exact formula]"
+      components: "[what each term means]"
+    
+  optimization:
+    optimizer: "Adam"
+    learning_rate: "3e-4"
+    lr_schedule: "linear decay to 0"
+    gradient_norm: "clip at 0.5"
+```
 
-## 1. ABSTRACT ANALYSIS (Critical)
-Read the abstract 2-3 times and extract:
-- **Problem Statement**: What specific problem is being solved?
-- **Proposed Solution**: What is the key innovation/method name?
-- **Main Contribution**: What does this paper claim as novel?
-- **Results Summary**: What improvements are reported?
+## 5. HYPERPARAMETERS HUNT
+Search EVERYWHERE (text, tables, captions) for:
 
-## 2. INTRODUCTION DEEP DIVE
-From the introduction, identify:
-- **Research Gap**: What limitation in prior work is addressed?
-- **Technical Innovation**: What is the core technical contribution?
-- **Scope of Work**: What exactly will be implemented/demonstrated?
-- **Paper Organization**: Which sections contain methods vs experiments?
-
-## 3. CONTRIBUTION EXTRACTION
-List explicitly:
-1. Primary contribution (the main innovation that MUST be reproduced)
-2. Secondary contributions (additional improvements that SHOULD be included)
-3. Validation scope (what experiments prove the contributions)
-
-## 4. REPRODUCTION SCOPE
-Determine what needs reproduction:
-- **Core Algorithm**: The main method that MUST be implemented
-- **Essential Baselines**: Which comparison methods are necessary
-- **Key Experiments**: Which experiments validate the core claims
+```yaml
+hyperparameters:
+  # Training
+  batch_size: 64
+  buffer_size: 1e6
+  discount_gamma: 0.99
+  
+  # Architecture
+  hidden_units: [256, 256]
+  activation: "ReLU"
+  
+  # Algorithm-specific
+  explanation_weight: 0.5
+  exploration_bonus_scale: 0.1
+  reset_probability: 0.3
+  
+  # Found in:
+  location_references:
+    - "batch_size: Table 1"
+    - "hidden_units: Section 4.1"
+```
 
 # OUTPUT FORMAT
 ```yaml
-paper_understanding:
-  problem_statement: "[One clear sentence: what problem does this solve]"
-  
-  core_method:
-    name: "[Exact name of the proposed method/algorithm from paper]"
-    acronym: "[If paper uses acronym like RICE, RND, etc.]"
-    one_line_description: "[What it does in one sentence]"
-    
-  key_innovation: "[The ONE thing that makes this method novel]"
-  
-  contributions:
-    primary: "[Main technical contribution - MUST implement]"
-    secondary: 
-      - "[Additional contribution 1 - SHOULD implement]"
-      - "[Additional contribution 2 - SHOULD implement]"
-  
-  reproduction_scope:
-    must_implement:
-      - "[Core algorithm/method]"
-      - "[Essential component for core to work]"
-    comparison_baselines:
-      - "[Baseline 1 mentioned in experiments]"
-      - "[Baseline 2 mentioned in experiments]"
-    key_experiments:
-      - "[Main experiment that validates primary contribution]"
-      - "[Supporting experiment]"
-  
+complete_algorithm_extraction:
   paper_structure:
-    method_sections: "[e.g., Section 3, Section 4.1-4.3]"
-    experiment_sections: "[e.g., Section 5]"
+    method_sections: "[3, 3.1, 3.2, 3.3, 4]"
+    algorithm_count: "[total number found]"
     
-  success_metric: "[What specific metric/result proves successful reproduction]"
+  main_algorithm:
+    [COMPLETE DETAILS AS ABOVE]
+  
+  supporting_algorithms:
+    - [EACH SUPPORTING ALGORITHM WITH FULL DETAILS]
+  
+  components:
+    - [EVERY COMPONENT WITH ARCHITECTURE]
+  
+  training_details:
+    [COMPLETE TRAINING PROCEDURE]
+  
+  all_hyperparameters:
+    [EVERY PARAMETER WITH VALUE AND SOURCE]
+  
+  implementation_notes:
+    - "[Any implementation hint from paper]"
+    - "[Tricks mentioned in text]"
+  
+  missing_but_critical:
+    - "[What's not specified but essential]"
+    - "[With suggested defaults]"
 ```
 
-Focus on UNDERSTANDING the paper's core contribution. Keep responses concise and actionable."""
+BE EXHAUSTIVE. A developer should be able to implement the ENTIRE paper using only your extraction."""
 
-CODE_PLANNING_PROMPT = """You are creating an executable reproduction plan by synthesizing the parallel analysis results.
+PAPER_CONCEPT_ANALYSIS_PROMPT = """You are doing a COMPREHENSIVE analysis of a research paper to understand its complete structure, contributions, and implementation requirements.
+
+# OBJECTIVE
+Map out the ENTIRE paper structure and identify ALL components that need implementation for successful reproduction.
+
+# COMPREHENSIVE ANALYSIS PROTOCOL
+
+## 1. FULL PAPER STRUCTURAL ANALYSIS
+Read the ENTIRE paper and create a complete map:
+
+```yaml
+paper_structure_map:
+  title: "[Full paper title]"
+  
+  sections:
+    1_introduction:
+      main_claims: "[What the paper claims to achieve]"
+      problem_definition: "[Exact problem being solved]"
+      
+    2_related_work:
+      key_comparisons: "[Methods this work builds upon or competes with]"
+      
+    3_method:  # May have multiple subsections
+      subsections:
+        3.1: "[Title and main content]"
+        3.2: "[Title and main content]"
+      algorithms_presented: "[List all algorithms by name]"
+      
+    4_experiments:
+      environments: "[All test environments/datasets]"
+      baselines: "[All comparison methods]"
+      metrics: "[All evaluation metrics used]"
+      
+    5_results:
+      main_findings: "[Key results that prove the method works]"
+      tables_figures: "[Important result tables/figures to reproduce]"
+```
+
+## 2. METHOD DECOMPOSITION
+For the main method/approach:
+
+```yaml
+method_decomposition:
+  method_name: "[Full name and acronym]"
+  
+  core_components:  # Break down into implementable pieces
+    component_1:
+      name: "[e.g., State Importance Estimator]"
+      purpose: "[Why this component exists]"
+      paper_section: "[Where it's described]"
+      
+    component_2:
+      name: "[e.g., Policy Refinement Module]"
+      purpose: "[Its role in the system]"
+      paper_section: "[Where it's described]"
+      
+  component_interactions:
+    - "[How component 1 feeds into component 2]"
+    - "[Data flow between components]"
+    
+  theoretical_foundation:
+    key_insight: "[The main theoretical insight]"
+    why_it_works: "[Intuitive explanation]"
+```
+
+## 3. IMPLEMENTATION REQUIREMENTS MAPPING
+Map paper content to code requirements:
+
+```yaml
+implementation_map:
+  algorithms_to_implement:
+    - algorithm: "[Name from paper]"
+      section: "[Where defined]"
+      complexity: "[Simple/Medium/Complex]"
+      dependencies: "[What it needs to work]"
+      
+  models_to_build:
+    - model: "[Neural network or other model]"
+      architecture_location: "[Section describing it]"
+      purpose: "[What this model does]"
+      
+  data_processing:
+    - pipeline: "[Data preprocessing needed]"
+      requirements: "[What the data should look like]"
+      
+  evaluation_suite:
+    - metric: "[Metric name]"
+      formula_location: "[Where it's defined]"
+      purpose: "[What it measures]"
+```
+
+## 4. EXPERIMENT REPRODUCTION PLAN
+Identify ALL experiments needed:
+
+```yaml
+experiments_analysis:
+  main_results:
+    - experiment: "[Name/description]"
+      proves: "[What claim this validates]"
+      requires: "[Components needed to run this]"
+      expected_outcome: "[Specific numbers/trends]"
+      
+  ablation_studies:
+    - study: "[What is being ablated]"
+      purpose: "[What this demonstrates]"
+      
+  baseline_comparisons:
+    - baseline: "[Method name]"
+      implementation_required: "[Yes/No/Partial]"
+      source: "[Where to find implementation]"
+```
+
+## 5. CRITICAL SUCCESS FACTORS
+What defines successful reproduction:
+
+```yaml
+success_criteria:
+  must_achieve:
+    - "[Primary result that must be reproduced]"
+    - "[Core behavior that must be demonstrated]"
+    
+  should_achieve:
+    - "[Secondary results that validate the method]"
+    
+  validation_evidence:
+    - "[Specific figure/table to reproduce]"
+    - "[Qualitative behavior to demonstrate]"
+```
+
+# OUTPUT FORMAT
+```yaml
+comprehensive_paper_analysis:
+  executive_summary:
+    paper_title: "[Full title]"
+    core_contribution: "[One sentence summary]"
+    implementation_complexity: "[Low/Medium/High]"
+    estimated_components: "[Number of major components to build]"
+    
+  complete_structure_map:
+    [FULL SECTION BREAKDOWN AS ABOVE]
+    
+  method_architecture:
+    [DETAILED COMPONENT BREAKDOWN]
+    
+  implementation_requirements:
+    [ALL ALGORITHMS, MODELS, DATA, METRICS]
+    
+  reproduction_roadmap:
+    phase_1: "[What to implement first]"
+    phase_2: "[What to build next]"
+    phase_3: "[Final components and validation]"
+    
+  validation_checklist:
+    - "[ ] [Specific result to achieve]"
+    - "[ ] [Behavior to demonstrate]"
+    - "[ ] [Metric to match]"
+```
+
+BE THOROUGH. Miss nothing. The output should be a complete blueprint for reproduction."""
+
+CODE_PLANNING_PROMPT = """You are creating a DETAILED, COMPLETE reproduction plan by integrating comprehensive analysis results.
 
 # INPUT
-You will receive two analysis results:
-1. **Concept Analysis Result**: Understanding of what the paper achieves (YAML format)
-2. **Algorithm Analysis Result**: Technical implementation details (YAML format)
+You receive two exhaustive analyses:
+1. **Comprehensive Paper Analysis**: Complete paper structure, components, and requirements
+2. **Complete Algorithm Extraction**: All algorithms, formulas, pseudocode, and technical details
 
 # OBJECTIVE
-Synthesize these analyses into a precise, actionable implementation plan that leads to successful paper reproduction.
+Create an implementation plan so detailed that a developer can reproduce the ENTIRE paper without reading it.
 
-# SYNTHESIS PROCESS
+# DETAILED SYNTHESIS PROCESS
 
-## 1. INTEGRATE ANALYSES
-Extract and combine key information:
-- **From Concept Analysis**: Core method name, primary contribution, reproduction scope
-- **From Algorithm Analysis**: Technical specifications, dependencies, missing details
+## 1. MERGE ALL INFORMATION
+Combine EVERYTHING from both analyses:
+- Every algorithm with its pseudocode
+- Every component with its architecture
+- Every hyperparameter with its value
+- Every experiment with expected results
 
-## 2. IMPLEMENTATION PLANNING
+## 2. CREATE DETAILED FILE MAPPING
 
-### Core Components (MUST implement)
-From concept analysis primary contribution:
-- Main algorithm with exact specifications
-- Essential supporting modules
-- Core experiments that validate the contribution
+For EACH file in the structure, specify EXACTLY what it implements:
 
-### Dependencies & Environment
-From algorithm analysis technical details:
-- Exact framework and version
-- Required libraries with versions
-- Hardware requirements
-- Dataset specifications
-
-### File Structure (Keep exactly as shown)
-Organize code logically:
-```
-[method_name]/
-├── src/
-│   ├── core/           # Main algorithm implementation
-│   ├── models/         # Neural networks, architectures  
-│   ├── utils/          # Helper functions
-│   └── config.py       # All hyperparameters
-├── data/               # Data loading and preprocessing
-├── experiments/        # Scripts to run experiments
-├── tests/              # Unit tests for core components
-├── requirements.txt    # Exact versions
-└── README.md          # How to reproduce
-```
-
-# OUTPUT FORMAT
 ```yaml
-reproduction_plan:
-  project_name: "[method_name_lowercase]"
-  
-  core_implementation:
-    primary_algorithm:
-      file: "src/core/[algorithm_name].py"
-      class: "[MainAlgorithmClass]"
-      key_methods:
-        - "[method1]: [what it does]"
-        - "[method2]: [what it does]"
+detailed_file_specifications:
+  src/core/[algorithm_name].py:
+    implements: "[Exact algorithm name from paper]"
+    algorithm_reference: "[Section X.Y, Algorithm Z]"
     
-    supporting_modules:
-      - file: "src/models/[model_name].py"
-        purpose: "[what this provides]"
-      - file: "src/utils/[util_name].py"  
-        purpose: "[helper functions for X]"
-  
-  dependencies:
-    python_version: "[3.8+ or as specified]"
-    framework: "[pytorch==1.8.0 or as found]"
-    essential_packages:
-      - "[numpy==1.19.5 or latest if not specified]"
-      - "[scikit-learn, opencv-python, etc.]"
-    compute: "[GPU memory requirement or CPU]"
-  
-  implementation_phases:
-    phase_1_core:  # First priority
-      - "Implement [main algorithm] in src/core/"
-      - "Set up config.py with all hyperparameters"
-      - "Create data loading pipeline"
-    
-    phase_2_models:  # Build components
-      - "Implement [model architecture] if needed"
-      - "Add loss functions and metrics"
-      - "Create training loop"
-    
-    phase_3_validation:  # Verify it works
-      - "Run minimal test on toy data"
-      - "Implement main experiment script"
-      - "Compare with paper's reported results"
-  
-  experiments_to_run:
-    - name: "[Main experiment from paper]"
-      script: "experiments/run_main.py"
-      expected_result: "[metric and value from paper]"
-    
-    - name: "[Baseline comparison]"
-      script: "experiments/compare_baselines.py"
-      validates: "[what this proves]"
-  
-  success_validation:
-    metrics_to_match:
-      - metric: "[e.g., accuracy, F1]"
-        expected: "[value from paper]"
-        tolerance: "[±X% if mentioned or reasonable]"
-    
-    qualitative_checks:
-      - "[Visual results should show X]"
-      - "[Convergence behavior should match]"
-    
-  notes:
-    missing_details:
-      - "[Important detail not in paper - use common default]"
-    implementation_tips:
-      - "[Key insight for successful reproduction]"
+    classes:
+      - name: "[ClassName]"
+        purpose: "[What this class does]"
+        key_methods:
+          - method: "__init__"
+            parameters: "[list all parameters with types]"
+            initializes: "[what gets initialized]"
+            
+          - method: "[method_name]"
+            implements: "[Which equation/algorithm step]"
+            formula: "[Exact formula from paper]"
+            inputs: "[parameter: type, ...]"
+            outputs: "[return type and meaning]"
+            
+    functions:
+      - name: "[function_name]"
+        implements: "[Equation X from Section Y]"
+        pseudocode: |
+          [EXACT pseudocode from paper]
+        
+    dependencies:
+      imports_from: "[other project files]"
+      external: "[numpy, torch, etc.]"
 ```
 
-Create a PRACTICAL plan that leads to working code. Focus on WHAT to implement, not theory."""
+## 3. ALGORITHM-TO-FILE MAPPING
+
+Map EVERY algorithm/formula to its implementation location:
+
+```yaml
+algorithm_implementation_map:
+  "StateMask Explanation (Algorithm 1)":
+    primary_file: "src/models/mask_network.py"
+    supporting_files: 
+      - "src/utils/mask_utils.py"
+    key_functions:
+      - "compute_importance_scores: Implements Eq. 3-5"
+      - "optimize_mask: Implements Algorithm 1 steps 3-7"
+      
+  "Mixed Distribution Construction (Section 3.2)":
+    primary_file: "src/core/mixed_distribution.py"
+    formulas_implemented:
+      - "Eq. 7: State mixing probability"
+      - "Eq. 8: Distribution sampling"
+```
+
+## 4. COMPLETE HYPERPARAMETER SPECIFICATION
+
+Create exhaustive configuration with sources:
+
+```yaml
+complete_configuration:
+  # From Section 4.1
+  model_architecture:
+    mask_network:
+      layers: [400, 300]  # "two hidden layers of 400 and 300 units"
+      activation: "relu"
+      initialization: "xavier_uniform"
+    
+  # From Table 1  
+  training_hyperparameters:
+    learning_rate: 3e-4
+    batch_size: 64
+    buffer_size: 1e6
+    
+  # From Section 3.3
+  algorithm_parameters:
+    reset_probability: 0.3  # "p = 0.3 in all experiments"
+    exploration_weight: 0.1  # "λ = 0.1 for RND bonus"
+```
+
+# COMPREHENSIVE OUTPUT FORMAT
+
+```yaml
+complete_reproduction_plan:
+  paper_info:
+    title: "[Full paper title]"
+    core_contribution: "[Main innovation being reproduced]"
+    
+  # SECTION 1: Complete File Structure with Detailed Specifications
+  file_structure:
+    [PROJECT_NAME]/
+    ├── src/
+    │   ├── core/
+    │   │   ├── __init__.py
+    │   │   ├── [main_algorithm].py  # Implements Algorithm 1 from Section 3.1
+    │   │   │   # Classes: [MainClass] - handles [specific responsibility]
+    │   │   │   # Functions: [func1] - computes Equation 3
+    │   │   └── [component].py       # Implements [Component] from Section 3.2
+    │   ├── models/
+    │   │   ├── [network].py         # Architecture from Section 4.1, Table 2
+    │   │   │   # Layers: [detailed architecture]
+    │   │   │   # Forward: implements Equation 5-7
+    │   └── utils/
+    │       └── [helpers].py         # Support functions for [specific purpose]
+    ├── experiments/
+    │   ├── run_[environment].py     # Reproduces Figure 3, Table 1
+    │   └── ablation_[component].py  # Reproduces Section 5.3 ablation
+    └── configs/
+        └── hyperparameters.yaml     # All parameters from paper
+  
+  # SECTION 2: Algorithm Implementation Details
+  algorithm_implementations:
+    - algorithm: "[Name from paper]"
+      location: "src/core/[filename].py"
+      pseudocode: |
+        [COMPLETE pseudocode from paper]
+      implementation_notes:
+        - "Line 3: Use torch.softmax with temperature"
+        - "Line 5: Clip gradients at norm 1.0"
+      formulas:
+        - equation: "[LaTeX formula]"
+          code: "[Python implementation]"
+  
+  # SECTION 3: Model Architectures
+  model_specifications:
+    - model: "[Model name]"
+      file: "src/models/[model].py"
+      architecture: |
+        Input: [shape and type]
+        Layer 1: [type, size, activation]
+        Layer 2: [type, size, activation]
+        Output: [shape and type]
+      initialization: "[How to initialize]"
+      
+  # SECTION 4: Training Procedures  
+  training_procedures:
+    main_training_loop:
+      file: "src/training/train.py"
+      steps:
+        1. "[Exact step from paper]"
+        2. "[Next step with details]"
+      loss_functions:
+        - name: "[loss name]"
+          formula: "[exact formula]"
+          implementation: "[Python code]"
+          
+  # SECTION 5: Experiments
+  experiments:
+    - name: "[Experiment name from paper]"
+      reproduces: "[Figure/Table X]"
+      script: "experiments/[script].py"
+      expected_results:
+        metric: "[exact value ± tolerance]"
+      setup:
+        - "[Specific setup step]"
+        
+  # SECTION 6: Dependencies & Environment
+  environment:
+    python: "[version]"
+    cuda: "[version if needed]"
+    packages:
+      - "[package==exact.version]"
+      
+  # SECTION 7: Missing Details & Defaults
+  missing_details_solutions:
+    - missing: "[What wasn't specified]"
+      solution: "[Reasonable default with justification]"
+      
+  # SECTION 8: Implementation Order
+  implementation_roadmap:
+    week_1:
+      - "Implement [core algorithm] with unit tests"
+      - "Verify [key formula] matches paper"
+    week_2:
+      - "Build [model architecture]"
+      - "Integrate with [training loop]"
+    week_3:
+      - "Run [main experiment]"
+      - "Compare with [expected results]"
+      
+  # SECTION 9: Validation Checklist
+  validation_checklist:
+    algorithm_correctness:
+      - "[ ] Algorithm 1 produces expected intermediate values"
+      - "[ ] Equation 3 computation matches manual calculation"
+    experimental_results:
+      - "[ ] Figure 3 reproduction within 5% of paper"
+      - "[ ] Table 1 metrics match reported values"
+```
+
+BE EXHAUSTIVE. Every algorithm, every formula, every parameter, every file should be specified in complete detail."""
 
 # File Tree Creation Prompts / 文件树创建提示词
 
