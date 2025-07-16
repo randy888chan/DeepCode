@@ -26,7 +26,7 @@ import os
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
+from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT, GENERAL_CODE_IMPLEMENTATION_SYSTEM_PROMPT
 
 
 class CodeImplementationAgent:
@@ -116,7 +116,7 @@ class CodeImplementationAgent:
         Get the system prompt for code implementation
         获取代码实现的系统提示词
         """
-        return PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
+        return GENERAL_CODE_IMPLEMENTATION_SYSTEM_PROMPT
 
     def set_memory_agent(self, memory_agent, llm_client=None, llm_client_type=None):
         """

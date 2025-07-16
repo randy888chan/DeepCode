@@ -33,7 +33,7 @@ class MCPToolDefinitions:
             # MCPToolDefinitions._get_search_code_tool(),
             # MCPToolDefinitions._get_file_structure_tool(),
             # New unified code reference tools
-            MCPToolDefinitions._get_search_code_references_tool(),
+            # MCPToolDefinitions._get_search_code_references_tool(),
             # MCPToolDefinitions._get_get_indexes_overview_tool(),
             # MCPToolDefinitions._get_set_workspace_tool(),
         ]

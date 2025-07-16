@@ -1,0 +1,762 @@
+{
+  "repo_name": "Maximally_Interfered_Retrieval",
+  "total_files": 19,
+  "file_summaries": [
+    {
+      "file_path": "Maximally_Interfered_Retrieval/model.py",
+      "file_type": "Neural network model definition file implementing a Convolutional Variational Autoencoder (CVAE)",
+      "main_functions": [
+        "CVAE.__init__",
+        "CVAE.encode",
+        "CVAE.decode",
+        "CVAE.forward",
+        "CVAE.reparameterize",
+        "CVAE.sample",
+        "CVAE.loss_function"
+      ],
+      "key_concepts": [
+        "Convolutional Variational Autoencoder",
+        "Encoder-decoder architecture",
+        "Convolutional and transposed convolutional layers",
+        "Batch normalization",
+        "ResBlock residual connections",
+        "Reparameterization trick",
+        "Latent space representation"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "torch.utils.data",
+        "numpy",
+        "math",
+        "logging",
+        "VAE.layers.GatedDense",
+        "utils.Reshape"
+      ],
+      "summary": "This file implements a Convolutional Variational Autoencoder (CVAE) using PyTorch for image processing tasks. The model features a convolutional encoder that compresses 3-channel images into a latent representation and a corresponding decoder that reconstructs images from the latent space, with support for both training and sampling modes. The architecture includes residual blocks, batch normalization, and is currently configured to work as an autoencoder rather than a full variational autoencoder.",
+      "lines_of_code": 262,
+      "last_modified": "2025-07-15T13:18:17.309855"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/utils.py",
+      "file_type": "Machine learning utility functions module for continual learning and neural network operations",
+      "main_functions": [
+        "overwrite_grad",
+        "get_grad_vector",
+        "get_future_step_parameters",
+        "get_grad_dims",
+        "onehot",
+        "distillation_KL_loss",
+        "naive_cross_entropy_loss"
+      ],
+      "key_concepts": [
+        "gradient manipulation",
+        "MIR (Memory-based Interference Reduction)",
+        "continual learning",
+        "knowledge distillation",
+        "parameter updates",
+        "gradient vector operations",
+        "one-hot encoding",
+        "KL divergence loss"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn.functional",
+        "numpy",
+        "copy",
+        "pdb",
+        "collections.OrderedDict",
+        "collections.defaultdict"
+      ],
+      "summary": "This utility module provides specialized functions for continual learning scenarios, particularly focusing on gradient manipulation for MIR (Memory-based Interference Reduction) techniques. It includes functions for gradient vector operations, parameter updates, knowledge distillation losses, and common neural network utilities like one-hot encoding and custom loss functions.",
+      "lines_of_code": 153,
+      "last_modified": "2025-07-15T13:18:17.310244"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/buffer.py",
+      "file_type": "PyTorch neural network module implementing a memory buffer for continual learning",
+      "main_functions": [
+        "Buffer.__init__",
+        "Buffer.x",
+        "Buffer.y",
+        "Buffer.t",
+        "Buffer.display",
+        "Buffer.add_reservoir"
+      ],
+      "key_concepts": [
+        "reservoir sampling",
+        "experience replay buffer",
+        "continual learning",
+        "memory management",
+        "one-hot encoding",
+        "tensor registration",
+        "dataset-specific buffer sizing"
+      ],
+      "dependencies": [
+        "numpy",
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "torchvision.utils",
+        "PIL"
+      ],
+      "summary": "This file implements a Buffer class that serves as a memory replay mechanism for continual learning systems, storing input samples, labels, task identifiers, and logits with reservoir sampling capabilities. The buffer dynamically sizes itself based on dataset type (MNIST, CIFAR, ImageNet) and supports visualization of stored samples, making it reusable across different continual learning scenarios.",
+      "lines_of_code": 167,
+      "last_modified": "2025-07-15T13:18:17.308373"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "file_type": "Main entry point script for continual learning experiments with generative models",
+      "main_functions": [
+        "argument parsing with argparse",
+        "continual learning experiment orchestration",
+        "MIR (Maximally Interfered Retrieval) implementation",
+        "generative model training coordination",
+        "classifier training coordination"
+      ],
+      "key_concepts": [
+        "continual learning",
+        "catastrophic forgetting",
+        "memory replay",
+        "MIR (Maximally Interfered Retrieval)",
+        "generative models (VAE, CVAE)",
+        "multi-task learning",
+        "rehearsal-based methods",
+        "knowledge distillation"
+      ],
+      "dependencies": [
+        "torch",
+        "torchvision",
+        "wandb",
+        "argparse",
+        "custom modules: mir, data, utils, model, VAE"
+      ],
+      "summary": "This is the main script for running continual learning experiments that use generative models to combat catastrophic forgetting. It implements various rehearsal strategies including random generation and MIR-based memory retrieval, supporting multiple datasets (MNIST, CIFAR, MiniImageNet) and different neural network architectures with comprehensive logging and experimental configuration options.",
+      "lines_of_code": 450,
+      "last_modified": "2025-07-15T13:18:17.309061"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/data.py",
+      "file_type": "Data loading and preprocessing module for continual learning experiments",
+      "main_functions": [
+        "XYDataset",
+        "CLDataLoader",
+        "get_permuted_mnist"
+      ],
+      "key_concepts": [
+        "continual learning",
+        "dataset abstraction",
+        "permuted MNIST tasks",
+        "data normalization",
+        "batch loading",
+        "task-based data organization"
+      ],
+      "dependencies": [
+        "torch",
+        "torchvision",
+        "numpy",
+        "PIL",
+        "pickle",
+        "os",
+        "sys"
+      ],
+      "summary": "This module provides data loading utilities for continual learning experiments, featuring a flexible dataset wrapper (XYDataset) that handles both image paths and tensor data with appropriate preprocessing. It includes a continual learning data loader (CLDataLoader) that manages multiple tasks and a specialized function for generating permuted MNIST tasks, which is a common benchmark in continual learning research.",
+      "lines_of_code": 293,
+      "last_modified": "2025-07-15T13:18:17.308569"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "file_type": "Experimental configuration and execution script",
+      "main_functions": [
+        "nested_loop_execution",
+        "hyperparameter_configuration",
+        "method_comparison_setup"
+      ],
+      "key_concepts": [
+        "generative_replay",
+        "continual_learning",
+        "MIR_algorithm",
+        "ablation_study",
+        "hyperparameter_tuning",
+        "dataset_benchmarking",
+        "model_comparison"
+      ],
+      "dependencies": [
+        "numpy",
+        "pdb",
+        "os",
+        "time",
+        "sys"
+      ],
+      "summary": "This script orchestrates experiments comparing different MIR (Memory-based Interference Reduction) configurations against baseline generative replay methods on continual learning datasets (split-mnist and permuted-mnist). It systematically runs ablation studies across 4 model variants with pre-tuned hyperparameters to reproduce published results for accuracy and ELBO metrics.",
+      "lines_of_code": 258,
+      "last_modified": "2025-07-15T13:18:17.305773"
+    },
+    {
+      "file_path": "Maximally_Interfered_Retrieval/VAE/loss.py",
+      "file_type": "Loss function module for Variational Autoencoder (VAE) with normalizing flows",
+      "main_functions": [
+        "binary_loss_function",
+        "mse_loss_function"
+      ],
+      "key_concepts": [
+        "VAE loss computation",
+        "KL divergence calculation",
+        "Normalizing flows (log determinant jacobian)",
+        "Binary cross-entropy loss",
+        "Mean squared error loss",
+        "Beta-VAE regularization",
+        "Log-normal distributions",
+        "Reconstruction loss"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "torch.autograd",
+        "numpy",
+        "VAE.distributions"
+      ],
+      "summary": "This module implements loss functions for Variational Autoencoders with normalizing flows, providing both binary cross-entropy and MSE-based reconstruction losses. The functions compute the complete VAE objective including reconstruction loss, KL divergence between latent distributions, and log determinant jacobian terms from normalizing flow transformations, with support for beta-VAE regularization.",
+      "lines_of_code": 267,
+      "last_modified": "2025-07-15T13:18:17.308099"
+    }
+  ],
+  "relationships": [
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/model.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Neural network architecture implementation patterns",
+        "PyTorch model structure with __init__, forward methods",
+        "Layer composition and initialization techniques",
+        "Encoder-decoder architectural concepts"
+      ],
+      "potential_contributions": [
+        "Template for implementing the sentence encoder MLP architecture",
+        "Reference for proper PyTorch model initialization patterns",
+        "Example of how to structure encoder components"
+      ],
+      "usage_suggestions": "Use the CVAE encoder structure as a template for implementing the sentence encoder. The convolutional layers would be replaced with the BART0/FLAN-T5 base encoder followed by the MLP layers (Linear(hidden_size, 512) -> ReLU -> Linear(512, hidden_size)). The initialization patterns and forward method structure can be directly adapted."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/model.py",
+      "target_file_path": "src/models/forecasters/base.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Abstract base class implementation patterns",
+        "Model interface design with encode/decode methods",
+        "Forward pass structure and method organization"
+      ],
+      "potential_contributions": [
+        "Template for creating abstract base forecaster class",
+        "Reference for method signatures and class structure",
+        "Example of how to organize model components"
+      ],
+      "usage_suggestions": "Extract the class structure and method organization patterns from the CVAE to create the abstract base forecaster class. The encode/decode paradigm can be adapted to the forecaster's prediction interface, and the forward method structure provides a good template for the base class interface."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/model.py",
+      "target_file_path": "src/models/forecasters/representation.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Neural network forward pass implementation",
+        "Tensor operations and shape handling",
+        "Model component integration patterns"
+      ],
+      "potential_contributions": [
+        "Reference for implementing the representation forecaster forward method",
+        "Example of tensor operations for similarity computation",
+        "Template for integrating multiple model components"
+      ],
+      "usage_suggestions": "Use the forward method structure and tensor operation patterns from the CVAE to implement the representation forecaster. The way the CVAE handles tensor shapes and operations can guide the implementation of the similarity computation (torch.matmul(h_j, h_i.transpose())) and the integration of encoder outputs with frequency priors."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/model.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.4,
+      "helpful_aspects": [
+        "Loss function implementation patterns",
+        "PyTorch loss computation structure",
+        "Model output processing for loss calculation"
+      ],
+      "potential_contributions": [
+        "Template for implementing custom loss functions",
+        "Reference for loss computation patterns",
+        "Example of how to structure loss calculations"
+      ],
+      "usage_suggestions": "Adapt the loss_function method structure from the CVAE to implement the BCE loss with positive weighting for the forecasting task. The way the CVAE handles model outputs and computes losses can serve as a template for implementing the weighted BCE loss required for the representation-based forecaster training."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/utils.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "distillation_KL_loss function for knowledge distillation",
+        "naive_cross_entropy_loss for custom loss implementations",
+        "Loss function patterns and implementations"
+      ],
+      "potential_contributions": [
+        "KL divergence loss could be adapted for forecaster training",
+        "Cross-entropy loss patterns for BCE loss implementation",
+        "Loss function structure and error handling patterns"
+      ],
+      "usage_suggestions": "Adapt the distillation_KL_loss and naive_cross_entropy_loss functions as templates for implementing the BCE loss with positive weighting (0.1) required for representation-based forecaster training. The KL loss implementation could also be useful if logit-based forecasting requires distribution matching."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/utils.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "onehot function for label encoding",
+        "Utility function patterns and structure",
+        "Data preprocessing approaches"
+      ],
+      "potential_contributions": [
+        "One-hot encoding for categorical labels",
+        "Utility function organization patterns",
+        "Data transformation helper functions"
+      ],
+      "usage_suggestions": "Use the onehot function as a reference for implementing label encoding utilities needed for dataset handling. The function structure and error handling patterns can guide the implementation of data preprocessing utilities for the forgotten examples prediction task."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/utils.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Gradient manipulation functions (overwrite_grad, get_grad_vector)",
+        "Parameter update utilities (get_future_step_parameters)",
+        "Training loop utility patterns"
+      ],
+      "potential_contributions": [
+        "Gradient handling patterns for training loops",
+        "Parameter update mechanisms",
+        "Training utility function organization"
+      ],
+      "usage_suggestions": "Reference the gradient manipulation functions to understand how to handle model parameter updates during training. While the specific MIR techniques may not directly apply, the patterns for gradient handling and parameter updates could inform the implementation of the main training loops for forecaster models."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/utils.py",
+      "target_file_path": "src/models/language_models.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Neural network utility functions",
+        "Model parameter handling (get_grad_dims, get_future_step_parameters)",
+        "Continual learning patterns"
+      ],
+      "potential_contributions": [
+        "Parameter dimension handling utilities",
+        "Model wrapper patterns",
+        "Neural network operation utilities"
+      ],
+      "usage_suggestions": "Use the parameter handling functions like get_grad_dims as reference for implementing utilities needed to work with BART0/FLAN-T5 model parameters. The continual learning patterns could inform how to handle model updates and parameter management in the language model wrapper."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/buffer.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Memory management and storage mechanisms",
+        "Tensor registration and data organization",
+        "Dynamic sizing based on dataset characteristics",
+        "Experience replay buffer architecture"
+      ],
+      "potential_contributions": [
+        "Provide foundation for logit and representation caching system",
+        "Offer memory-efficient storage patterns for model outputs",
+        "Supply tensor management utilities for cached data",
+        "Enable efficient retrieval of stored examples and predictions"
+      ],
+      "usage_suggestions": "Adapt the Buffer class architecture to create a caching system for storing logits and representations. Replace the reservoir sampling with a more structured caching mechanism that stores model outputs (logits from f_0 and f_i) and encoded representations (h_i, h_j) for efficient retrieval during forecasting. The dynamic sizing logic could be modified to handle different model sizes and sequence lengths."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/buffer.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Memory buffer integration patterns",
+        "Batch sampling and data management",
+        "Tensor operations and data flow",
+        "Experience replay mechanisms"
+      ],
+      "potential_contributions": [
+        "Provide patterns for integrating cached data into training loops",
+        "Supply batch sampling strategies for stored examples",
+        "Offer memory management during training iterations",
+        "Enable efficient data retrieval for model training"
+      ],
+      "usage_suggestions": "Use the buffer's sampling and data management patterns to implement efficient batch creation in the trainer. The add_reservoir method's logic could inspire how to sample balanced batches of (x_i, y_i) from D_train_R and (x_j, y_j) from D_PT while maintaining the required 8:8 positive/negative ratio. The tensor registration approach could help manage cached representations during training."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/buffer.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Dataset-specific handling logic",
+        "Memory allocation strategies",
+        "Data organization and indexing",
+        "Tensor preprocessing patterns"
+      ],
+      "potential_contributions": [
+        "Provide dataset-aware memory allocation strategies",
+        "Supply data organization patterns for different datasets",
+        "Offer tensor preprocessing and batching utilities",
+        "Enable efficient data loading and storage mechanisms"
+      ],
+      "usage_suggestions": "Leverage the dataset-specific sizing logic (MNIST, CIFAR, ImageNet handling) to create adaptive data loading strategies for different language model datasets. The buffer's approach to organizing inputs, labels, and task identifiers could be adapted to handle text sequences, target outputs, and forgetting labels in the language model context."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/buffer.py",
+      "target_file_path": "src/models/forecasters/base.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Memory management abstractions",
+        "Data storage interface patterns",
+        "Buffer state management",
+        "Modular design principles"
+      ],
+      "potential_contributions": [
+        "Inspire memory-aware base class design",
+        "Provide patterns for managing cached data in forecasters",
+        "Supply interface design for data storage components",
+        "Enable modular memory management across forecaster types"
+      ],
+      "usage_suggestions": "Use the Buffer class's clean interface design as inspiration for creating a base forecaster class that includes memory management capabilities. The buffer's methods for accessing stored data (x, y, t properties) could inspire how forecasters access cached logits and representations in a consistent manner across different forecasting approaches."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Main experiment orchestration structure",
+        "Argument parsing with argparse",
+        "Model training coordination",
+        "Comprehensive logging setup",
+        "Multi-dataset support framework"
+      ],
+      "potential_contributions": [
+        "Template for experiment runner structure",
+        "Argument parsing patterns for ML experiments",
+        "Training loop coordination patterns",
+        "Logging and metrics collection framework"
+      ],
+      "usage_suggestions": "Use the main script structure as a template for single_edit.py. Adapt the argument parsing system to handle forecasting model parameters, dataset selection, and evaluation metrics. The experiment orchestration patterns can be modified to run single error fix experiments instead of continual learning tasks."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "target_file_path": "experiments/sequential.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.8,
+      "helpful_aspects": [
+        "Sequential task handling (similar to sequential updates)",
+        "Multi-task learning coordination",
+        "Memory replay mechanisms",
+        "Catastrophic forgetting mitigation strategies",
+        "Task-by-task evaluation framework"
+      ],
+      "potential_contributions": [
+        "Sequential experiment structure for language model updates",
+        "Task progression and evaluation patterns",
+        "Memory management between sequential tasks",
+        "Performance tracking across sequential updates"
+      ],
+      "usage_suggestions": "Adapt the sequential task handling logic for sequential language model updates. The continual learning framework can be modified to handle sequential refinement tasks instead of class-incremental learning. Use the task progression patterns to implement sequential update experiments with forgetting prediction."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Training loop orchestration",
+        "Model coordination between generative and classifier components",
+        "Multi-component training management",
+        "Experiment configuration handling"
+      ],
+      "potential_contributions": [
+        "Training loop structure for multi-component models",
+        "Coordination patterns between encoder and forecaster models",
+        "Training state management",
+        "Configuration-driven training setup"
+      ],
+      "usage_suggestions": "Extract the training coordination patterns to manage training of both the sentence encoder and forecaster models. The multi-component training logic can be adapted to handle the encoder-forecaster architecture, with separate learning rates and optimization schedules as specified in the target project."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Multi-dataset handling framework",
+        "Data loading and preprocessing patterns",
+        "Batch sampling strategies",
+        "Dataset configuration management"
+      ],
+      "potential_contributions": [
+        "Dataset loading infrastructure",
+        "Batch sampling patterns for training data",
+        "Data preprocessing utilities",
+        "Multi-dataset support framework"
+      ],
+      "usage_suggestions": "Adapt the dataset handling patterns for language model datasets. The multi-dataset support can be modified to handle different language tasks. Use the batch sampling strategies to implement the specific pos/neg ratio requirements (8:8 per batch) needed for the forecasting model training."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/gen_main.py",
+      "target_file_path": "configs/hyperparams.yaml",
+      "relationship_type": "reference",
+      "confidence_score": 0.4,
+      "helpful_aspects": [
+        "Hyperparameter organization patterns",
+        "Configuration file structure",
+        "Parameter grouping by model components",
+        "Experiment configuration management"
+      ],
+      "potential_contributions": [
+        "Configuration file structure template",
+        "Hyperparameter organization patterns",
+        "Model-specific parameter grouping",
+        "Experiment setup configuration"
+      ],
+      "usage_suggestions": "Use the configuration structure as a reference for organizing hyperparameters in the target project. Adapt the parameter grouping to include encoder learning rates, forecaster parameters, training batch sizes, and model-specific settings for BART0/FLAN-T5 models."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/data.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "Dataset abstraction patterns with XYDataset class",
+        "Flexible data loading supporting both paths and tensors",
+        "Batch loading and preprocessing utilities",
+        "Task-based data organization structure",
+        "Data normalization and transformation pipelines"
+      ],
+      "potential_contributions": [
+        "Core dataset wrapper architecture can be adapted for language model data",
+        "Batch loading patterns directly applicable to training loops",
+        "Task organization concepts useful for sequential experiments",
+        "Preprocessing pipeline structure for text data handling"
+      ],
+      "usage_suggestions": "Adapt the XYDataset class structure to handle text sequences and labels instead of images. The flexible input handling (paths vs tensors) can be modified to handle text data vs pre-encoded representations. The batch loading and preprocessing patterns can be directly applied to language model training data with minimal modifications."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/data.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "CLDataLoader's task management for sequential learning",
+        "Batch sampling and organization patterns",
+        "Data iteration and task switching logic",
+        "Memory-efficient data loading strategies"
+      ],
+      "potential_contributions": [
+        "Task-based training loop structure for sequential updates",
+        "Batch sampling strategies for positive/negative ratio maintenance",
+        "Data organization patterns for continual learning scenarios",
+        "Memory management approaches for large datasets"
+      ],
+      "usage_suggestions": "Use the CLDataLoader's task management concepts to implement the sequential update experiments. The batch sampling logic can be adapted to maintain the required 8:8 positive/negative ratio for representation training. The task switching mechanisms can support the sequential refinement experiments."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/data.py",
+      "target_file_path": "experiments/sequential.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Permuted MNIST task generation for sequential learning",
+        "Task sequence management and evaluation",
+        "Continual learning experimental framework",
+        "Performance tracking across tasks"
+      ],
+      "potential_contributions": [
+        "Sequential experiment structure and organization",
+        "Task progression and evaluation patterns",
+        "Performance monitoring across updates",
+        "Experimental framework for continual learning"
+      ],
+      "usage_suggestions": "Adapt the sequential task framework from permuted MNIST to language model refinement tasks. The task progression logic can be modified to handle sequential model updates instead of permuted datasets. The evaluation patterns can track forgetting across sequential refinements."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/data.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Data preprocessing and normalization utilities",
+        "Efficient data transformation pipelines",
+        "Memory management for large datasets",
+        "Batch processing optimization"
+      ],
+      "potential_contributions": [
+        "Data preprocessing patterns for logit and representation caching",
+        "Memory-efficient processing strategies",
+        "Batch transformation utilities",
+        "Optimization patterns for large-scale data handling"
+      ],
+      "usage_suggestions": "Leverage the data preprocessing and normalization patterns to implement efficient caching mechanisms for logits and representations. The batch processing optimizations can be adapted for handling large language model outputs and intermediate representations."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "experimental_orchestration_patterns",
+        "systematic_method_comparison",
+        "hyperparameter_configuration_management",
+        "ablation_study_structure",
+        "result_reproduction_framework"
+      ],
+      "potential_contributions": [
+        "experiment_execution_framework",
+        "method_comparison_infrastructure",
+        "systematic_evaluation_patterns",
+        "hyperparameter_sweep_logic"
+      ],
+      "usage_suggestions": "Adapt the nested loop execution pattern and systematic method comparison structure to orchestrate single edit experiments. Use the hyperparameter configuration approach to manage different model variants (BART0-Large, FLAN-T5-Large, FLAN-T5-3B) and the ablation study framework to compare forecasting methods against baselines."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "target_file_path": "experiments/sequential.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "sequential_experiment_design",
+        "continual_learning_evaluation_patterns",
+        "multi_dataset_benchmarking",
+        "systematic_result_collection"
+      ],
+      "potential_contributions": [
+        "sequential_update_experiment_structure",
+        "continual_evaluation_framework",
+        "multi_step_experiment_orchestration"
+      ],
+      "usage_suggestions": "Leverage the continual learning experiment structure to design sequential update experiments. The systematic evaluation across multiple datasets (split-mnist, permuted-mnist) can be adapted for sequential language model updates, and the result collection patterns can track forgetting across update sequences."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "target_file_path": "configs/hyperparams.yaml",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "hyperparameter_organization_structure",
+        "pre_tuned_parameter_management",
+        "systematic_configuration_approach",
+        "reproducibility_focused_design"
+      ],
+      "potential_contributions": [
+        "configuration_file_structure",
+        "parameter_organization_patterns",
+        "reproducible_experiment_setup"
+      ],
+      "usage_suggestions": "Use the hyperparameter organization approach to structure the yaml configuration file. Adapt the pre-tuned parameter management system for learning rates (encoder_lm: 1e-5, encoder_mlp: 1e-4), batch sizes, and model-specific configurations across BART0 and FLAN-T5 variants."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "training_loop_orchestration",
+        "systematic_method_evaluation",
+        "model_comparison_infrastructure",
+        "result_tracking_patterns"
+      ],
+      "potential_contributions": [
+        "training_orchestration_framework",
+        "evaluation_loop_structure",
+        "systematic_comparison_logic"
+      ],
+      "usage_suggestions": "Adapt the systematic training and evaluation patterns for the main training loops. Use the model comparison infrastructure to handle different forecaster types (representation, logit, frequency) and the result tracking patterns to monitor BCE loss, F1 scores, and other metrics during training."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/Scripts/gen_reproduce.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "dataset_handling_patterns",
+        "systematic_data_loading",
+        "benchmark_dataset_management",
+        "reproducible_data_processing"
+      ],
+      "potential_contributions": [
+        "data_loading_infrastructure",
+        "dataset_management_patterns",
+        "systematic_data_handling"
+      ],
+      "usage_suggestions": "Leverage the systematic dataset handling approach for managing D_train_R and D_PT datasets. Adapt the benchmark dataset management patterns for handling different language model datasets and the reproducible data processing approach for consistent experimental conditions."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/VAE/loss.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Loss function implementation patterns",
+        "PyTorch loss computation structure",
+        "Mathematical loss formulation experience",
+        "Regularization techniques (beta-VAE similar to positive weighting)",
+        "Multi-component loss combination (reconstruction + KL similar to BCE + regularization)"
+      ],
+      "potential_contributions": [
+        "Template for implementing BCE loss with positive weighting",
+        "Structure for combining multiple loss components",
+        "PyTorch tensor operations and loss computation patterns",
+        "Experience with loss function hyperparameter handling"
+      ],
+      "usage_suggestions": "Adapt the multi-component loss structure from VAE (reconstruction + KL + flow terms) to implement the BCE loss with positive weighting (pos_weight=0.1) for the representation-based forecaster. The existing pattern of combining different loss terms with coefficients can be modified to handle the imbalanced classification problem in forgetting prediction."
+    },
+    {
+      "repo_file_path": "Maximally_Interfered_Retrieval/VAE/loss.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Loss computation integration patterns",
+        "Training loop loss calculation structure",
+        "Multi-component objective handling",
+        "PyTorch training patterns"
+      ],
+      "potential_contributions": [
+        "Reference for integrating complex loss functions into training loops",
+        "Pattern for handling multiple loss components during training",
+        "Structure for loss logging and monitoring"
+      ],
+      "usage_suggestions": "Use the loss computation patterns as reference when integrating the BCE loss with positive weighting into the main training loop. The existing structure for handling multiple loss terms can inform how to properly compute and backpropagate the forgetting prediction loss during representation model training."
+    }
+  ],
+  "analysis_metadata": {
+    "analysis_date": "2025-07-15T13:32:04.017549",
+    "target_structure_analyzed": "complete_reproduction_plan:\n  paper_info:\n    title: \"What Will My Model Forget? Forecasting Forgotten Examples in Language Model Refinement\"\n    core_contribution: \"Method to predict which examples w...",
+    "total_relationships_found": 28,
+    "high_confidence_relationships": 8,
+    "analyzer_version": "1.3.0",
+    "pre_filtering_enabled": true,
+    "files_before_filtering": 19,
+    "files_after_filtering": 7,
+    "filtering_efficiency": 63.16,
+    "config_file_used": null,
+    "min_confidence_score": 0.3,
+    "high_confidence_threshold": 0.7,
+    "concurrent_analysis_used": false,
+    "content_caching_enabled": false,
+    "cache_hits": 0
+  }
+}

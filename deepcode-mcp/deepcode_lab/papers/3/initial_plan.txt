@@ -1,175 +1,166 @@
-I'll create a comprehensive reproduction plan integrating both analyses. This will be a detailed implementation blueprint that allows reproducing the RICE (Reinforcement Learning with Explanation) paper.
+I'll create a detailed reproduction plan by synthesizing the analyses into a comprehensive implementation guide.
 
 ```yaml
 complete_reproduction_plan:
   paper_info:
-    title: "RICE: Breaking Through the Training Bottlenecks of Reinforcement Learning with Explanation"
-    core_contribution: "Novel RL refinement method using explanations and mixed initial states"
-    
+    title: "What Will My Model Forget? Forecasting Forgotten Examples in Language Model Refinement"
+    core_contribution: "Method to predict which examples will be forgotten during language model updates"
+
   # SECTION 1: Complete File Structure with Detailed Specifications
   file_structure:
-    rice_implementation/
+    forgotten-examples/
     ├── src/
-    │   ├── core/
-    │   │   ├── __init__.py
-    │   │   ├── mask_network.py      # Implements Algorithm 1: StateMask Explanation
-    │   │   ├── policy_refiner.py    # Implements Algorithm 2: RICE Refining
-    │   │   ├── rnd_module.py        # RND-based exploration mechanism
-    │   │   └── mixed_distribution.py # Mixed initial state distribution
     │   ├── models/
-    │   │   ├── networks.py          # Neural network architectures
-    │   │   └── ppo.py              # PPO implementation
+    │   │   ├── encoder.py      # Implements sentence encoder h with MLP
+    │   │   ├── forecasters/
+    │   │   │   ├── base.py     # Abstract base forecaster class
+    │   │   │   ├── frequency.py    # Frequency threshold implementation
+    │   │   │   ├── logit.py        # Logit-change based implementation 
+    │   │   │   └── representation.py # Representation based implementation
+    │   │   └── language_models.py   # Base LM wrapper (BART0/FLAN-T5)
+    │   ├── training/
+    │   │   ├── trainer.py      # Main training loops
+    │   │   └── losses.py       # Loss functions and metrics
     │   └── utils/
-    │       ├── env_wrappers.py      # Environment handling utilities
-    │       └── evaluation.py        # Metrics and evaluation tools
-    ├── experiments/
-    │   ├── mujoco_experiments.py    # MuJoCo environment tests
-    │   ├── real_world_experiments.py # Real-world application tests
-    │   └── ablation_studies.py      # Component analysis experiments
-    └── configs/
-        └── hyperparameters.yaml     # All configuration parameters
+    │       ├── data.py         # Dataset handling
+    │       └── caching.py      # Logit and representation caching
+    ├── configs/
+    │   └── hyperparams.yaml    # All training parameters
+    └── experiments/
+        ├── single_edit.py      # Single error fix experiments
+        └── sequential.py       # Sequential update experiments
 
   # SECTION 2: Algorithm Implementation Details
   algorithm_implementations:
-    - algorithm: "StateMask Explanation (Algorithm 1)"
-      location: "src/core/mask_network.py"
+    - algorithm: "Representation-based Forecasting"
+      location: "src/models/forecasters/representation.py"
       pseudocode: |
-        def train_mask_network(target_policy_π, env):
-            θ_old = θ
-            for iteration in range(MAX_ITERS):
-                s0 = env.reset()
-                D = []
-                for t in range(T):
-                    at = target_policy_π.sample_action(st)
-                    amt = mask_network_π̃θ_old.sample_action(st)
-                    a = at * amt
-                    st+1, R_t = env.step(a)
-                    D.append((st, st+1, amt, R_t))
-                θ = update_ppo(θ_old, D)
-                θ_old = θ
+        class RepresentationForecaster:
+          def forward(x_i, y_i, x_j, y_j):
+            # Encode inputs
+            h_i = encoder(x_i, y_i)  # Shape: [T×H]
+            h_j = encoder(x_j, y_j)  # Shape: [T×H]
+            
+            # Compute similarity and add prior
+            sim = torch.matmul(h_j, h_i.transpose())  # [1×1]
+            b_j = compute_frequency_prior(x_j)
+            
+            # Final prediction
+            z_ij = torch.sigmoid(sim + b_j)
+            return z_ij
 
-    - algorithm: "RICE Refining (Algorithm 2)"
-      location: "src/core/policy_refiner.py"
+    - algorithm: "Logit-based Forecasting"
+      location: "src/models/forecasters/logit.py"
       pseudocode: |
-        def refine_policy(pretrained_policy_π, mask_network_π̃, env, reset_prob_p):
-            for iteration in range(MAX_ITERS):
-                if random.random() < p:
-                    trajectory = run_policy(π, env)
-                    critical_state = identify_critical_state(trajectory, mask_network_π̃)
-                    s0 = critical_state
-                else:
-                    s0 = env.reset()
-                # ... [rest of implementation]
+        class LogitForecaster:
+          def forward(x_i, y_i, x_j, y_j, f_0, f_i):
+            # Get encodings
+            h_i = encoder(x_i, y_i)
+            h_j = encoder(x_j, y_j)
+            
+            # Compute kernel
+            theta = torch.matmul(h_j, h_i.transpose())
+            
+            # Predict updated logits
+            logit_diff = f_i(x_i) - f_0(x_i)
+            pred_logits = theta * logit_diff + f_0(x_j)
+            return pred_logits
 
   # SECTION 3: Model Architectures
   model_specifications:
-    - model: "MaskNetwork"
-      file: "src/models/networks.py"
+    - model: "Sentence Encoder"
+      file: "src/models/encoder.py"
       architecture: |
-        Input: state_dim
-        Layer 1: Linear(state_dim, 128), ReLU
-        Layer 2: Linear(128, 128), ReLU
-        Output: Linear(128, 1), Sigmoid
-
-    - model: "RNDModule"
-      file: "src/core/rnd_module.py"
-      architecture: |
-        Target Network: Fixed random network
-        Predictor Network: Trainable predictor
-        Output: L2 distance between features
+        Input: Text sequence
+        Base: BART0/FLAN-T5 encoder
+        MLP:
+          Layer 1: Linear(hidden_size, 512)
+          ReLU
+          Layer 2: Linear(512, hidden_size)
+        Output: [T×H] encoded representation
 
   # SECTION 4: Training Procedures
   training_procedures:
-    main_training_loop:
-      file: "src/core/policy_refiner.py"
+    representation_training:
+      file: "src/training/trainer.py"
       steps:
-        1. "Sample initial state (mixed distribution)"
-        2. "Collect trajectory with exploration bonus"
-        3. "Update policy using PPO"
-        4. "Update RND predictor"
+        1. "Sample batch of (x_i,y_i) from D_train_R"
+        2. "Sample batch of (x_j,y_j) from D_PT"
+        3. "Get ground truth forgetting labels"
+        4. "Compute predictions using representation model"
+        5. "Optimize BCE loss with positive weight=0.1"
       
+      hyperparameters:
+        batch_size: 16
+        learning_rates:
+          encoder_lm: 1e-5
+          encoder_mlp: 1e-4
+        max_steps: 100000
+        pos_neg_ratio: "8:8 per batch"
+
   # SECTION 5: Experiments
   experiments:
-    - name: "MuJoCo Evaluation"
-      reproduces: "Section 5.1"
-      environments:
-        - "Hopper-v3"
-        - "Walker2d-v3"
-        - "Reacher-v2"
-        - "HalfCheetah-v3"
-      
-    - name: "Real-world Applications"
-      reproduces: "Section 5.2"
-      applications:
-        - "Selfish mining"
-        - "Network defense"
-        - "Autonomous driving"
-        - "Malware mutation"
+    - name: "Single Edit Performance"
+      reproduces: "Table 1"
+      script: "experiments/single_edit.py"
+      metrics:
+        - "Edit Success Rate"
+        - "EM Drop Ratio"
+        - "F1 Score"
+      models:
+        - "BART0-Large"
+        - "FLAN-T5-Large"
+        - "FLAN-T5-3B"
 
   # SECTION 6: Dependencies & Environment
   environment:
     python: ">=3.8"
-    key_packages:
+    packages:
       - "torch>=1.8.0"
-      - "gym>=0.18.0"
-      - "mujoco-py>=2.0.2"
-
-  # SECTION 7: Hyperparameters
-  hyperparameters:
-    mask_network:
-      mask_alpha: 0.01
-      learning_rate: 3e-4
+      - "transformers"
+      - "datasets"
       
-    policy_refining:
-      reset_prob_p: 0.25
-      exploration_lambda: 0.01
-      
-    ppo:
-      clip_ratio: 0.2
-      value_coef: 0.5
-      entropy_coef: 0.01
-      
-    training:
-      n_iterations: 500
-      batch_size: 64
-      trajectory_length: 1000
+  # SECTION 7: Missing Details & Defaults
+  missing_details_solutions:
+    - missing: "Exact MLP dimensions"
+      solution: "Use 512 hidden dim based on common practice"
+    - missing: "Early stopping criteria"
+      solution: "Stop when validation F1 doesn't improve for 3 epochs"
 
   # SECTION 8: Implementation Order
   implementation_roadmap:
     week_1:
-      - "Implement mask network architecture"
-      - "Set up PPO training infrastructure"
+      - "Implement encoder architecture with MLP"
+      - "Set up data loading and caching"
     week_2:
-      - "Implement RND exploration module"
-      - "Develop mixed state distribution"
+      - "Implement representation-based forecaster"
+      - "Build training loop with BCE loss"
     week_3:
-      - "Integrate components in policy refiner"
-      - "Set up MuJoCo environments"
+      - "Add logit-based forecaster"
+      - "Implement evaluation metrics"
     week_4:
-      - "Run baseline comparisons"
-      - "Conduct ablation studies"
+      - "Run single-edit experiments"
+      - "Compare results with paper"
 
   # SECTION 9: Validation Checklist
   validation_checklist:
-    algorithm_correctness:
-      - "[ ] Mask network produces binary outputs"
-      - "[ ] RND bonus calculation verified"
-      - "[ ] Mixed distribution sampling correct"
-      
-    performance_metrics:
-      - "[ ] Higher final rewards than baselines"
-      - "[ ] Faster training convergence"
-      - "[ ] Maintained explanation fidelity"
+    model_architecture:
+      - "[ ] Encoder produces correct output shapes"
+      - "[ ] MLP properly initialized"
+    training:
+      - "[ ] Loss decreases during training"
+      - "[ ] Batch sampling maintains pos/neg ratio"
+    results:
+      - "[ ] F1 scores exceed frequency baseline"
+      - "[ ] Performance matches Table 1 within margin"
 ```
 
-This reproduction plan provides a complete blueprint for implementing RICE, including:
+This plan provides a complete roadmap for reproducing the paper. Key implementation considerations:
 
-1. Detailed file structure with implementation specifications
-2. Complete algorithms with pseudocode
-3. Architecture specifications for all neural networks
-4. Comprehensive hyperparameter settings
-5. Experiment setup for both MuJoCo and real-world applications
-6. Clear implementation roadmap
-7. Validation checklist for correctness
+1. The representation-based forecaster should be implemented first as it's more robust across models
+2. Careful attention to caching logits and representations is crucial for efficiency
+3. The encoder architecture requires proper initialization and careful learning rate tuning
+4. Batch sampling needs to maintain the specified positive/negative example ratio
+5. Evaluation should verify both prediction accuracy and computational efficiency
 
-A developer can follow this plan to reproduce the paper's results without needing to reference the original paper. The plan maintains all theoretical guarantees while providing practical implementation details.
+The plan should enable a developer to implement the complete system without referring back to the original paper.

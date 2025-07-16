@@ -28,7 +28,7 @@ from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLL
 # Local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from prompts.code_prompts import STRUCTURE_GENERATOR_PROMPT
-from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
+from prompts.code_prompts import PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT, GENERAL_CODE_IMPLEMENTATION_SYSTEM_PROMPT
 from workflows.agents import CodeImplementationAgent, MemoryAgent
 from workflows.agents.memory_agent_concise import ConciseMemoryAgent
 from config.mcp_tool_definitions import get_mcp_tools
@@ -216,31 +216,40 @@ Requirements:
             await self._initialize_mcp_agent(code_directory)
             
             tools = self._prepare_mcp_tool_definitions()
-            system_message = PURE_CODE_IMPLEMENTATION_SYSTEM_PROMPT
+            system_message = GENERAL_CODE_IMPLEMENTATION_SYSTEM_PROMPT
             messages = []
             
-            implementation_message = f"""**TASK: Implement Research Paper Reproduction Code**
+#             implementation_message = f"""**TASK: Implement Research Paper Reproduction Code**
 
-You are implementing a complete, working codebase that reproduces the core algorithms, experiments, and methods described in a research paper. Your goal is to create functional code that can replicate the paper's key results and contributions.
+# You are implementing a complete, working codebase that reproduces the core algorithms, experiments, and methods described in a research paper. Your goal is to create functional code that can replicate the paper's key results and contributions.
 
-**What you need to do:**
-- Analyze the paper content and reproduction plan to understand requirements
-- Implement all core algorithms mentioned in the main body of the paper
-- Create the necessary components following the planned architecture
-- Test each component to ensure functionality
-- Integrate components into a cohesive, executable system
-- Focus on reproducing main contributions rather than appendix-only experiments
+# **What you need to do:**
+# - Analyze the paper content and reproduction plan to understand requirements
+# - Implement all core algorithms mentioned in the main body of the paper
+# - Create the necessary components following the planned architecture
+# - Test each component to ensure functionality
+# - Integrate components into a cohesive, executable system
+# - Focus on reproducing main contributions rather than appendix-only experiments
 
-**RESOURCES:**
-- **Paper & Reproduction Plan**: `{target_directory}/` (contains .md paper files and initial_plan.txt with detailed implementation guidance)
-- **Reference Code Indexes**: `{target_directory}/indexes/` (JSON files with implementation patterns from related codebases)
-- **Implementation Directory**: `{code_directory}/` (your working directory for all code files)
+# **RESOURCES:**
+# - **Paper & Reproduction Plan**: `{target_directory}/` (contains .md paper files and initial_plan.txt with detailed implementation guidance)
+# - **Reference Code Indexes**: `{target_directory}/indexes/` (JSON files with implementation patterns from related codebases)
+# - **Implementation Directory**: `{code_directory}/` (your working directory for all code files)
 
-**CURRENT OBJECTIVE:** 
-Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) to understand the implementation strategy, then examine the paper content to identify the first priority component to implement. Use the search_code tool to find relevant reference implementations from the indexes directory (`{target_directory}/indexes/*.json`) before coding.
+# **CURRENT OBJECTIVE:** 
+# Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) to understand the implementation strategy, then examine the paper content to identify the first priority component to implement. Use the search_code tool to find relevant reference implementations from the indexes directory (`{target_directory}/indexes/*.json`) before coding.
 
----
-**START:** Review the plan above and begin implementation."""
+# ---
+# **START:** Review the plan above and begin implementation."""
+            implementation_message = f"""**Task: Implement code based on the following reproduction plan**
+
+**Code Reproduction Plan:**
+{plan_content}
+
+**Working Directory:** {code_directory}
+
+**Current Objective:** Begin implementation by analyzing the plan structure, examining the current project layout, and implementing the first foundation file according to the plan's priority order."""
+       
             
             messages.append({"role": "user", "content": implementation_message})
             
@@ -775,10 +784,12 @@ Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) t
 
 🎯 **Next Action:** Continue with dependency-aware implementation workflow.
 
-⚡ **Quick Reminder:**
-- Use search_code for unfamiliar file types before implementing dependent files
-- Read related files before implementing dependent files
-- Implement exactly ONE complete file per response"""
+⚡ **Development Cycle for Next File:**
+1. **➡️ FIRST: Call `read_code_mem`** to understand existing implementations and dependencies
+2. **Then: `write_file`** to implement the new component
+3. **Finally: Test** if needed
+
+💡 **Key Point:** Always start with `read_code_mem` to query summaries of ALREADY IMPLEMENTED files before creating new ones."""
 
     def _generate_error_guidance(self) -> str:
         """Generate error guidance for handling issues"""
@@ -787,8 +798,13 @@ Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) t
 🔧 **Action Required:**
 1. Review the error details above
 2. Fix the identified issue
-3. Continue with the next file implementation
-4. Ensure proper error handling in future implementations"""
+3. Continue with proper development cycle for next file:
+   - **Start with `read_code_mem`** to understand existing implementations
+   - **Then `write_file`** to implement properly
+   - **Test** if needed
+4. Ensure proper error handling in future implementations
+
+💡 **Remember:** Always begin with `read_code_mem` to query summaries of ALREADY IMPLEMENTED files."""
 
     def _generate_no_tools_guidance(self, files_count: int) -> str:
         """Generate concise guidance when no tools are called"""
@@ -796,12 +812,14 @@ Start by reading the reproduction plan (`{target_directory}/initial_plan.txt`) t
 
 📊 **Current Progress:** {files_count} files implemented
 
-🚨 **Action Required:** You must use tools to implement the next file. Follow the dependency-aware workflow in your system prompt.
+🚨 **Action Required:** You must use tools to implement the next file. Follow the development cycle:
 
-⚡ **Essential Tools:**
-- search_reference_code → read_file → write_file → continue
+⚡ **Development Cycle - START HERE:**
+1. **➡️ FIRST: Call `read_code_mem`** to understand existing implementations
+2. **Then: `write_file`** to implement the new component
+3. **Finally: Test** if needed
 
-🚨 **Critical:** Use tools to implement files, not just explanations!"""
+🚨 **Critical:** Start with `read_code_mem` to query summaries of ALREADY IMPLEMENTED files, then use `write_file` to implement - not just explanations!"""
 
     def _compile_user_response(self, tool_results: List[Dict], guidance: str) -> str:
         """Compile tool results and guidance into a single user response"""
@@ -1062,9 +1080,9 @@ async def main():
         # Ask if user wants to continue with actual workflow
         print("\nContinuing with workflow execution...")
         
-        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/initial_plan.txt"
+        plan_file = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/5/initial_plan.txt"
         # plan_file = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
-        target_directory = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/1/"
+        target_directory = "/Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab/papers/5/"
         print("Implementation Mode Selection:")
         print("1. Pure Code Implementation Mode (Recommended)")
         print("2. Iterative Implementation Mode")

@@ -1,0 +1,186 @@
+{
+  "report_generation_time": "2025-07-15T13:32:04.023753",
+  "analyzer_version": "1.3.0",
+  "configuration_used": {
+    "config_file": null,
+    "concurrent_analysis_enabled": false,
+    "content_caching_enabled": false,
+    "pre_filtering_enabled": true,
+    "min_confidence_score": 0.3,
+    "high_confidence_threshold": 0.7
+  },
+  "aggregate_statistics": {
+    "total_repositories_processed": 4,
+    "total_files_analyzed": 28,
+    "total_relationships_found": 119,
+    "total_lines_of_code": 4771,
+    "average_files_per_repository": 7.0,
+    "average_relationships_per_repository": 29.75,
+    "average_lines_per_repository": 1192.75
+  },
+  "relationship_type_distribution": {
+    "partial_match": 34,
+    "reference": 23,
+    "utility": 45,
+    "direct_match": 17
+  },
+  "file_type_distribution": {
+    "PyTorch machine learning training script for MNIST dataset": 1,
+    "Machine learning utility script for analyzing training dynamics and example difficulty": 1,
+    "Machine learning training script for CIFAR dataset with data augmentation": 1,
+    "Main execution script/entry point for a machine learning model editing framework": 1,
+    "PyTorch neural network model definitions and factory module": 1,
+    "Neural network module definition file containing custom PyTorch layers and models": 1,
+    "Abstract base class for editable neural language models": 1,
+    "Utility module containing helper functions for machine learning workflows": 1,
+    "Machine learning loss functions and probability calculation utilities": 1,
+    "Machine learning training framework base class": 1,
+    "YAML configuration file for a machine learning model editing system": 1,
+    "YAML configuration file for a T5-large transformer model specification": 1,
+    "YAML configuration file for a BART model setup": 1,
+    "Neural network model implementation for editable neural networks": 1,
+    "Data preprocessing utility for text classification datasets": 1,
+    "PyTorch dataset loader for text classification with BERT tokenization": 1,
+    "Main training script/entry point for a continual learning system": 1,
+    "Data download and extraction utility script": 1,
+    "Python class implementation for memory-based machine learning model": 1,
+    "PyTorch neural network module wrapper for BERT-based text classification": 1,
+    "Machine learning model implementation file for memory-based parameter adaptation": 1,
+    "Neural network model definition file implementing a Convolutional Variational Autoencoder (CVAE)": 1,
+    "Machine learning utility functions module for continual learning and neural network operations": 1,
+    "PyTorch neural network module implementing a memory buffer for continual learning": 1,
+    "Main entry point script for continual learning experiments with generative models": 1,
+    "Data loading and preprocessing module for continual learning experiments": 1,
+    "Experimental configuration and execution script": 1,
+    "Loss function module for Variational Autoencoder (VAE) with normalizing flows": 1
+  },
+  "repository_details": [
+    {
+      "repo_name": "example_forgetting",
+      "total_files": 8,
+      "analyzed_files": 3,
+      "total_relationships": 13,
+      "high_confidence_relationships": 3,
+      "relationship_type_counts": {
+        "partial_match": 4,
+        "reference": 4,
+        "utility": 5
+      },
+      "file_type_counts": {
+        "PyTorch machine learning training script for MNIST dataset": 1,
+        "Machine learning utility script for analyzing training dynamics and example difficulty": 1,
+        "Machine learning training script for CIFAR dataset with data augmentation": 1
+      },
+      "total_lines_of_code": 914,
+      "average_lines_per_file": 304.67,
+      "average_confidence_score": 0.573,
+      "filtering_efficiency": 62.5,
+      "concurrent_analysis_used": false,
+      "cache_hits": 0,
+      "analysis_date": "2025-07-15T13:20:12.012557"
+    },
+    {
+      "repo_name": "mend",
+      "total_files": 38,
+      "analyzed_files": 11,
+      "total_relationships": 48,
+      "high_confidence_relationships": 19,
+      "relationship_type_counts": {
+        "direct_match": 10,
+        "partial_match": 12,
+        "reference": 9,
+        "utility": 17
+      },
+      "file_type_counts": {
+        "Main execution script/entry point for a machine learning model editing framework": 1,
+        "PyTorch neural network model definitions and factory module": 1,
+        "Neural network module definition file containing custom PyTorch layers and models": 1,
+        "Abstract base class for editable neural language models": 1,
+        "Utility module containing helper functions for machine learning workflows": 1,
+        "Machine learning loss functions and probability calculation utilities": 1,
+        "Machine learning training framework base class": 1,
+        "YAML configuration file for a machine learning model editing system": 1,
+        "YAML configuration file for a T5-large transformer model specification": 1,
+        "YAML configuration file for a BART model setup": 1,
+        "Neural network model implementation for editable neural networks": 1
+      },
+      "total_lines_of_code": 1099,
+      "average_lines_per_file": 99.91,
+      "average_confidence_score": 0.704,
+      "filtering_efficiency": 71.05,
+      "concurrent_analysis_used": false,
+      "cache_hits": 0,
+      "analysis_date": "2025-07-15T13:25:25.045460"
+    },
+    {
+      "repo_name": "episodic-lifelong-learning",
+      "total_files": 8,
+      "analyzed_files": 7,
+      "total_relationships": 30,
+      "high_confidence_relationships": 8,
+      "relationship_type_counts": {
+        "partial_match": 7,
+        "reference": 7,
+        "utility": 12,
+        "direct_match": 4
+      },
+      "file_type_counts": {
+        "Data preprocessing utility for text classification datasets": 1,
+        "PyTorch dataset loader for text classification with BERT tokenization": 1,
+        "Main training script/entry point for a continual learning system": 1,
+        "Data download and extraction utility script": 1,
+        "Python class implementation for memory-based machine learning model": 1,
+        "PyTorch neural network module wrapper for BERT-based text classification": 1,
+        "Machine learning model implementation file for memory-based parameter adaptation": 1
+      },
+      "total_lines_of_code": 908,
+      "average_lines_per_file": 129.71,
+      "average_confidence_score": 0.628,
+      "filtering_efficiency": 12.5,
+      "concurrent_analysis_used": false,
+      "cache_hits": 0,
+      "analysis_date": "2025-07-15T13:28:50.792993"
+    },
+    {
+      "repo_name": "Maximally_Interfered_Retrieval",
+      "total_files": 19,
+      "analyzed_files": 7,
+      "total_relationships": 28,
+      "high_confidence_relationships": 8,
+      "relationship_type_counts": {
+        "partial_match": 11,
+        "utility": 11,
+        "reference": 3,
+        "direct_match": 3
+      },
+      "file_type_counts": {
+        "Neural network model definition file implementing a Convolutional Variational Autoencoder (CVAE)": 1,
+        "Machine learning utility functions module for continual learning and neural network operations": 1,
+        "PyTorch neural network module implementing a memory buffer for continual learning": 1,
+        "Main entry point script for continual learning experiments with generative models": 1,
+        "Data loading and preprocessing module for continual learning experiments": 1,
+        "Experimental configuration and execution script": 1,
+        "Loss function module for Variational Autoencoder (VAE) with normalizing flows": 1
+      },
+      "total_lines_of_code": 1850,
+      "average_lines_per_file": 264.29,
+      "average_confidence_score": 0.632,
+      "filtering_efficiency": 63.16,
+      "concurrent_analysis_used": false,
+      "cache_hits": 0,
+      "analysis_date": "2025-07-15T13:32:04.017549"
+    }
+  ],
+  "performance_metrics": {
+    "concurrent_processing_repos": 0,
+    "cache_efficiency": {
+      "total_cache_hits": 0,
+      "repositories_with_caching": 0
+    },
+    "filtering_efficiency": {
+      "average_filtering_efficiency": 52.3,
+      "max_filtering_efficiency": 71.05,
+      "min_filtering_efficiency": 12.5
+    }
+  }
+}

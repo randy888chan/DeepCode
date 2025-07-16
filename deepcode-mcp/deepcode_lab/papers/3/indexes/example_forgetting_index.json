@@ -1,0 +1,354 @@
+{
+  "repo_name": "example_forgetting",
+  "total_files": 8,
+  "file_summaries": [
+    {
+      "file_path": "example_forgetting/run_mnist.py",
+      "file_type": "PyTorch machine learning training script for MNIST dataset",
+      "main_functions": [
+        "Net",
+        "train",
+        "get_hms"
+      ],
+      "key_concepts": [
+        "convolutional neural network",
+        "MNIST classification",
+        "dropout regularization",
+        "batch training",
+        "example statistics tracking",
+        "missclassification margin"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn",
+        "torch.nn.functional",
+        "torch.optim",
+        "torchvision",
+        "numpy",
+        "argparse"
+      ],
+      "summary": "This file implements a CNN-based MNIST digit classifier with configurable dropout and tracks detailed per-example statistics during training. It includes a basic 2-layer convolutional network with fully connected layers and appears to be part of a larger experiment that analyzes example-level learning dynamics and forgetting patterns.",
+      "lines_of_code": 310,
+      "last_modified": "2025-07-15T13:18:11.813607"
+    },
+    {
+      "file_path": "example_forgetting/order_examples_by_forgetting.py",
+      "file_type": "Machine learning utility script for analyzing training dynamics and example difficulty",
+      "main_functions": [
+        "compute_forgetting_statistics",
+        "sort_examples_by_forgetting"
+      ],
+      "key_concepts": [
+        "forgetting events detection",
+        "training dynamics analysis",
+        "example difficulty ranking",
+        "accuracy transitions tracking",
+        "misclassification margins",
+        "learning presentation counting"
+      ],
+      "dependencies": [
+        "argparse",
+        "numpy",
+        "os",
+        "pickle"
+      ],
+      "summary": "This file implements functionality to analyze neural network training dynamics by computing forgetting statistics for individual training examples and sorting them by difficulty. It tracks when examples are learned, forgotten, and re-learned during training to identify which examples are most prone to being forgotten, providing insights into dataset difficulty and training stability.",
+      "lines_of_code": 156,
+      "last_modified": "2025-07-15T13:18:11.813262"
+    },
+    {
+      "file_path": "example_forgetting/run_cifar.py",
+      "file_type": "Machine learning training script for CIFAR dataset with data augmentation",
+      "main_functions": [
+        "get_hms",
+        "noisy",
+        "train"
+      ],
+      "key_concepts": [
+        "CIFAR image classification",
+        "Cutout data augmentation",
+        "Gaussian noise injection",
+        "ResNet/WideResNet architectures",
+        "Batch training with permutation",
+        "PyTorch training loop"
+      ],
+      "dependencies": [
+        "torch",
+        "torchvision",
+        "numpy",
+        "argparse",
+        "Cutout.util.misc",
+        "Cutout.util.cutout",
+        "Cutout.model.resnet",
+        "Cutout.model.wide_resnet"
+      ],
+      "summary": "This is a PyTorch training script for CIFAR dataset that implements image classification using ResNet/WideResNet models with Cutout augmentation. The script includes functionality for adding Gaussian noise to images and provides a complete training loop with batch processing and statistics tracking.",
+      "lines_of_code": 448,
+      "last_modified": "2025-07-15T13:18:11.813461"
+    }
+  ],
+  "relationships": [
+    {
+      "repo_file_path": "example_forgetting/run_mnist.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Training loop structure with batch processing",
+        "Loss computation and optimization patterns",
+        "Example-level statistics tracking during training",
+        "Model evaluation and metric calculation"
+      ],
+      "potential_contributions": [
+        "Template for main training loop architecture",
+        "Batch processing and data loading patterns",
+        "Loss tracking and logging mechanisms",
+        "Training state management and checkpointing"
+      ],
+      "usage_suggestions": "Use the training loop structure as a foundation for implementing the representation-based forecaster training. The batch processing logic, loss computation patterns, and training state management can be adapted for the BCE loss optimization with positive weighting. The example-level tracking mechanisms could be valuable for monitoring forgetting patterns during training."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_mnist.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Neural network architecture definition using PyTorch",
+        "Forward pass implementation patterns",
+        "Layer initialization and configuration",
+        "Model component organization"
+      ],
+      "potential_contributions": [
+        "PyTorch model structure and organization patterns",
+        "Forward pass implementation examples",
+        "Layer definition and initialization approaches",
+        "Model configuration management"
+      ],
+      "usage_suggestions": "Reference the Net class structure when implementing the sentence encoder with MLP layers. The forward pass patterns, layer definitions (conv2d, linear layers), and PyTorch model organization can inform the implementation of the encoder that wraps BART0/FLAN-T5 with the additional MLP components."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_mnist.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Loss function computation patterns",
+        "Training metrics calculation",
+        "Example-level loss tracking",
+        "Performance evaluation utilities"
+      ],
+      "potential_contributions": [
+        "Loss computation structure and organization",
+        "Metric calculation patterns",
+        "Training monitoring utilities",
+        "Example-level analysis tools"
+      ],
+      "usage_suggestions": "Extract the loss computation patterns and metric calculation approaches for implementing the BCE loss with positive weighting (0.1) required for the representation-based forecaster. The example-level tracking mechanisms could be adapted for monitoring forgetting predictions and evaluation metrics like F1 score."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_mnist.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Dataset loading and preprocessing patterns",
+        "Batch sampling and data organization",
+        "Example indexing and tracking",
+        "Data pipeline management"
+      ],
+      "potential_contributions": [
+        "Data loading infrastructure patterns",
+        "Batch sampling mechanisms",
+        "Example tracking and indexing systems",
+        "Dataset preprocessing utilities"
+      ],
+      "usage_suggestions": "Adapt the data loading and batch processing patterns for handling the language model datasets (D_train_R and D_PT). The example tracking mechanisms could be useful for maintaining the 8:8 positive/negative ratio per batch and managing the complex data relationships required for forgetting prediction."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_mnist.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.4,
+      "helpful_aspects": [
+        "Experiment execution structure",
+        "Model evaluation and testing patterns",
+        "Results collection and analysis",
+        "Experimental configuration management"
+      ],
+      "potential_contributions": [
+        "Experiment script organization",
+        "Model evaluation frameworks",
+        "Results tracking and analysis patterns",
+        "Experimental workflow management"
+      ],
+      "usage_suggestions": "Use as a reference for structuring the single edit experiments that reproduce Table 1 results. The evaluation patterns, results collection mechanisms, and experimental workflow can inform the implementation of experiments comparing BART0-Large, FLAN-T5-Large, and FLAN-T5-3B models on edit success rate, EM drop ratio, and F1 score metrics."
+    },
+    {
+      "repo_file_path": "example_forgetting/order_examples_by_forgetting.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Training dynamics analysis framework",
+        "Example difficulty ranking methodology",
+        "Accuracy transition tracking during training",
+        "Statistical computation for training events"
+      ],
+      "potential_contributions": [
+        "Provide foundation for tracking forgetting events during language model training",
+        "Adapt forgetting statistics computation for language model refinement context",
+        "Implement example difficulty assessment for forecaster training data preparation"
+      ],
+      "usage_suggestions": "Adapt the forgetting statistics computation logic to track when language model examples are forgotten during refinement training. The core methodology of detecting accuracy transitions and computing forgetting events can be modified to work with language model predictions instead of classification accuracy. Use the example ranking approach to identify difficult examples for training the forecasting models."
+    },
+    {
+      "repo_file_path": "example_forgetting/order_examples_by_forgetting.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Example sorting and ranking functionality",
+        "Training dynamics data structures",
+        "Statistical analysis of example difficulty patterns",
+        "Batch processing of training examples"
+      ],
+      "potential_contributions": [
+        "Provide utilities for preprocessing and ranking training examples by difficulty",
+        "Implement data structures for tracking example forgetting patterns",
+        "Create helper functions for analyzing dataset characteristics"
+      ],
+      "usage_suggestions": "Extract the example sorting and statistical analysis utilities to support dataset preparation for the forecasting models. The ranking functionality can help identify which examples from the pretraining dataset are most likely to be forgotten, which is crucial for training the representation-based and logit-based forecasters."
+    },
+    {
+      "repo_file_path": "example_forgetting/order_examples_by_forgetting.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Framework for analyzing training dynamics in controlled experiments",
+        "Methodology for tracking example-level performance changes",
+        "Statistical analysis of learning patterns",
+        "Evaluation metrics for training stability"
+      ],
+      "potential_contributions": [
+        "Provide experimental framework for validating forecasting accuracy",
+        "Implement metrics for measuring forgetting prediction performance",
+        "Create baseline analysis tools for comparing forecasting methods"
+      ],
+      "usage_suggestions": "Use the experimental analysis framework as a reference for designing validation experiments that measure how well the forecasting models predict which examples will be forgotten during single edits. The training dynamics analysis approach can inform the evaluation methodology for the representation-based and logit-based forecasters."
+    },
+    {
+      "repo_file_path": "example_forgetting/order_examples_by_forgetting.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Statistical computation methods for training events",
+        "Accuracy transition detection logic",
+        "Example-level performance tracking",
+        "Numerical stability considerations for training statistics"
+      ],
+      "potential_contributions": [
+        "Provide utility functions for computing training-related statistics",
+        "Implement helper methods for tracking model performance changes",
+        "Create numerical computation utilities for forecasting models"
+      ],
+      "usage_suggestions": "Extract the statistical computation utilities to support the implementation of loss functions and metrics in the forecasting system. The accuracy transition detection logic can be adapted to create custom metrics for evaluating how well the forecasting models predict forgetting events during language model refinement."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_cifar.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Complete PyTorch training loop implementation",
+        "Batch processing and data loading patterns",
+        "Training statistics tracking and logging",
+        "Model optimization and parameter updates",
+        "Device handling (CPU/GPU) patterns"
+      ],
+      "potential_contributions": [
+        "Training loop structure for forecaster models",
+        "Batch sampling and processing logic",
+        "Loss computation and backpropagation patterns",
+        "Training progress monitoring and metrics tracking"
+      ],
+      "usage_suggestions": "Adapt the training loop structure from run_cifar.py to implement the representation-based and logit-based forecaster training. The batch processing logic can be modified to handle the specific (x_i, y_i) and (x_j, y_j) sampling requirements, and the training statistics tracking can be extended to monitor BCE loss and F1 scores during training."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_cifar.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Dataset loading and preprocessing patterns",
+        "Data augmentation implementation (Cutout)",
+        "Batch creation and shuffling logic",
+        "Data transformation pipelines",
+        "Memory-efficient data handling"
+      ],
+      "potential_contributions": [
+        "Dataset wrapper classes for language model data",
+        "Batch sampling strategies for training pairs",
+        "Data preprocessing and caching mechanisms",
+        "Efficient data loading for large language datasets"
+      ],
+      "usage_suggestions": "Use the dataset handling patterns to implement language model dataset loading for D_train_R and D_PT. The batch creation logic can be adapted to sample pairs of examples (x_i, y_i) and (x_j, y_j) while maintaining the required positive/negative ratio of 8:8 per batch."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_cifar.py",
+      "target_file_path": "src/training/losses.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Loss function implementation patterns",
+        "PyTorch loss computation structure",
+        "Gradient handling and optimization",
+        "Training metrics calculation"
+      ],
+      "potential_contributions": [
+        "BCE loss implementation with positive weighting",
+        "Custom loss functions for forecasting tasks",
+        "Metric computation utilities",
+        "Loss aggregation and reporting"
+      ],
+      "usage_suggestions": "Extract the loss computation patterns to implement the BCE loss with positive weight=0.1 for the representation-based forecaster training. The structure can be extended to handle the specific forgetting prediction loss requirements."
+    },
+    {
+      "repo_file_path": "example_forgetting/run_cifar.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.4,
+      "helpful_aspects": [
+        "Experiment execution structure",
+        "Model evaluation and testing patterns",
+        "Results collection and reporting",
+        "Hyperparameter handling"
+      ],
+      "potential_contributions": [
+        "Experiment orchestration framework",
+        "Model evaluation pipeline",
+        "Results aggregation and analysis",
+        "Reproducible experiment setup"
+      ],
+      "usage_suggestions": "Use the overall experiment structure as a template for implementing the single edit performance experiments. The model evaluation patterns can be adapted to test BART0-Large, FLAN-T5-Large, and FLAN-T5-3B models on the forgetting prediction task with appropriate metrics (Edit Success Rate, EM Drop Ratio, F1 Score)."
+    }
+  ],
+  "analysis_metadata": {
+    "analysis_date": "2025-07-15T13:20:12.012557",
+    "target_structure_analyzed": "complete_reproduction_plan:\n  paper_info:\n    title: \"What Will My Model Forget? Forecasting Forgotten Examples in Language Model Refinement\"\n    core_contribution: \"Method to predict which examples w...",
+    "total_relationships_found": 13,
+    "high_confidence_relationships": 3,
+    "analyzer_version": "1.3.0",
+    "pre_filtering_enabled": true,
+    "files_before_filtering": 8,
+    "files_after_filtering": 3,
+    "filtering_efficiency": 62.5,
+    "config_file_used": null,
+    "min_confidence_score": 0.3,
+    "high_confidence_threshold": 0.7,
+    "concurrent_analysis_used": false,
+    "content_caching_enabled": false,
+    "cache_hits": 0
+  }
+}

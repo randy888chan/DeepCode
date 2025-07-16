@@ -1,18 +1,35 @@
+"""
+Multi-Agent Research Pipeline for Paper Code Implementation
+
+This module orchestrates a comprehensive workflow from paper analysis to code implementation:
+1. Paper input analysis and content extraction
+2. Reference analysis and GitHub repository discovery
+3. Code planning and structure design
+4. Codebase indexing and relationship analysis
+5. Final code implementation
+
+Features:
+- Docker synchronization support for seamless file access
+- Multi-agent coordination with specialized roles
+- Comprehensive error handling and progress tracking
+- Flexible indexing enable/disable for performance tuning
+"""
+
+import asyncio
+import json
+import os
+import re
+from typing import Callable, Dict, Optional, Tuple
+
+# MCP Agent imports
 from mcp_agent.agents.agent import Agent
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm import RequestParams
 from mcp_agent.workflows.orchestrator.orchestrator import Orchestrator
 from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
-from utils.file_processor import FileProcessor
-from tools.github_downloader import GitHubDownloader
-# 导入代码实现工作流 / Import code implementation workflow
-from workflows.code_implementation_workflow import CodeImplementationWorkflow
-# 导入Docker同步管理器 / Import Docker sync manager
-from utils.docker_sync_manager import setup_docker_sync, get_sync_directory
-import os
-import asyncio
-os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # 禁止生成.pyc文件
+
+# Local imports
 from prompts.code_prompts import (
     PAPER_INPUT_ANALYZER_PROMPT,
     PAPER_DOWNLOADER_PROMPT,
@@ -22,27 +39,33 @@ from prompts.code_prompts import (
     CODE_PLANNING_PROMPT,
     GITHUB_DOWNLOAD_PROMPT,
 )
-import json
-import re
+from tools.github_downloader import GitHubDownloader
+from utils.docker_sync_manager import setup_docker_sync, get_sync_directory
+from utils.file_processor import FileProcessor
+from workflows.code_implementation_workflow import CodeImplementationWorkflow
+
+# Environment configuration
+os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # Prevent .pyc file generation
+
 
 def extract_clean_json(llm_output: str) -> str:
     """
-    从LLM输出中提取纯净的JSON，移除所有额外的文本和格式化
+    Extract clean JSON from LLM output, removing all extra text and formatting.
     
     Args:
-        llm_output: LLM的原始输出
+        llm_output: Raw LLM output
         
     Returns:
-        纯净的JSON字符串
+        str: Clean JSON string
     """
     try:
-        # 1. 首先尝试直接解析整个输出为JSON
+        # Try to parse the entire output as JSON first
         json.loads(llm_output.strip())
         return llm_output.strip()
     except json.JSONDecodeError:
         pass
     
-    # 2. 移除markdown代码块
+    # Remove markdown code blocks
     if '```json' in llm_output:
         pattern = r'```json\s*(.*?)\s*```'
         match = re.search(pattern, llm_output, re.DOTALL)
@@ -54,7 +77,7 @@ def extract_clean_json(llm_output: str) -> str:
             except json.JSONDecodeError:
                 pass
     
-    # 3. 查找以{开始的JSON对象
+    # Find JSON object starting with {
     lines = llm_output.split('\n')
     json_lines = []
     in_json = False
@@ -80,7 +103,7 @@ def extract_clean_json(llm_output: str) -> str:
         except json.JSONDecodeError:
             pass
     
-    # 4. 最后的尝试：使用正则表达式查找JSON
+    # Last attempt: use regex to find JSON
     pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
     matches = re.findall(pattern, llm_output, re.DOTALL)
     for match in matches:
@@ -90,19 +113,20 @@ def extract_clean_json(llm_output: str) -> str:
         except json.JSONDecodeError:
             continue
     
-    # 如果所有方法都失败，返回原始输出
+    # If all methods fail, return original output
     return llm_output
 
-async def run_paper_analyzer(prompt_text, logger):
+
+async def run_paper_analyzer(prompt_text: str, logger) -> str:
     """
     Run the paper analysis workflow using PaperInputAnalyzerAgent.
     
     Args:
-        prompt_text (str): The input prompt text containing paper information
-        logger: The logger instance for logging information
+        prompt_text: Input prompt text containing paper information
+        logger: Logger instance for logging information
         
     Returns:
-        str: The analysis result from the agent
+        str: Analysis result from the agent
     """
     try:
         # Log input information for debugging
@@ -128,16 +152,16 @@ async def run_paper_analyzer(prompt_text, logger):
                 print(f"Failed to list tools: {e}")
             
             try:
-                analyzer = await analyzer_agent.attach_llm(AnthropicAugmentedLLM)
+                analyzer = await analyzer_agent.attach_llm(OpenAIAugmentedLLM)
                 print("✅ LLM attached successfully")
             except Exception as e:
                 print(f"❌ Failed to attach LLM: {e}")
                 raise
             
-            # 为论文分析设置更高的token输出量 / Set higher token output for paper analysis
+            # Set higher token output for paper analysis
             analysis_params = RequestParams(
-                max_tokens=6144,  # 为论文分析设置6144 tokens
-                temperature=0.3,  # 适中的创造性用于分析
+                max_tokens=6144,
+                temperature=0.3,
             )
             
             print(f"🔄 Making LLM request with params: max_tokens={analysis_params.max_tokens}, temperature={analysis_params.temperature}")
@@ -166,7 +190,7 @@ async def run_paper_analyzer(prompt_text, logger):
                 print(f"Exception type: {type(e)}")
                 raise
             
-            # 清理LLM输出，确保只返回纯净的JSON
+            # Clean LLM output to ensure only pure JSON is returned
             try:
                 clean_result = extract_clean_json(raw_result)
                 print(f"Raw LLM output: {raw_result}")
@@ -193,16 +217,17 @@ async def run_paper_analyzer(prompt_text, logger):
         print(f"Exception details: {type(e).__name__}: {str(e)}")
         raise
 
-async def run_paper_downloader(analysis_result, logger):
+
+async def run_paper_downloader(analysis_result: str, logger) -> str:
     """
     Run the paper download workflow using PaperDownloaderAgent.
     
     Args:
-        analysis_result (str): The result from the paper analyzer
-        logger: The logger instance for logging information
+        analysis_result: Result from the paper analyzer
+        logger: Logger instance for logging information
         
     Returns:
-        str: The download result from the agent
+        str: Download result from the agent
     """
     downloader_agent = Agent(
         name="PaperDownloaderAgent",
@@ -215,12 +240,12 @@ async def run_paper_downloader(analysis_result, logger):
         tools = await downloader_agent.list_tools()
         print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
         
-        downloader = await downloader_agent.attach_llm(AnthropicAugmentedLLM)
+        downloader = await downloader_agent.attach_llm(OpenAIAugmentedLLM)
         
-        # 为下载器设置更高的token输出量 / Set higher token output for downloader
+        # Set higher token output for downloader
         downloader_params = RequestParams(
-            max_tokens=4096,  # 为下载器设置4096 tokens
-            temperature=0.2,  # 下载任务需要精确性
+            max_tokens=4096,
+            temperature=0.2,
         )
         
         return await downloader.generate_str(
@@ -228,16 +253,17 @@ async def run_paper_downloader(analysis_result, logger):
             request_params=downloader_params
         )
 
-async def paper_code_analyzer(document, logger):
+
+async def paper_code_analyzer(document: str, logger) -> str:
     """
     Run the paper code analysis workflow using multiple agents.
     
     Args:
-        document (str): The document to analyze
-        logger: The logger instance for logging information
+        document: Document to analyze
+        logger: Logger instance for logging information
         
     Returns:
-        str: The analysis result from the agents
+        str: Analysis result from the agents
     """
     concept_analysis_agent = Agent(
         name="ConceptAnalysisAgent",
@@ -256,15 +282,15 @@ async def paper_code_analyzer(document, logger):
     )
 
     code_aggregator_agent = ParallelLLM(
-            fan_in_agent=code_planner_agent,
-            fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
-            llm_factory=AnthropicAugmentedLLM,
-        )
+        fan_in_agent=code_planner_agent,
+        fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
+        llm_factory=OpenAIAugmentedLLM,
+    )
     
-    # 设置更高的token输出量 / Set higher token output limit
+    # Set higher token output limit
     enhanced_params = RequestParams(
-        max_tokens=26384,  # 增加到16384 tokens以确保完整输出
-        temperature=0.3,   # 保持适中的创造性
+        max_tokens=26384,
+        temperature=0.3,
     )
     
     result = await code_aggregator_agent.generate_str(
@@ -274,17 +300,18 @@ async def paper_code_analyzer(document, logger):
     print(f"Code analysis result: {result}")
     return result
 
-async def github_repo_download(search_result, paper_dir, logger):
+
+async def github_repo_download(search_result: str, paper_dir: str, logger) -> str:
     """
     Download GitHub repositories based on search results.
     
     Args:
-        search_result (str): The result from GitHub repository search
-        paper_dir (str): The directory where the paper and its code will be stored
-        logger: The logger instance for logging information
+        search_result: Result from GitHub repository search
+        paper_dir: Directory where the paper and its code will be stored
+        logger: Logger instance for logging information
         
     Returns:
-        str: The download result
+        str: Download result
     """
     github_download_agent = Agent(
         name="GithubDownloadAgent",
@@ -294,12 +321,12 @@ async def github_repo_download(search_result, paper_dir, logger):
     
     async with github_download_agent:
         print("GitHub downloader: Downloading repositories...")
-        downloader = await github_download_agent.attach_llm(AnthropicAugmentedLLM)
+        downloader = await github_download_agent.attach_llm(OpenAIAugmentedLLM)
         
-        # 为GitHub下载设置更高的token输出量 / Set higher token output for GitHub download
+        # Set higher token output for GitHub download
         github_params = RequestParams(
-            max_tokens=4096,  # 为GitHub下载设置4096 tokens
-            temperature=0.1,  # GitHub下载需要高精确性
+            max_tokens=4096,
+            temperature=0.1,
         )
         
         return await downloader.generate_str(
@@ -307,18 +334,18 @@ async def github_repo_download(search_result, paper_dir, logger):
             request_params=github_params
         )
 
-async def paper_reference_analyzer(analysis_result, logger):
+
+async def paper_reference_analyzer(analysis_result: str, logger) -> str:
     """
     Run the paper reference analysis and GitHub repository workflow.
     
     Args:
-        analysis_result (str): The result from the paper analyzer
-        logger: The logger instance for logging information
+        analysis_result: Result from the paper analyzer
+        logger: Logger instance for logging information
         
     Returns:
-        tuple: (reference_result, search_result, download_result)
+        str: Reference analysis result
     """
-    # 1. Analyze references
     reference_analysis_agent = Agent(
         name="ReferenceAnalysisAgent",
         instruction=PAPER_REFERENCE_ANALYZER_PROMPT,
@@ -327,12 +354,12 @@ async def paper_reference_analyzer(analysis_result, logger):
     
     async with reference_analysis_agent:
         print("Reference analyzer: Connected to server, analyzing references...")
-        analyzer = await reference_analysis_agent.attach_llm(AnthropicAugmentedLLM)
+        analyzer = await reference_analysis_agent.attach_llm(OpenAIAugmentedLLM)
         
-        # 为引用分析设置更高的token输出量 / Set higher token output for reference analysis
+        # Set higher token output for reference analysis
         reference_params = RequestParams(
-            max_tokens=30000,  # 为引用分析设置6144 tokens
-            temperature=0.2,  # 引用分析需要更精确
+            max_tokens=30000,
+            temperature=0.2,
         )
         
         reference_result = await analyzer.generate_str(
@@ -341,14 +368,13 @@ async def paper_reference_analyzer(analysis_result, logger):
         )
         return reference_result
 
-    
+
 async def _process_input_source(input_source: str, logger) -> str:
     """
     Process and validate input source (file path or URL).
-    处理和验证输入源（文件路径或URL）
     
     Args:
-        input_source: The input source (file path or analysis result)
+        input_source: Input source (file path or analysis result)
         logger: Logger instance
         
     Returns:
@@ -361,10 +387,10 @@ async def _process_input_source(input_source: str, logger) -> str:
         return file_path
     return input_source
 
-async def _execute_paper_analysis_phase(input_source: str, logger, progress_callback=None) -> tuple:
+
+async def _execute_paper_analysis_phase(input_source: str, logger, progress_callback: Optional[Callable] = None) -> Tuple[str, str]:
     """
     Execute paper analysis and download phase.
-    执行论文分析和下载阶段
     
     Args:
         input_source: Input source
@@ -389,10 +415,10 @@ async def _execute_paper_analysis_phase(input_source: str, logger, progress_call
     
     return analysis_result, download_result
 
-async def _setup_paper_directory_structure(download_result: str, logger, sync_directory: str = None) -> dict:
+
+async def _setup_paper_directory_structure(download_result: str, logger, sync_directory: Optional[str] = None) -> Dict[str, str]:
     """
     Setup paper directory structure and prepare file paths.
-    设置论文目录结构并准备文件路径
     
     Args:
         download_result: Download result from previous phase
@@ -422,10 +448,10 @@ async def _setup_paper_directory_structure(download_result: str, logger, sync_di
         'sync_directory': sync_directory
     }
 
-async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_callback=None) -> str:
+
+async def _execute_reference_analysis_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> str:
     """
     Execute reference analysis phase.
-    执行引用分析阶段
     
     Args:
         dir_info: Directory structure information
@@ -456,10 +482,10 @@ async def _execute_reference_analysis_phase(dir_info: dict, logger, progress_cal
     
     return reference_result
 
-async def _execute_code_planning_phase(dir_info: dict, logger, progress_callback=None):
+
+async def _execute_code_planning_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
     """
     Execute code planning phase.
-    执行代码规划阶段
     
     Args:
         dir_info: Directory structure information
@@ -478,10 +504,10 @@ async def _execute_code_planning_phase(dir_info: dict, logger, progress_callback
             f.write(initial_plan_result)
         print(f"Initial plan saved to {initial_plan_path}")
 
-async def _execute_github_download_phase(reference_result: str, dir_info: dict, logger, progress_callback=None):
+
+async def _execute_github_download_phase(reference_result: str, dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
     """
     Execute GitHub repository download phase.
-    执行GitHub仓库下载阶段
     
     Args:
         reference_result: Reference analysis result
@@ -530,10 +556,10 @@ async def _execute_github_download_phase(reference_result: str, dir_info: dict, 
         print(f"GitHub download error saved to {dir_info['download_path']}")
         raise e  # Re-raise to be handled by the main pipeline
 
-async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_callback=None) -> dict:
+
+async def _execute_codebase_indexing_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
     """
     Execute codebase indexing phase.
-    执行代码库索引阶段
     
     Args:
         dir_info: Directory structure information
@@ -641,10 +667,10 @@ async def _execute_codebase_indexing_phase(dir_info: dict, logger, progress_call
         
         return error_report
 
-async def _execute_code_implementation_phase(dir_info: dict, logger, progress_callback=None) -> dict:
+
+async def _execute_code_implementation_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
     """
     Execute code implementation phase.
-    执行代码实现阶段
     
     Args:
         dir_info: Directory structure information
@@ -697,10 +723,15 @@ async def _execute_code_implementation_phase(dir_info: dict, logger, progress_ca
         print(f"Error during code implementation workflow: {e}")
         return {'status': 'error', 'message': str(e)}
 
-async def execute_multi_agent_research_pipeline(input_source, logger, progress_callback=None, enable_indexing=True):
+
+async def execute_multi_agent_research_pipeline(
+    input_source: str, 
+    logger, 
+    progress_callback: Optional[Callable] = None, 
+    enable_indexing: bool = True
+) -> str:
     """
     Execute the complete multi-agent research pipeline from paper input to code implementation.
-    执行从论文输入到代码实现的完整多智能体研究流水线
     
     This is the main orchestration function that coordinates all research workflow phases:
     - Docker synchronization setup for seamless file access
@@ -711,17 +742,16 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
     - Final code implementation
     
     Args:
-        input_source (str): The input source (file path, URL, or analysis result)
-        logger: The logger instance for comprehensive logging
-        progress_callback (callable, optional): Progress callback function for UI updates
-        enable_indexing (bool, optional): Whether to enable codebase indexing (default: True)
+        input_source: Input source (file path, URL, or analysis result)
+        logger: Logger instance for comprehensive logging
+        progress_callback: Progress callback function for UI updates
+        enable_indexing: Whether to enable codebase indexing (default: True)
         
     Returns:
         str: The comprehensive pipeline execution result with status and outcomes
     """ 
     try:
         # Phase 0: Docker Synchronization Setup
-        # 阶段0：Docker同步设置
         if progress_callback:
             progress_callback(5, "🔄 Setting up Docker synchronization for seamless file access...")
         
@@ -735,7 +765,7 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         print(f"📂 Sync directory: {sync_directory}")
         print(f"✅ Sync status: {sync_result['message']}")
         
-        # 记录索引功能状态
+        # Log indexing functionality status
         if enable_indexing:
             print("🗂️ Codebase indexing enabled - full workflow")
         else:
@@ -748,21 +778,17 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
             print("💻 Running locally - use Docker container for full sync experience")
             print("💡 Tip: Run 'python start_docker_sync.py' for Docker sync mode")
         
-        # Continue with original pipeline phases...
         # Phase 1: Input Processing and Validation
-        # 阶段1：输入处理和验证
         input_source = await _process_input_source(input_source, logger)
         
         # Phase 2: Paper Analysis and Download (if needed)
-        # 阶段2：论文分析和下载（如需要）
         if isinstance(input_source, str) and (input_source.endswith(('.pdf', '.docx', '.txt', '.html', '.md')) or 
-                                            input_source.startswith(('http', 'file://'))):
+            input_source.startswith(('http', 'file://'))):
             analysis_result, download_result = await _execute_paper_analysis_phase(input_source, logger, progress_callback)
         else:
             download_result = input_source  # Use input directly if already processed
         
         # Phase 3: Directory Structure Setup
-        # 阶段3：目录结构设置
         if progress_callback:
             progress_callback(40, "🔧 Starting comprehensive code preparation workflow...")
         
@@ -770,37 +796,33 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         await asyncio.sleep(30)
         
         # Phase 4: Code Planning
-        # 阶段4：代码规划
         await _execute_code_planning_phase(dir_info, logger, progress_callback)
         
-        # Phase 5: Reference Analysis (仅在启用索引时执行)
-        # 阶段5：引用分析（仅在启用索引时执行）
+        # Phase 5: Reference Analysis (only when indexing is enabled)
         if enable_indexing:
             reference_result = await _execute_reference_analysis_phase(dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping reference analysis (indexing disabled)")
-            # 创建一个空的引用分析结果以保持文件结构一致性
+            # Create empty reference analysis result to maintain file structure consistency
             reference_result = "Reference analysis skipped - indexing disabled for faster processing"
             with open(dir_info['reference_path'], 'w', encoding='utf-8') as f:
                 f.write(reference_result)
         
-        # Phase 6: GitHub Repository Download (可选)
-        # 阶段6：GitHub仓库下载（可选）
+        # Phase 6: GitHub Repository Download (optional)
         if enable_indexing:
             await _execute_github_download_phase(reference_result, dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping GitHub repository download (indexing disabled)")
-            # 创建一个空的下载结果文件以保持文件结构一致性
+            # Create empty download result file to maintain file structure consistency
             with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
                 f.write("GitHub repository download skipped - indexing disabled for faster processing")
         
-        # Phase 7: Codebase Indexing (可选)
-        # 阶段7：代码库索引（可选）
+        # Phase 7: Codebase Indexing (optional)
         if enable_indexing:
             index_result = await _execute_codebase_indexing_phase(dir_info, logger, progress_callback)
         else:
             print("🔶 Skipping codebase indexing (indexing disabled)")
-            # 创建一个跳过索引的结果
+            # Create a skipped indexing result
             index_result = {
                 'status': 'skipped',
                 'reason': 'indexing_disabled',
@@ -810,11 +832,9 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
                 f.write(str(index_result))
         
         # Phase 8: Code Implementation
-        # 阶段8：代码实现
         implementation_result = await _execute_code_implementation_phase(dir_info, logger, progress_callback)
         
         # Final Status Report
-        # 最终状态报告
         if enable_indexing:
             pipeline_summary = f"Multi-agent research pipeline completed for {dir_info['paper_dir']}"
         else:
@@ -846,12 +866,19 @@ async def execute_multi_agent_research_pipeline(input_source, logger, progress_c
         print(f"Error in execute_multi_agent_research_pipeline: {e}")
         raise e
 
+
 # Backward compatibility alias (deprecated)
-# 向后兼容别名（已弃用）
-async def paper_code_preparation(input_source, logger, progress_callback=None):
+async def paper_code_preparation(input_source: str, logger, progress_callback: Optional[Callable] = None) -> str:
     """
     Deprecated: Use execute_multi_agent_research_pipeline instead.
-    已弃用：请使用 execute_multi_agent_research_pipeline 替代。
+    
+    Args:
+        input_source: Input source
+        logger: Logger instance
+        progress_callback: Progress callback function
+        
+    Returns:
+        str: Pipeline result
     """
     print("paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead.")
     return await execute_multi_agent_research_pipeline(input_source, logger, progress_callback)

@@ -1,0 +1,789 @@
+{
+  "repo_name": "episodic-lifelong-learning",
+  "total_files": 8,
+  "file_summaries": [
+    {
+      "file_path": "episodic-lifelong-learning/preprocess.py",
+      "file_type": "Data preprocessing utility for text classification datasets",
+      "main_functions": [
+        "preprocess",
+        "create_ordered_tc_data"
+      ],
+      "key_concepts": [
+        "text normalization",
+        "regex cleaning",
+        "dataset ordering",
+        "continual learning sequences",
+        "multi-dataset aggregation",
+        "character truncation"
+      ],
+      "dependencies": [
+        "pandas",
+        "numpy",
+        "re",
+        "pickle",
+        "swifter",
+        "time",
+        "os"
+      ],
+      "summary": "This file provides text preprocessing utilities for continual learning experiments on text classification datasets. It defines dataset configurations, ordering sequences for different experimental runs, and implements text cleaning functions that normalize, remove unwanted characters, and truncate content to fixed lengths suitable for sequence models.",
+      "lines_of_code": 200,
+      "last_modified": "2025-07-15T13:18:06.101269"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/data_loader.py",
+      "file_type": "PyTorch dataset loader for text classification with BERT tokenization",
+      "main_functions": [
+        "DataSet.__init__",
+        "DataSet.__len__",
+        "DataSet.__getitem__",
+        "DataSet._add_spl_ids_and_pad"
+      ],
+      "key_concepts": [
+        "BERT tokenization",
+        "text preprocessing",
+        "sequence padding",
+        "attention masks",
+        "PyTorch Dataset interface",
+        "CSV data loading"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.utils.data",
+        "pandas",
+        "transformers.BertTokenizer"
+      ],
+      "summary": "This file implements a custom PyTorch Dataset class that loads text data from CSV files and preprocesses it for BERT-based models. It handles tokenization, sequence padding to fixed length (128 tokens), adds special tokens (CLS/SEP), and creates attention masks for efficient batch processing in neural network training.",
+      "lines_of_code": 32,
+      "last_modified": "2025-07-15T13:18:06.097631"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/main.py",
+      "file_type": "Main training script/entry point for a continual learning system",
+      "main_functions": [
+        "train",
+        "argument parsing setup",
+        "model initialization",
+        "optimizer configuration"
+      ],
+      "key_concepts": [
+        "continual learning",
+        "replay memory",
+        "MbPA++ algorithm",
+        "sequential data processing",
+        "BERT-based classification",
+        "experience replay",
+        "catastrophic forgetting mitigation"
+      ],
+      "dependencies": [
+        "torch",
+        "transformers",
+        "tqdm",
+        "matplotlib",
+        "numpy",
+        "pickle",
+        "argparse",
+        "custom DataSet loader",
+        "custom MbPAplusplus model"
+      ],
+      "summary": "This is a training script for the MbPA++ (Memory-based Parameter Adaptation) continual learning model that uses replay memory to prevent catastrophic forgetting. The script handles sequential training on different task orders with configurable batch sizes, epochs, and replay frequencies, specifically designed for BERT-based text classification tasks.",
+      "lines_of_code": 249,
+      "last_modified": "2025-07-15T13:18:06.100583"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/data_download.py",
+      "file_type": "Data download and extraction utility script",
+      "main_functions": [
+        "download_file_from_google_drive",
+        "get_confirm_token",
+        "save_response_content"
+      ],
+      "key_concepts": [
+        "Google Drive file downloading",
+        "Session-based HTTP requests",
+        "Tarball extraction and processing",
+        "Directory structure creation",
+        "File streaming and chunked downloads",
+        "CSV file organization"
+      ],
+      "dependencies": [
+        "os",
+        "requests",
+        "tarfile",
+        "glob"
+      ],
+      "summary": "This script downloads text classification datasets (AG News, Amazon, DBpedia, Yelp, Yahoo) from Google Drive links, extracts the tarball archives, and organizes the CSV files into train/test directory structure. It implements Google Drive's download confirmation token handling to bypass download warnings for large files.",
+      "lines_of_code": 55,
+      "last_modified": "2025-07-15T13:18:06.097544"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/models/MbPAplusplus.py",
+      "file_type": "Python class implementation for memory-based machine learning model",
+      "main_functions": [
+        "ReplayMemory.__init__",
+        "ReplayMemory.push",
+        "ReplayMemory.get_neighbours",
+        "ReplayMemory._prepare_batch",
+        "ReplayMemory.sample"
+      ],
+      "key_concepts": [
+        "replay memory buffer",
+        "nearest neighbor retrieval",
+        "key-value storage with neural embeddings",
+        "experience replay",
+        "batch preparation for neural networks",
+        "Euclidean distance similarity",
+        "memory-based continual learning"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn",
+        "transformers",
+        "numpy",
+        "tqdm",
+        "models.baselines.MbPA",
+        "random"
+      ],
+      "summary": "This file implements a ReplayMemory class that stores neural network experiences as key-value pairs using embedding vectors as keys, supporting nearest neighbor retrieval and batch sampling for memory-based continual learning. It appears to be an enhanced version (MbPAplusplus) of the MbPA baseline model, focusing on efficient memory management and retrieval for neural network training.",
+      "lines_of_code": 172,
+      "last_modified": "2025-07-15T13:18:06.100785"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "file_type": "PyTorch neural network module wrapper for BERT-based text classification",
+      "main_functions": [
+        "EncDec.__init__",
+        "classify",
+        "infer",
+        "save_state"
+      ],
+      "key_concepts": [
+        "BERT sequence classification",
+        "pretrained model loading",
+        "model state management",
+        "attention masks",
+        "loss computation",
+        "inference pipeline"
+      ],
+      "dependencies": [
+        "transformers",
+        "torch",
+        "torch.nn"
+      ],
+      "summary": "This file implements a wrapper class around BERT for sequence classification that supports both training (with loss computation) and inference modes. It provides functionality to load pretrained BERT models either from local files or Hugging Face hub, manage model states, and perform text classification with 33 output labels.",
+      "lines_of_code": 36,
+      "last_modified": "2025-07-15T13:18:06.101043"
+    },
+    {
+      "file_path": "episodic-lifelong-learning/models/baselines/MbPA.py",
+      "file_type": "Machine learning model implementation file for memory-based parameter adaptation",
+      "main_functions": [
+        "ReplayMemory",
+        "MbPA",
+        "push",
+        "get_neighbours",
+        "_prepare_batch"
+      ],
+      "key_concepts": [
+        "memory buffer",
+        "replay memory",
+        "nearest neighbor retrieval",
+        "parameter adaptation",
+        "key-value storage",
+        "experience replay",
+        "episodic memory"
+      ],
+      "dependencies": [
+        "torch",
+        "torch.nn",
+        "transformers",
+        "numpy",
+        "tqdm",
+        "copy"
+      ],
+      "summary": "This file implements a Memory-based Parameter Adaptation (MbPA) system with a replay memory buffer that stores experiences as key-value pairs and retrieves similar experiences using nearest neighbor search. The ReplayMemory class manages storage and retrieval of training examples, while MbPA appears to be the main neural network model that utilizes this memory system for adaptive learning.",
+      "lines_of_code": 164,
+      "last_modified": "2025-07-15T13:18:06.100949"
+    }
+  ],
+  "relationships": [
+    {
+      "repo_file_path": "episodic-lifelong-learning/preprocess.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "text preprocessing and normalization functions",
+        "dataset handling and ordering utilities",
+        "multi-dataset aggregation patterns",
+        "character truncation for sequence models"
+      ],
+      "potential_contributions": [
+        "text cleaning functions for input preprocessing",
+        "dataset ordering patterns for sequential experiments",
+        "normalization utilities for consistent text handling",
+        "truncation logic for managing sequence lengths"
+      ],
+      "usage_suggestions": "Extract the text preprocessing functions (regex cleaning, normalization) and dataset ordering utilities to create a comprehensive data handling module. The preprocess() function can be adapted for cleaning text inputs before feeding to BART0/FLAN-T5 models, while the ordering patterns can inform sequential update experiment design."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/preprocess.py",
+      "target_file_path": "experiments/sequential.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "continual learning sequence definitions",
+        "dataset ordering for different experimental runs",
+        "multi-dataset experimental setup patterns"
+      ],
+      "potential_contributions": [
+        "experimental design patterns for sequential updates",
+        "dataset sequencing strategies",
+        "continual learning evaluation frameworks"
+      ],
+      "usage_suggestions": "Use the dataset ordering and sequencing patterns as reference for designing sequential update experiments. The continual learning setup can inform how to structure multiple rounds of model updates and evaluate forgetting across different datasets in the sequential experiment pipeline."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/preprocess.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "text preprocessing pipeline integration",
+        "dataset preparation utilities",
+        "sequence length management"
+      ],
+      "potential_contributions": [
+        "preprocessing integration in training loops",
+        "data preparation utilities for batch processing",
+        "text normalization for consistent model inputs"
+      ],
+      "usage_suggestions": "Integrate the text preprocessing utilities into the training pipeline to ensure consistent input formatting. The preprocessing functions can be called before feeding data to the encoder models, and the truncation logic can help manage sequence lengths for BART0/FLAN-T5 processing."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_loader.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "PyTorch Dataset interface implementation",
+        "CSV data loading functionality",
+        "Text preprocessing and tokenization",
+        "Batch processing capabilities",
+        "Sequence padding and attention mask generation"
+      ],
+      "potential_contributions": [
+        "Core dataset loading infrastructure",
+        "Text preprocessing pipeline for language models",
+        "Efficient batch data handling",
+        "Foundation for training data management"
+      ],
+      "usage_suggestions": "This file can serve as the foundation for src/utils/data.py with modifications to handle the specific data formats needed for forgetting prediction. The existing BERT tokenization can be adapted for BART0/FLAN-T5 models, and the CSV loading can be extended to handle the training pairs (x_i, y_i) and pre-training data (x_j, y_j) required by the forecasting algorithms."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_loader.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Dataset iteration patterns",
+        "Batch processing logic",
+        "Data loading integration with PyTorch",
+        "Text preprocessing workflow"
+      ],
+      "potential_contributions": [
+        "Data loading patterns for training loops",
+        "Batch sampling strategies",
+        "Integration patterns between data and model training"
+      ],
+      "usage_suggestions": "The data loading and batch processing patterns from this file can inform the training loop implementation in src/training/trainer.py. The way this file handles tokenization and batch preparation can be adapted for the specific requirements of sampling (x_i, y_i) pairs from D_train_R and (x_j, y_j) pairs from D_PT with the required 8:8 positive/negative ratio."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_loader.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "BERT tokenization approach",
+        "Text sequence handling",
+        "Attention mask generation",
+        "Fixed sequence length processing (128 tokens)"
+      ],
+      "potential_contributions": [
+        "Tokenization strategy for encoder input",
+        "Sequence preprocessing patterns",
+        "Input formatting for transformer models"
+      ],
+      "usage_suggestions": "The tokenization and preprocessing logic can be referenced when implementing the sentence encoder in src/models/encoder.py. The approach to handling variable-length sequences, padding, and attention masks can be adapted from BERT to work with BART0/FLAN-T5 encoders, maintaining the same preprocessing quality while switching the underlying model architecture."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_loader.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Efficient data loading patterns",
+        "Batch processing optimization",
+        "Memory management for large datasets",
+        "Preprocessing pipeline structure"
+      ],
+      "potential_contributions": [
+        "Efficient data handling patterns for caching",
+        "Batch processing optimization techniques",
+        "Memory-efficient data loading strategies"
+      ],
+      "usage_suggestions": "The efficient data loading and batch processing patterns from this file can inform the implementation of src/utils/caching.py, particularly for caching logits and representations. The way this file handles large datasets and memory management can be adapted for storing and retrieving cached model outputs during the forecasting process."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/src/training/trainer.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.9,
+      "helpful_aspects": [
+        "Complete training loop implementation with argument parsing",
+        "Model initialization and optimizer configuration patterns",
+        "Batch processing and sequential training experience",
+        "Experience with BERT-based models and text classification",
+        "Structured approach to handling different training phases"
+      ],
+      "potential_contributions": [
+        "Core training loop structure and flow control",
+        "Argument parsing setup for hyperparameters",
+        "Model initialization patterns",
+        "Optimizer configuration and learning rate scheduling",
+        "Batch sampling and processing logic"
+      ],
+      "usage_suggestions": "Use this file as the primary template for implementing the main training loops in trainer.py. The existing argument parsing, model initialization, and training loop structure can be adapted for the representation-based and logit-based forecaster training. The sequential training experience with different task orders directly translates to the sequential update experiments needed for the target project."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/experiments/sequential.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "Sequential training on different task orders",
+        "Experience with continual learning scenarios",
+        "Handling of sequential data processing",
+        "Model evaluation across different phases",
+        "Configuration management for different experimental setups"
+      ],
+      "potential_contributions": [
+        "Sequential experiment structure and flow",
+        "Task ordering and progression logic",
+        "Performance tracking across sequential updates",
+        "Experimental configuration management",
+        "Results collection and analysis patterns"
+      ],
+      "usage_suggestions": "Adapt the sequential training logic for implementing the sequential update experiments. The existing framework for handling different task orders and tracking performance across phases can be modified to handle sequential language model updates and measure forgetting patterns over time."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/src/models/language_models.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "BERT-based model integration and handling",
+        "Model wrapper patterns for transformer architectures",
+        "Experience with text classification tasks",
+        "Model configuration and parameter management"
+      ],
+      "potential_contributions": [
+        "Base model wrapper structure for BART0/FLAN-T5",
+        "Model loading and configuration patterns",
+        "Text processing and tokenization handling",
+        "Model state management and checkpointing"
+      ],
+      "usage_suggestions": "Use the BERT integration patterns as a reference for implementing the BART0/FLAN-T5 wrapper in language_models.py. The existing model handling, configuration management, and text processing approaches can be adapted for the target language models while maintaining similar interface patterns."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/src/utils/caching.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "Experience with replay memory management",
+        "Data caching and retrieval patterns",
+        "Memory-efficient data handling",
+        "Batch processing optimization"
+      ],
+      "potential_contributions": [
+        "Caching architecture and data structure design",
+        "Memory management strategies",
+        "Efficient data retrieval patterns",
+        "Batch processing optimization techniques"
+      ],
+      "usage_suggestions": "Leverage the replay memory management experience to implement efficient logit and representation caching. The existing memory management patterns and data retrieval strategies can be adapted for caching model outputs and representations needed for the forecasting algorithms."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/src/training/losses.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Loss function implementation experience",
+        "Training optimization and metrics tracking",
+        "Model performance evaluation patterns"
+      ],
+      "potential_contributions": [
+        "Loss function structure and implementation patterns",
+        "Training metrics calculation and tracking",
+        "Performance evaluation utilities"
+      ],
+      "usage_suggestions": "Use the loss function implementation patterns as a reference for implementing the BCE loss with positive weighting required for the representation-based forecaster training. The existing metrics tracking and evaluation patterns can be adapted for the specific forecasting metrics needed."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/main.py",
+      "target_file_path": "forgotten-examples/experiments/single_edit.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.4,
+      "helpful_aspects": [
+        "Experimental setup and configuration management",
+        "Model evaluation and results collection",
+        "Performance measurement patterns"
+      ],
+      "potential_contributions": [
+        "Experiment structure and organization",
+        "Results collection and analysis framework",
+        "Performance measurement utilities"
+      ],
+      "usage_suggestions": "Reference the experimental setup patterns for implementing the single edit experiments. The existing approach to model evaluation, results collection, and performance measurement can provide a foundation for the single error fix experiments required in the target project."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_download.py",
+      "target_file_path": "src/utils/data.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.7,
+      "helpful_aspects": [
+        "Google Drive download functionality for large datasets",
+        "Tarball extraction and file organization",
+        "CSV file handling and directory structure creation",
+        "Session-based HTTP requests with chunked downloads"
+      ],
+      "potential_contributions": [
+        "Provide dataset downloading infrastructure for training data",
+        "Handle large file downloads with proper error handling",
+        "Organize downloaded datasets into train/test splits",
+        "Serve as foundation for custom dataset acquisition"
+      ],
+      "usage_suggestions": "Adapt the Google Drive download functions to fetch language model training datasets or benchmark datasets needed for the forgetting prediction experiments. The CSV organization logic could be modified to handle the specific data formats required for the representation and logit-based forecasting models. The chunked download and extraction functionality would be particularly useful for large language model datasets."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_download.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.6,
+      "helpful_aspects": [
+        "File streaming and chunked processing experience",
+        "Directory structure management",
+        "Large file handling patterns",
+        "Session management for downloads"
+      ],
+      "potential_contributions": [
+        "Provide patterns for efficient large file processing",
+        "Contribute to logit and representation caching mechanisms",
+        "Offer chunked processing approach for memory efficiency",
+        "Supply file organization strategies for cached data"
+      ],
+      "usage_suggestions": "Extract the chunked processing and file management patterns to implement efficient caching of model logits and representations. The session-based approach could be adapted for managing cached computations, and the directory organization logic could structure cached embeddings and logits by model, dataset, and experiment configuration."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_download.py",
+      "target_file_path": "experiments/single_edit.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Dataset downloading and preparation workflow",
+        "File extraction and organization patterns",
+        "Error handling for large file operations"
+      ],
+      "potential_contributions": [
+        "Provide dataset preparation pipeline for experiments",
+        "Handle benchmark dataset acquisition automatically",
+        "Ensure reproducible data setup across experiments"
+      ],
+      "usage_suggestions": "Integrate the download functionality into the experiment setup to automatically fetch required datasets before running single edit experiments. This would ensure consistent data preparation and reduce manual setup requirements for reproducing the paper's results."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/data_download.py",
+      "target_file_path": "experiments/sequential.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.5,
+      "helpful_aspects": [
+        "Automated dataset acquisition",
+        "Consistent file organization",
+        "Batch processing patterns for multiple datasets"
+      ],
+      "potential_contributions": [
+        "Enable automated setup for sequential update experiments",
+        "Provide consistent data preparation across experiment runs",
+        "Handle multiple dataset downloads efficiently"
+      ],
+      "usage_suggestions": "Use the multi-dataset download capability to prepare various benchmark datasets needed for sequential update experiments. The batch processing approach could be adapted to handle multiple experimental configurations with different datasets automatically."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/MbPAplusplus.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Memory buffer implementation with key-value storage",
+        "Efficient retrieval mechanisms using embeddings",
+        "Batch preparation for neural network training",
+        "Experience storage and sampling patterns"
+      ],
+      "potential_contributions": [
+        "Provide foundation for logit and representation caching system",
+        "Adapt memory buffer for storing model outputs and embeddings",
+        "Reuse efficient batch sampling and preparation logic",
+        "Implement nearest neighbor retrieval for similar examples"
+      ],
+      "usage_suggestions": "Adapt the ReplayMemory class structure to create a caching system for storing and retrieving logits and representations. The key-value storage pattern with embedding-based keys could be modified to cache model outputs (logits) and intermediate representations, with the nearest neighbor retrieval helping identify similar examples for forecasting. The batch preparation methods could be adapted for efficient loading of cached data during training."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/MbPAplusplus.py",
+      "target_file_path": "src/models/forecasters/representation.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Nearest neighbor retrieval using Euclidean distance",
+        "Embedding-based similarity computation",
+        "Memory-efficient storage and retrieval patterns",
+        "Experience replay mechanisms for continual learning"
+      ],
+      "potential_contributions": [
+        "Provide similarity computation methods for representation-based forecasting",
+        "Adapt nearest neighbor logic for finding similar training examples",
+        "Reuse embedding storage patterns for representation caching",
+        "Apply continual learning concepts to forgetting prediction"
+      ],
+      "usage_suggestions": "Extract the nearest neighbor retrieval logic and similarity computation methods to implement the core similarity calculation in representation-based forecasting (torch.matmul(h_j, h_i.transpose())). The memory buffer's embedding-based retrieval could be adapted to find similar examples when computing forgetting predictions, and the continual learning approach aligns with the paper's focus on model updates and forgetting."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/MbPAplusplus.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Memory-based training patterns",
+        "Batch sampling strategies",
+        "Experience replay for continual learning",
+        "Neural network training with stored experiences"
+      ],
+      "potential_contributions": [
+        "Inform training loop design for memory-based models",
+        "Provide patterns for handling stored examples during training",
+        "Guide batch sampling strategies for forecasting models",
+        "Offer insights into continual learning training procedures"
+      ],
+      "usage_suggestions": "Use the memory-based training patterns as reference for designing the forecasting model training loop. The batch sampling strategies could inform how to sample training examples from D_train_R and D_PT, and the experience replay concepts could guide how to handle the interaction between stored examples and new training data in the context of forgetting prediction."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/MbPAplusplus.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Neural embedding generation patterns",
+        "Memory-efficient representation learning",
+        "Key-value storage with neural embeddings",
+        "Embedding-based similarity computation"
+      ],
+      "potential_contributions": [
+        "Provide patterns for generating and storing embeddings",
+        "Inform efficient representation computation strategies",
+        "Guide embedding-based similarity calculations",
+        "Offer memory management techniques for embeddings"
+      ],
+      "usage_suggestions": "Reference the embedding generation and storage patterns when implementing the sentence encoder. The neural embedding techniques used in the replay memory could inform how to efficiently compute and store the h_i and h_j representations, and the memory management strategies could be useful for handling large numbers of encoded examples during training."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "target_file_path": "src/models/language_models.py",
+      "relationship_type": "direct_match",
+      "confidence_score": 0.85,
+      "helpful_aspects": [
+        "BERT-based model wrapper architecture",
+        "Pretrained model loading from HuggingFace",
+        "Model state management (save_state method)",
+        "Inference pipeline with attention masks",
+        "Classification head implementation"
+      ],
+      "potential_contributions": [
+        "Base architecture for wrapping BART0/FLAN-T5 models",
+        "Model loading and initialization patterns",
+        "State management utilities",
+        "Inference method structure"
+      ],
+      "usage_suggestions": "Adapt the EncDec class structure to create a base language model wrapper for BART0/FLAN-T5. The existing model loading, state management, and inference patterns can be directly reused. Modify the classification head to support the target paper's requirements and replace BERT with BART0/FLAN-T5 models."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Neural network module structure with __init__ and forward methods",
+        "Integration with pretrained transformer models",
+        "Model configuration and parameter management",
+        "Device handling and tensor operations"
+      ],
+      "potential_contributions": [
+        "Base neural network module patterns",
+        "Pretrained model integration approach",
+        "Parameter initialization strategies",
+        "Forward pass implementation structure"
+      ],
+      "usage_suggestions": "Use the EncDec class as a template for implementing the sentence encoder. The existing structure for wrapping pretrained models can be adapted to create the encoder with BART0/FLAN-T5 base + MLP architecture. The model loading and parameter management patterns are directly applicable."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "target_file_path": "src/models/forecasters/base.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Abstract base class patterns from neural network modules",
+        "Common method signatures (forward, save_state)",
+        "Model initialization and configuration handling",
+        "Error handling and validation patterns"
+      ],
+      "potential_contributions": [
+        "Base class structure and method signatures",
+        "Common initialization patterns",
+        "State management interface design",
+        "Model validation approaches"
+      ],
+      "usage_suggestions": "Extract common patterns from EncDec to design the abstract base forecaster class. Use the initialization, forward pass structure, and state management methods as templates for defining the interface that all forecaster implementations should follow."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Loss computation patterns (cross-entropy loss)",
+        "Model evaluation and inference modes",
+        "Batch processing and tensor operations",
+        "Model state switching (train/eval modes)"
+      ],
+      "potential_contributions": [
+        "Training loop structure insights",
+        "Loss computation patterns",
+        "Model evaluation approaches",
+        "Batch processing utilities"
+      ],
+      "usage_suggestions": "Reference the loss computation and model evaluation patterns when implementing the training procedures. The existing approach to handling model states, computing losses, and managing inference can inform the design of the main training loops for the forecasting models."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/enc_dec.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Model state management and serialization",
+        "Efficient model loading and saving patterns",
+        "Memory management for large models",
+        "State persistence utilities"
+      ],
+      "potential_contributions": [
+        "Caching mechanism design patterns",
+        "Model state serialization approaches",
+        "Memory-efficient model handling",
+        "Persistent storage utilities"
+      ],
+      "usage_suggestions": "Adapt the save_state functionality to implement caching mechanisms for logits and representations. The existing model state management patterns can be extended to create efficient caching systems for the intermediate computations needed in the forecasting algorithms."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/MbPA.py",
+      "target_file_path": "src/utils/caching.py",
+      "relationship_type": "partial_match",
+      "confidence_score": 0.75,
+      "helpful_aspects": [
+        "Memory buffer implementation with key-value storage",
+        "Efficient retrieval mechanisms using nearest neighbor search",
+        "Experience storage and replay functionality",
+        "Buffer management with capacity limits"
+      ],
+      "potential_contributions": [
+        "Adapt ReplayMemory class for caching logits and representations",
+        "Use nearest neighbor retrieval for similar example lookup",
+        "Implement efficient storage/retrieval of model outputs",
+        "Handle memory management for large-scale caching"
+      ],
+      "usage_suggestions": "Modify the ReplayMemory class to cache model logits and representations instead of training experiences. The key-value storage mechanism can be adapted where keys are input embeddings and values are cached model outputs. The nearest neighbor functionality can help retrieve similar cached examples efficiently, which is crucial for the forecasting models that need to compare representations across examples."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/MbPA.py",
+      "target_file_path": "src/models/forecasters/representation.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.65,
+      "helpful_aspects": [
+        "Nearest neighbor search implementation for similarity computation",
+        "Key-value pair management for storing and retrieving examples",
+        "Memory-based retrieval mechanisms",
+        "Experience comparison and matching logic"
+      ],
+      "potential_contributions": [
+        "Implement similarity computation between representations",
+        "Adapt neighbor retrieval for finding similar training examples",
+        "Use memory buffer concepts for efficient representation comparison",
+        "Apply nearest neighbor logic for representation-based forecasting"
+      ],
+      "usage_suggestions": "The get_neighbours function and nearest neighbor search logic can be adapted for the representation-based forecaster. Instead of retrieving similar experiences for replay, modify it to find similar representations for computing the similarity matrix in the forecasting algorithm. The memory buffer concept can help efficiently store and compare encoded representations."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/MbPA.py",
+      "target_file_path": "src/training/trainer.py",
+      "relationship_type": "reference",
+      "confidence_score": 0.55,
+      "helpful_aspects": [
+        "Memory-based learning approach with experience replay",
+        "Batch preparation and sampling mechanisms",
+        "Parameter adaptation strategies",
+        "Training loop structure with memory integration"
+      ],
+      "potential_contributions": [
+        "Adapt memory-based training concepts for forecaster training",
+        "Use batch preparation logic for sampling training pairs",
+        "Apply experience replay concepts for training data management",
+        "Integrate memory-based learning into forecaster training loops"
+      ],
+      "usage_suggestions": "The _prepare_batch function and memory-based training approach can inform the trainer implementation. Adapt the batch sampling logic to handle the specific requirements of forecaster training, such as sampling pairs of examples (x_i, y_i) and (x_j, y_j) with proper positive/negative ratios. The memory-based learning concepts can help design efficient training procedures."
+    },
+    {
+      "repo_file_path": "episodic-lifelong-learning/models/baselines/MbPA.py",
+      "target_file_path": "src/models/encoder.py",
+      "relationship_type": "utility",
+      "confidence_score": 0.45,
+      "helpful_aspects": [
+        "Neural network model structure and organization",
+        "Parameter management and model initialization",
+        "Forward pass implementation patterns",
+        "Model component integration"
+      ],
+      "potential_contributions": [
+        "Provide structural patterns for encoder implementation",
+        "Inform model initialization and parameter management",
+        "Guide neural network component organization",
+        "Offer implementation patterns for model forward passes"
+      ],
+      "usage_suggestions": "While the MbPA model serves a different purpose, its neural network structure and organization patterns can inform the encoder implementation. The model initialization, parameter management, and forward pass patterns can be adapted for the sentence encoder with MLP architecture required in the target project."
+    }
+  ],
+  "analysis_metadata": {
+    "analysis_date": "2025-07-15T13:28:50.792993",
+    "target_structure_analyzed": "complete_reproduction_plan:\n  paper_info:\n    title: \"What Will My Model Forget? Forecasting Forgotten Examples in Language Model Refinement\"\n    core_contribution: \"Method to predict which examples w...",
+    "total_relationships_found": 30,
+    "high_confidence_relationships": 8,
+    "analyzer_version": "1.3.0",
+    "pre_filtering_enabled": true,
+    "files_before_filtering": 8,
+    "files_after_filtering": 7,
+    "filtering_efficiency": 12.5,
+    "config_file_used": null,
+    "min_confidence_score": 0.3,
+    "high_confidence_threshold": 0.7,
+    "concurrent_analysis_used": false,
+    "content_caching_enabled": false,
+    "cache_hits": 0
+  }
+}
