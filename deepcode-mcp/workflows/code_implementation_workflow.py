@@ -24,6 +24,7 @@ from typing import Dict, Any, Optional, List
 # MCP Agent imports
 from mcp_agent.agents.agent import Agent
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
+from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
 # Local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,6 +38,83 @@ from utils.dialogue_logger import DialogueLogger, extract_paper_id_from_path
 
 # os.environ['https_proxy'] = 'http://127.0.0.1:7890'
 # os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+
+
+def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
+    """
+    Automatically select the LLM class based on API key availability in configuration.
+    
+    Reads from YAML config file and returns AnthropicAugmentedLLM if anthropic.api_key 
+    is available, otherwise returns OpenAIAugmentedLLM.
+    
+    Args:
+        config_path: Path to the YAML configuration file
+    
+    Returns:
+        class: The preferred LLM class
+    """
+    try:
+        # Try to read the configuration file
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # Check for anthropic API key in config
+            anthropic_config = config.get('anthropic', {})
+            anthropic_key = anthropic_config.get('api_key', '')
+            
+            if anthropic_key and anthropic_key.strip() and not anthropic_key == "":
+                # print("🤖 Using AnthropicAugmentedLLM (Anthropic API key found in config)")
+                return AnthropicAugmentedLLM
+            else:
+                # print("🤖 Using OpenAIAugmentedLLM (Anthropic API key not configured)")
+                return OpenAIAugmentedLLM
+        else:
+            print(f"🤖 Config file {config_path} not found, using OpenAIAugmentedLLM")
+            return OpenAIAugmentedLLM
+            
+    except Exception as e:
+        print(f"🤖 Error reading config file {config_path}: {e}")
+        print("🤖 Falling back to OpenAIAugmentedLLM")
+        return OpenAIAugmentedLLM
+
+
+def get_default_models(config_path: str = "mcp_agent.config.yaml"):
+    """
+    Get default models from configuration file.
+    
+    Args:
+        config_path: Path to the configuration file
+        
+    Returns:
+        dict: Dictionary with 'anthropic' and 'openai' default models
+    """
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            anthropic_model = config.get('anthropic', {}).get('default_model', 'claude-sonnet-4-20250514')
+            openai_model = config.get('openai', {}).get('default_model', 'o3-mini')
+            
+            return {
+                'anthropic': anthropic_model,
+                'openai': openai_model
+            }
+        else:
+            print(f"Config file {config_path} not found, using default models")
+            return {
+                'anthropic': 'claude-sonnet-4-20250514',
+                'openai': 'o3-mini'
+            }
+            
+    except Exception as e:
+        print(f"Error reading config file {config_path}: {e}")
+        return {
+            'anthropic': 'claude-sonnet-4-20250514',
+            'openai': 'o3-mini'
+        }
+
 
 class CodeImplementationWorkflow:
     """
@@ -54,6 +132,7 @@ class CodeImplementationWorkflow:
         """Initialize workflow with configuration"""
         self.config_path = config_path
         self.api_config = self._load_api_config()
+        self.default_models = get_default_models("mcp_agent.config.yaml")
         self.logger = self._create_logger()
         self.mcp_agent = None
         self.dialogue_logger = None
@@ -173,7 +252,7 @@ class CodeImplementationWorkflow:
         )
         
         async with structure_agent:
-            creator = await structure_agent.attach_llm(AnthropicAugmentedLLM)
+            creator = await structure_agent.attach_llm(get_preferred_llm_class(self.config_path))
             
             message = f"""Analyze the following implementation plan and generate shell commands to create the file tree structure.
 
@@ -579,7 +658,7 @@ Requirements:
             )
             
             await self.mcp_agent.__aenter__()
-            llm = await self.mcp_agent.attach_llm(AnthropicAugmentedLLM)
+            llm = await self.mcp_agent.attach_llm(get_preferred_llm_class(self.config_path))
             
             # Set workspace to the target code directory
             workspace_result = await self.mcp_agent.call_tool(
@@ -612,43 +691,54 @@ Requirements:
                 self.mcp_agent = None
 
     async def _initialize_llm_client(self):
-        """Initialize LLM client (Anthropic or OpenAI)"""
-        # Try Anthropic API first
-        try:
-            anthropic_key = self.api_config.get('anthropic', {}).get('api_key')
-            if anthropic_key:
+        """Initialize LLM client (Anthropic or OpenAI) based on API key availability"""
+        # Check which API has available key and try that first
+        anthropic_key = self.api_config.get('anthropic', {}).get('api_key', '')
+        openai_key = self.api_config.get('openai', {}).get('api_key', '')
+        
+        # Try Anthropic API first if key is available
+        if anthropic_key and anthropic_key.strip():
+            try:
                 from anthropic import AsyncAnthropic
                 client = AsyncAnthropic(api_key=anthropic_key)
-                # Test connection
+                # Test connection with default model from config
                 await client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    # model="claude-3-5-sonnet-20241022",
+                    model=self.default_models['anthropic'],
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}]
                 )
-                self.logger.info("Using Anthropic API")
+                self.logger.info(f"Using Anthropic API with model: {self.default_models['anthropic']}")
                 return client, "anthropic"
-        except Exception as e:
-            self.logger.warning(f"Anthropic API unavailable: {e}")
+            except Exception as e:
+                self.logger.warning(f"Anthropic API unavailable: {e}")
         
-        # Try OpenAI API
-        try:
-            openai_key = self.api_config.get('openai', {}).get('api_key')
-            if openai_key:
+        # Try OpenAI API if Anthropic failed or key not available
+        if openai_key and openai_key.strip():
+            try:
                 from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=openai_key)
-                # Test connection
+                # Handle custom base_url if specified
+                openai_config = self.api_config.get('openai', {})
+                base_url = openai_config.get('base_url')
+                
+                if base_url:
+                    client = AsyncOpenAI(api_key=openai_key, base_url=base_url)
+                else:
+                    client = AsyncOpenAI(api_key=openai_key)
+                
+                # Test connection with default model from config
                 await client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=self.default_models['openai'],
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}]
                 )
-                self.logger.info("Using OpenAI API")
+                self.logger.info(f"Using OpenAI API with model: {self.default_models['openai']}")
+                if base_url:
+                    self.logger.info(f"Using custom base URL: {base_url}")
                 return client, "openai"
-        except Exception as e:
-            self.logger.warning(f"OpenAI API unavailable: {e}")
+            except Exception as e:
+                self.logger.warning(f"OpenAI API unavailable: {e}")
         
-        raise ValueError("No available LLM API")
+        raise ValueError("No available LLM API - please check your API keys in configuration")
 
     async def _call_llm_with_tools(self, client, client_type, system_message, messages, tools, max_tokens=8192):
         """Call LLM with tools"""
@@ -671,8 +761,7 @@ Requirements:
         
         try:
             response = await client.messages.create(
-                model="claude-sonnet-4-20250514",
-                # model="claude-3-5-sonnet-20241022",
+                model=self.default_models['anthropic'],
                 system=system_message,
                 messages=validated_messages,
                 tools=tools,
@@ -715,7 +804,7 @@ Requirements:
         openai_messages.extend(messages)
         
         response = await client.chat.completions.create(
-            model="gpt-4-1106-preview",
+            model=self.default_models['openai'],
             messages=openai_messages,
             tools=openai_tools if openai_tools else None,
             max_tokens=max_tokens,

@@ -30,6 +30,7 @@ import asyncio
 import json
 import os
 import re
+import yaml
 from typing import Callable, Dict, Optional, Tuple
 
 # MCP Agent imports
@@ -55,6 +56,45 @@ from workflows.code_implementation_workflow import CodeImplementationWorkflow
 
 # Environment configuration
 os.environ['PYTHONDONTWRITEBYTECODE'] = '1'  # Prevent .pyc file generation
+
+
+def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
+    """
+    Automatically select the LLM class based on API key availability in configuration.
+    
+    Reads from YAML config file and returns AnthropicAugmentedLLM if anthropic.api_key 
+    is available, otherwise returns OpenAIAugmentedLLM.
+    
+    Args:
+        config_path: Path to the YAML configuration file
+    
+    Returns:
+        class: The preferred LLM class
+    """
+    try:
+        # Try to read the configuration file
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            
+            # Check for anthropic API key in config
+            anthropic_config = config.get('anthropic', {})
+            anthropic_key = anthropic_config.get('api_key', '')
+            
+            if anthropic_key and anthropic_key.strip() and not anthropic_key == "":
+                # print("🤖 Using AnthropicAugmentedLLM (Anthropic API key found in config)")
+                return AnthropicAugmentedLLM
+            else:
+                # print("🤖 Using OpenAIAugmentedLLM (Anthropic API key not configured)")
+                return OpenAIAugmentedLLM
+        else:
+            print(f"🤖 Config file {config_path} not found, using OpenAIAugmentedLLM")
+            return OpenAIAugmentedLLM
+            
+    except Exception as e:
+        print(f"🤖 Error reading config file {config_path}: {e}")
+        print("🤖 Falling back to OpenAIAugmentedLLM")
+        return OpenAIAugmentedLLM
 
 
 def extract_clean_json(llm_output: str) -> str:
@@ -161,7 +201,7 @@ async def run_research_analyzer(prompt_text: str, logger) -> str:
                 print(f"Failed to list tools: {e}")
             
             try:
-                analyzer = await analyzer_agent.attach_llm(OpenAIAugmentedLLM)
+                analyzer = await analyzer_agent.attach_llm(get_preferred_llm_class())
                 print("✅ LLM attached successfully")
             except Exception as e:
                 print(f"❌ Failed to attach LLM: {e}")
@@ -249,7 +289,7 @@ async def run_resource_processor(analysis_result: str, logger) -> str:
         tools = await processor_agent.list_tools()
         print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
         
-        processor = await processor_agent.attach_llm(OpenAIAugmentedLLM)
+        processor = await processor_agent.attach_llm(get_preferred_llm_class())
         
         # Set higher token output for resource processing
         processor_params = RequestParams(
@@ -298,7 +338,7 @@ async def run_code_analyzer(paper_dir: str, logger) -> str:
     code_aggregator_agent = ParallelLLM(
         fan_in_agent=code_planner_agent,
         fan_out_agents=[concept_analysis_agent, algorithm_analysis_agent],
-        llm_factory=OpenAIAugmentedLLM,
+        llm_factory=get_preferred_llm_class(),
     )
     
     # Set higher token output limit
@@ -346,7 +386,7 @@ async def github_repo_download(search_result: str, paper_dir: str, logger) -> st
     
     async with github_download_agent:
         print("GitHub downloader: Downloading repositories...")
-        downloader = await github_download_agent.attach_llm(OpenAIAugmentedLLM)
+        downloader = await github_download_agent.attach_llm(get_preferred_llm_class())
         
         # Set higher token output for GitHub download
         github_params = RequestParams(
@@ -379,7 +419,7 @@ async def paper_reference_analyzer(analysis_result: str, logger) -> str:
     
     async with reference_analysis_agent:
         print("Reference analyzer: Connected to server, analyzing references...")
-        analyzer = await reference_analysis_agent.attach_llm(OpenAIAugmentedLLM)
+        analyzer = await reference_analysis_agent.attach_llm(get_preferred_llm_class())
         
         # Set higher token output for reference analysis
         reference_params = RequestParams(
