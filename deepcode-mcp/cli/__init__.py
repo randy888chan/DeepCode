@@ -1,6 +1,6 @@
 """
-CLI Module for Paper to Code Agent
-CLI版本的论文到代码智能体模块
+CLI Module for DeepCode Agent
+DeepCode智能体CLI模块
 
 包含以下组件 / Contains the following components:
 - cli_app: CLI应用主程序 / CLI application main program
@@ -9,7 +9,7 @@ CLI版本的论文到代码智能体模块
 """
 
 __version__ = "1.0.0"
-__author__ = "Paper to Code Team - CLI Edition"
+__author__ = "DeepCode Team - Data Intelligence Lab @ HKU"
 
 from .cli_app import main as cli_main
 from .cli_interface import CLIInterface

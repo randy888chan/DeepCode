@@ -1,11 +1,14 @@
 """
-Workflows package for paper-to-code implementation.
+Intelligent Agent Orchestration Workflows for Research-to-Code Automation.
+
+This package provides advanced AI-driven workflow orchestration capabilities
+for automated research analysis and code implementation synthesis.
 """
 
-from .initial_workflows import (
-    run_paper_analyzer,
-    run_paper_downloader,
-    paper_code_analyzer,
+from .agent_orchestration_engine import (
+    run_research_analyzer,
+    run_resource_processor,
+    run_code_analyzer,
     github_repo_download,
     paper_reference_analyzer,
     execute_multi_agent_research_pipeline,
@@ -16,9 +19,9 @@ from .code_implementation_workflow import CodeImplementationWorkflow
 
 __all__ = [
     # Initial workflows
-    'run_paper_analyzer',
-    'run_paper_downloader',
-    'paper_code_analyzer',
+    'run_research_analyzer',
+    'run_resource_processor', 
+    'run_code_analyzer',
     'github_repo_download',
     'paper_reference_analyzer',
     'execute_multi_agent_research_pipeline',  # Main multi-agent pipeline function

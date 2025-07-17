@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Paper to Code - CLI Application Main Program
-论文到代码 - CLI应用主程序
+DeepCode - CLI Application Main Program
+深度代码 - CLI应用主程序
 
-🧬 Command Line Interface for AI Research Engine
-⚡ Transform research papers into working code via CLI
+🧬 Open-Source Code Agent by Data Intelligence Lab @ HKU
+⚡ Revolutionizing research reproducibility through collaborative AI
 """
 
 import os
@@ -32,105 +32,70 @@ from mcp_agent.workflows.llm.llm_selector import ModelPreferences
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
-from workflows.initial_workflows import (
-    execute_multi_agent_research_pipeline,
-    run_paper_analyzer,
-    run_paper_downloader
-)
+from cli.workflows import CLIWorkflowAdapter
 from utils.file_processor import FileProcessor
 from cli.cli_interface import CLIInterface, Colors
 
 class CLIApp:
-    """CLI应用主类"""
+    """CLI应用主类 - 升级版智能体编排引擎"""
     
     def __init__(self):
         self.cli = CLIInterface()
-        self.app = MCPApp(name="paper_to_code_cli")
+        self.workflow_adapter = CLIWorkflowAdapter(cli_interface=self.cli)
+        self.app = None  # Will be initialized by workflow adapter
         self.logger = None
         self.context = None
         
     async def initialize_mcp_app(self):
-        """初始化MCP应用"""
-        self.cli.show_spinner("🚀 Initializing MCP application", 2.0)
-        
-        # 启动MCP应用
-        self.app_context = self.app.run()
-        self.agent_app = await self.app_context.__aenter__()
-        
-        self.logger = self.agent_app.logger
-        self.context = self.agent_app.context
-        
-        # 配置文件系统
-        self.context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
-        
-        self.cli.print_status("MCP application initialized successfully", "success")
+        """初始化MCP应用 - 使用工作流适配器"""
+        # Workflow adapter will handle MCP initialization
+        return await self.workflow_adapter.initialize_mcp_app()
         
     async def cleanup_mcp_app(self):
-        """清理MCP应用"""
-        if hasattr(self, 'app_context'):
-            await self.app_context.__aexit__(None, None, None)
+        """清理MCP应用 - 使用工作流适配器"""
+        await self.workflow_adapter.cleanup_mcp_app()
             
     async def process_input(self, input_source: str, input_type: str):
-        """处理输入源（URL或文件）"""
+        """处理输入源（URL或文件）- 使用升级版智能体编排引擎"""
         try:
             self.cli.print_separator()
-            self.cli.print_status("Starting paper analysis...", "processing")
+            self.cli.print_status("🚀 Starting intelligent agent orchestration...", "processing")
             
-            # 显示处理阶段
-            self.cli.display_processing_stages(0)
+            # 显示处理阶段（根据配置决定）
+            self.cli.display_processing_stages(0, self.cli.enable_indexing)
             
-            # 处理输入源路径
-            if input_source.startswith("file://"):
-                file_path = input_source[7:]
-                if os.name == 'nt' and file_path.startswith('/'):
-                    file_path = file_path.lstrip('/')
-                input_source = file_path
+            # 使用工作流适配器进行处理
+            result = await self.workflow_adapter.process_input_with_orchestration(
+                input_source=input_source,
+                input_type=input_type,
+                enable_indexing=self.cli.enable_indexing
+            )
+            
+            if result['status'] == 'success':
+                # 显示完成状态
+                final_stage = 8 if self.cli.enable_indexing else 5
+                self.cli.display_processing_stages(final_stage, self.cli.enable_indexing)
+                self.cli.print_status("🎉 Agent orchestration completed successfully!", "complete")
                 
-            # 阶段1: 论文分析
-            self.cli.print_status("📊 Analyzing paper content...", "analysis")
-            self.cli.display_processing_stages(1)
-            
-            analysis_result = await run_paper_analyzer(input_source, self.logger)
-            self.cli.print_status("Paper analysis completed", "success")
-            
-            # 阶段2: 文档下载处理
-            self.cli.print_status("📥 Processing downloads...", "download")
-            self.cli.display_processing_stages(2)
-            
-            # 添加短暂暂停以显示进度
-            await asyncio.sleep(2)
-            
-            download_result = await run_paper_downloader(analysis_result, self.logger)
-            self.cli.print_status("Download processing completed", "success")
-            
-            # 阶段3-8: 多智能体研究管道
-            self.cli.print_status("🔄 Executing multi-agent research pipeline...", "implementation")
-            self.cli.display_processing_stages(3)
-            
-            repo_result = await execute_multi_agent_research_pipeline(download_result, self.logger)
-            
-            # 显示完成状态
-            self.cli.display_processing_stages(8)
-            self.cli.print_status("All operations completed successfully! 🎉", "complete")
-            
-            # 显示结果
-            self.display_results(analysis_result, download_result, repo_result)
+                # 显示结果
+                self.display_results(
+                    result.get('analysis_result', ''),
+                    result.get('download_result', ''),
+                    result.get('repo_result', ''),
+                    result.get('pipeline_mode', 'comprehensive')
+                )
+            else:
+                self.cli.print_status(f"❌ Processing failed: {result.get('error', 'Unknown error')}", "error")
             
             # 添加到历史记录
-            result = {
-                'status': 'success',
-                'analysis_result': analysis_result,
-                'download_result': download_result,
-                'repo_result': repo_result
-            }
             self.cli.add_to_history(input_source, result)
             
             return result
             
         except Exception as e:
             error_msg = str(e)
-            self.cli.print_error_box("Processing Error", error_msg)
-            self.cli.print_status(f"Error during processing: {error_msg}", "error")
+            self.cli.print_error_box("Agent Orchestration Error", error_msg)
+            self.cli.print_status(f"Error during orchestration: {error_msg}", "error")
             
             # 添加错误到历史记录
             error_result = {
@@ -141,9 +106,14 @@ class CLIApp:
             
             return error_result
             
-    def display_results(self, analysis_result: str, download_result: str, repo_result: str):
+    def display_results(self, analysis_result: str, download_result: str, repo_result: str, pipeline_mode: str = 'comprehensive'):
         """显示处理结果"""
         self.cli.print_results_header()
+        
+        # 显示流水线模式
+        mode_display = "🧠 Comprehensive Mode" if pipeline_mode == 'comprehensive' else "⚡ Optimized Mode"
+        print(f"{Colors.BOLD}{Colors.PURPLE}🤖 PIPELINE MODE: {mode_display}{Colors.ENDC}")
+        self.cli.print_separator("─", 79, Colors.PURPLE)
         
         print(f"{Colors.BOLD}{Colors.OKCYAN}📊 ANALYSIS PHASE RESULTS:{Colors.ENDC}")
         self.cli.print_separator("─", 79, Colors.CYAN)
@@ -220,8 +190,11 @@ class CLIApp:
                 elif choice in ['h', 'history']:
                     self.cli.show_history()
                     
+                elif choice in ['c', 'config', 'configure']:
+                    self.cli.show_configuration_menu()
+                    
                 else:
-                    self.cli.print_status("Invalid choice. Please select U, F, H, or Q.", "warning")
+                    self.cli.print_status("Invalid choice. Please select U, F, C, H, or Q.", "warning")
                 
                 # 询问是否继续
                 if self.cli.is_running and choice in ['u', 'f']:
@@ -261,7 +234,7 @@ async def main():
         else:  # Unix/Linux/macOS
             os.system('find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null')
         
-        print(f"{Colors.OKGREEN}✨ Goodbye! Thanks for using Paper-to-Code CLI! ✨{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}✨ Goodbye! Thanks for using DeepCode CLI! ✨{Colors.ENDC}")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Enhanced CLI Interface Module for Paper to Code
-增强版CLI界面模块 - 专为Paper to Code设计
+Enhanced CLI Interface Module for DeepCode
+增强版CLI界面模块 - 专为DeepCode设计
 """
 
 import os
@@ -33,12 +33,13 @@ class Colors:
     YELLOW = '\033[33m'
 
 class CLIInterface:
-    """Enhanced CLI interface with modern styling for Paper to Code"""
+    """Enhanced CLI interface with modern styling for DeepCode"""
     
     def __init__(self):
         self.uploaded_file = None
         self.is_running = True
         self.processing_history = []
+        self.enable_indexing = True  # Default configuration
         
         # Check tkinter availability for file dialogs
         self.tkinter_available = True
@@ -56,7 +57,7 @@ class CLIInterface:
         os.system('cls' if os.name == 'nt' else 'clear')
         
     def print_logo(self):
-        """Print enhanced ASCII logo for Paper to Code CLI"""
+        """Print enhanced ASCII logo for DeepCode CLI"""
         logo = f"""
 {Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
@@ -74,8 +75,8 @@ class CLIInterface:
 ║  {Colors.BOLD}{Colors.YELLOW}╚██████╗╚██████╔╝██████╔╝███████╗   ╚██████╗███████╗██║{Colors.CYAN}                    ║
 ║  {Colors.BOLD}{Colors.YELLOW} ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝    ╚═════╝╚══════╝╚═╝{Colors.CYAN}                    ║
 ║                                                                               ║
-║  {Colors.BOLD}{Colors.GREEN}🤖 AI-POWERED RESEARCH PAPER REPRODUCTION ENGINE 🚀                    {Colors.CYAN}║
-║  {Colors.BOLD}{Colors.GREEN}⚡ INTELLIGENT • AUTOMATED • CUTTING-EDGE ⚡                        {Colors.CYAN}║
+║  {Colors.BOLD}{Colors.GREEN}🧬 OPEN-SOURCE CODE AGENT • DATA INTELLIGENCE LAB @ HKU 🚀           {Colors.CYAN}║
+║  {Colors.BOLD}{Colors.GREEN}⚡ REVOLUTIONIZING RESEARCH REPRODUCIBILITY ⚡                      {Colors.CYAN}║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
 """
@@ -85,17 +86,17 @@ class CLIInterface:
         """Print enhanced welcome banner"""
         banner = f"""
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
-║                          WELCOME TO PAPER-TO-CODE CLI                        ║
+║                             WELCOME TO DEEPCODE CLI                          ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
-║  {Colors.YELLOW}Version: 2.0.0 CLI Edition | Build: Professional Command Line             {Colors.CYAN}║
-║  {Colors.GREEN}Status: Ready | Engine: Neural Processing Initialized                      {Colors.CYAN}║
-║  {Colors.PURPLE}Author: AI Research Team | License: MIT                                    {Colors.CYAN}║
+║  {Colors.YELLOW}Open-Source Code Agent | Data Intelligence Lab @ HKU | MIT License        {Colors.CYAN}║
+║  {Colors.GREEN}Status: Ready | Engine: Multi-Agent Architecture Initialized               {Colors.CYAN}║
+║  {Colors.PURPLE}Mission: Revolutionizing Research Reproducibility                         {Colors.CYAN}║
 ║                                                                               ║
 ║  {Colors.BOLD}{Colors.OKCYAN}💎 CORE CAPABILITIES:{Colors.ENDC}                                                      {Colors.CYAN}║
-║    {Colors.BOLD}{Colors.OKCYAN}▶ Neural PDF Analysis & Code Extraction                               {Colors.CYAN}║
-║    {Colors.BOLD}{Colors.OKCYAN}▶ Advanced Multi-Agent Research Pipeline                             {Colors.CYAN}║
-║    {Colors.BOLD}{Colors.OKCYAN}▶ Automated Repository Management & Code Generation                  {Colors.CYAN}║
-║    {Colors.BOLD}{Colors.OKCYAN}▶ Smart File Processing (PDF•DOCX•PPTX•HTML•TXT)                    {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Automated Paper-to-Code Reproduction                                {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Collaborative Multi-Agent Architecture                             {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Intelligent Code Implementation & Validation                       {Colors.CYAN}║
+║    {Colors.BOLD}{Colors.OKCYAN}▶ Future Vision: One Sentence → Complete Codebase                   {Colors.CYAN}║
 ╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
 """
         print(banner)
@@ -125,11 +126,19 @@ class CLIInterface:
         
     def create_menu(self):
         """Create enhanced interactive menu"""
+        # Display current configuration
+        pipeline_mode = "🧠 COMPREHENSIVE" if self.enable_indexing else "⚡ OPTIMIZED"
+        index_status = "✅ Enabled" if self.enable_indexing else "🔶 Disabled"
+        
         menu = f"""
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                MAIN MENU                                      ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
 ║  {Colors.OKGREEN}🌐 [U] Process URL       {Colors.CYAN}│  {Colors.PURPLE}📁 [F] Upload File    {Colors.CYAN}│  {Colors.FAIL}❌ [Q] Quit{Colors.CYAN}         ║
+║  {Colors.OKCYAN}⚙️  [C] Configure        {Colors.CYAN}│  {Colors.YELLOW}📊 [H] History        {Colors.CYAN}│                 ║
+║                                                                               ║
+║  {Colors.BOLD}🤖 Current Pipeline Mode: {pipeline_mode}{Colors.CYAN}                          ║
+║  {Colors.BOLD}🗂️  Codebase Indexing: {index_status}{Colors.CYAN}                                    ║
 ║                                                                               ║
 ║  {Colors.YELLOW}📝 URL Processing:{Colors.CYAN}                                                         ║
 ║  {Colors.YELLOW}   ▶ Enter research paper URL (arXiv, IEEE, ACM, etc.)                    {Colors.CYAN}║
@@ -140,8 +149,8 @@ class CLIInterface:
 ║  {Colors.PURPLE}   ▶ Intelligent file format detection and processing                     {Colors.CYAN}║
 ║                                                                               ║
 ║  {Colors.OKCYAN}🔄 Processing Pipeline:{Colors.CYAN}                                                    ║
-║  {Colors.OKCYAN}   ▶ Document analysis → Reference extraction → Code generation           {Colors.CYAN}║
-║  {Colors.OKCYAN}   ▶ Multi-agent research pipeline with progress tracking                 {Colors.CYAN}║
+║  {Colors.OKCYAN}   ▶ Intelligent agent orchestration → Code synthesis                     {Colors.CYAN}║
+║  {Colors.OKCYAN}   ▶ Multi-agent coordination with progress tracking                     {Colors.CYAN}║
 ╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
 """
         print(menu)
@@ -188,7 +197,7 @@ class CLIInterface:
                     ]
                 
                 file_path = filedialog.askopenfilename(
-                    title="Select Research Paper File - Paper to Code CLI",
+                    title="Select Research File - DeepCode CLI",
                     filetypes=file_types,
                     initialdir=os.getcwd()
                 )
@@ -323,20 +332,33 @@ class CLIInterface:
             
         print(f"\r{Colors.BOLD}{Colors.CYAN}{message}... {Colors.OKGREEN}✓{Colors.ENDC}")
         
-    def display_processing_stages(self, current_stage: int = 0):
+    def display_processing_stages(self, current_stage: int = 0, enable_indexing: bool = True):
         """Display processing pipeline stages with current progress"""
-        stages = [
-            ("🚀", "Initialize", "Setting up AI engine"),
-            ("📊", "Analyze", "Analyzing paper content"),
-            ("📥", "Download", "Processing document"),
-            ("🔍", "References", "Analyzing references"),
-            ("📋", "Plan", "Generating code plan"),
-            ("📦", "Repos", "Downloading repositories"),
-            ("🗂️", "Index", "Building code index"),
-            ("⚙️", "Implement", "Implementing code")
-        ]
+        if enable_indexing:
+            # Full pipeline with all stages
+            stages = [
+                ("🚀", "Initialize", "Setting up AI engine"),
+                ("📊", "Analyze", "Analyzing research content"),
+                ("📥", "Download", "Processing document"),
+                ("📋", "Plan", "Generating code architecture"),
+                ("🔍", "References", "Analyzing references"),
+                ("📦", "Repos", "Downloading repositories"),
+                ("🗂️", "Index", "Building code index"),
+                ("⚙️", "Implement", "Implementing code")
+            ]
+            pipeline_mode = "COMPREHENSIVE"
+        else:
+            # Fast mode - skip indexing related stages
+            stages = [
+                ("🚀", "Initialize", "Setting up AI engine"),
+                ("📊", "Analyze", "Analyzing research content"),
+                ("📥", "Download", "Processing document"),
+                ("📋", "Plan", "Generating code architecture"),
+                ("⚙️", "Implement", "Implementing code")
+            ]
+            pipeline_mode = "OPTIMIZED"
         
-        print(f"\n{Colors.BOLD}{Colors.CYAN}📋 PROCESSING PIPELINE STATUS{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}{Colors.CYAN}📋 {pipeline_mode} PIPELINE STATUS{Colors.ENDC}")
         self.print_separator("─", 79, Colors.CYAN)
         
         for i, (icon, name, desc) in enumerate(stages):
@@ -405,12 +427,12 @@ class CLIInterface:
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                GOODBYE                                        ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
-║  {Colors.OKGREEN}🎉 Thank you for using Paper to Code CLI!                                 {Colors.CYAN}║
+║  {Colors.OKGREEN}🎉 Thank you for using DeepCode CLI!                                     {Colors.CYAN}║
 ║                                                                               ║
-║  {Colors.YELLOW}🧬 Your research papers have been transformed into working code            {Colors.CYAN}║
-║  {Colors.PURPLE}⚡ Keep pushing the boundaries of AI-powered research automation          {Colors.CYAN}║
+║  {Colors.YELLOW}🧬 Join our community in revolutionizing research reproducibility         {Colors.CYAN}║
+║  {Colors.PURPLE}⚡ Together, we're building the future of automated code generation       {Colors.CYAN}║
 ║                                                                               ║
-║  {Colors.OKCYAN}💡 Questions? Feedback? Visit our documentation or GitHub repository      {Colors.CYAN}║
+║  {Colors.OKCYAN}💡 Questions? Contribute to our open-source mission at GitHub             {Colors.CYAN}║
 ║  {Colors.GREEN}🧹 Cache files cleaned up for optimal performance                         {Colors.CYAN}║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
@@ -451,4 +473,54 @@ class CLIInterface:
                 
             print(f"{i}. {status_icon} {entry['timestamp']} | {source}")
             
-        self.print_separator("─", 79, Colors.CYAN) 
+        self.print_separator("─", 79, Colors.CYAN)
+    
+    def show_configuration_menu(self):
+        """Show configuration options menu"""
+        self.clear_screen()
+        print(f"""
+{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
+║                           CONFIGURATION MENU                                  ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  {Colors.BOLD}🤖 Agent Orchestration Engine Configuration{Colors.CYAN}                             ║
+║                                                                               ║
+║  {Colors.OKCYAN}[1] Pipeline Mode:{Colors.CYAN}                                                        ║
+║      {Colors.BOLD}🧠 Comprehensive Mode{Colors.CYAN} - Full intelligence analysis (Default)         ║
+║         ✓ Research Analysis + Resource Processing                            ║
+║         ✓ Reference Intelligence Discovery                                   ║
+║         ✓ Automated Repository Acquisition                                   ║
+║         ✓ Codebase Intelligence Orchestration                               ║
+║         ✓ Intelligent Code Implementation Synthesis                         ║
+║                                                                               ║
+║      {Colors.BOLD}⚡ Optimized Mode{Colors.CYAN} - Fast processing (Skip indexing)                    ║
+║         ✓ Research Analysis + Resource Processing                            ║
+║         ✓ Code Architecture Synthesis                                        ║
+║         ✓ Intelligent Code Implementation Synthesis                         ║
+║         ✗ Reference Intelligence Discovery (Skipped)                        ║
+║         ✗ Repository Acquisition (Skipped)                                   ║
+║         ✗ Codebase Intelligence Orchestration (Skipped)                     ║
+║                                                                               ║
+║  {Colors.YELLOW}Current Setting:{Colors.CYAN} {'🧠 Comprehensive Mode' if self.enable_indexing else '⚡ Optimized Mode'}                              ║
+║                                                                               ║
+║  {Colors.OKGREEN}[T] Toggle Pipeline Mode    {Colors.CYAN}│  {Colors.FAIL}[B] Back to Main Menu{Colors.CYAN}            ║
+╚═══════════════════════════════════════════════════════════════════════════════╝{Colors.ENDC}
+""")
+        
+        while True:
+            print(f"\n{Colors.BOLD}{Colors.OKCYAN}➤ Configuration choice: {Colors.ENDC}", end="")
+            choice = input().strip().lower()
+            
+            if choice in ['t', 'toggle']:
+                self.enable_indexing = not self.enable_indexing
+                mode = "🧠 Comprehensive" if self.enable_indexing else "⚡ Optimized"
+                self.print_status(f"Pipeline mode switched to: {mode}", "success")
+                time.sleep(1)
+                self.show_configuration_menu()
+                return
+                
+            elif choice in ['b', 'back']:
+                return
+                
+            else:
+                self.print_status("Invalid choice. Please enter 'T' or 'B'.", "warning") 

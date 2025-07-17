@@ -1,8 +1,6 @@
-# Paper to Code - AI Research Engine
+# DeepCode
 
-🧬 **Next-Generation AI Research Automation Platform**
-
-Transform research papers into working code automatically using advanced AI agents and multi-modal processing.
+**DeepCode** is an open-source code agent developed by the Data Intelligence Lab @ HKU. Our mission is to revolutionize research reproducibility and productivity by building an intelligent system that can automatically reproduce code from scientific papers—and, ultimately, from a single sentence.
 
 ## 🚀 Quick Start
 
@@ -13,17 +11,20 @@ python paper_to_code.py
 
 ### CLI Version (Command Line)
 ```bash
-python cli/paper_to_code_cli.py
+python cli/main_cli.py
 ```
 
-## ✨ Features
+## What is DeepCode?
 
-- **Multi-Agent Research Pipeline**: Advanced AI agents work together to analyze and reproduce research papers
-- **Intelligent Document Processing**: Support for PDF, DOCX, PPTX, HTML, and TXT files  
-- **URL Processing**: Direct support for arXiv, IEEE, ACM, and other academic platforms
-- **Code Generation**: Automatic code implementation based on paper analysis
-- **Repository Management**: Smart GitHub repository downloading and indexing
-- **Multiple Interfaces**: Both Web UI and CLI versions available
+DeepCode leverages a collaborative multi-agent architecture to automate the challenging process of code reproduction in AI research. Given a research paper, DeepCode's agents can parse the content, extract methodologies, generate code implementations, and test the resulting system, aiming for faithful and robust reproduction of research results.
+
+## Key Features
+
+- 🤖 **Automated Paper-to-Code**: Input a research paper, receive a working codebase. DeepCode orchestrates multiple agents to handle the entire workflow—from understanding the paper to generating and validating code.
+- 🧠 **Multi-Agent Collaboration**: Specialized agents work together to analyze, implement, and test every component, ensuring accuracy and completeness.
+- ⚡ **Accelerate Research Reproducibility**: Eliminate tedious manual coding and speed up the process of validating and building upon the latest AI innovations.
+- 🌱 **Open-Source and Extensible**: Built for the community. Easily customize and extend DeepCode to support new domains, frameworks, or tasks.
+- 🌍 **Join a Growing Community**: Contribute, collaborate, and help shape the future of automated code generation.
 
 ## 📋 Usage Options
 
@@ -45,9 +46,17 @@ python paper_to_code.py
 - Professional terminal experience
 
 ```bash
-python cli/paper_to_code_cli.py
+python cli/main_cli.py
 # Interactive CLI with menus and progress tracking
 ```
+
+## Our Vision
+
+We believe that, in the near future, codebases can be reproduced—or even created from scratch—simply by describing them in natural language. DeepCode is making this vision a reality, step by step.
+
+---
+
+> Try DeepCode today and help us build the future of automated research and development!
 
 ### 3. Legacy CLI (Backward Compatibility)
 ```bash

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Paper to Code CLI - Complete Command Line Launcher
-论文到代码CLI - 完整命令行启动器
+DeepCode CLI - Complete Command Line Launcher
+DeepCode CLI - 完整命令行启动器
 
-🧬 Next-Generation AI Research Automation Platform (CLI Edition)  
-⚡ Transform research papers into working code automatically via command line
+🧬 Open-Source Code Agent by Data Intelligence Lab @ HKU (CLI Edition)  
+⚡ Revolutionizing research reproducibility through collaborative AI via command line
 
-这是CLI版本的主入口点，提供与paper_to_code.py完全相同的功能，
+这是CLI版本的主入口点，提供与DeepCode web版本完全相同的功能，
 但通过命令行界面而非Web界面运行。
 """
 
@@ -54,7 +54,7 @@ def check_dependencies():
     
     # Check for workflow dependencies
     try:
-        from workflows.initial_workflows import execute_multi_agent_research_pipeline
+        from workflows.agent_orchestration_engine import execute_multi_agent_research_pipeline
         print("✅ Workflow modules are available")
     except ImportError:
         print("⚠️  Workflow modules may not be properly configured")
@@ -95,17 +95,17 @@ def print_banner():
     banner = """
 ╔══════════════════════════════════════════════════════════════════════════════════════╗
 ║                                                                                      ║
-║    🧬 Paper to Code - CLI Research Engine                                            ║
+║    🧬 DeepCode - Open-Source Code Agent                                              ║
 ║                                                                                      ║
-║    ⚡ NEURAL • AUTONOMOUS • REVOLUTIONARY ⚡                                        ║
+║    ⚡ DATA INTELLIGENCE LAB @ HKU ⚡                                                ║
 ║                                                                                      ║
-║    Transform research papers into working code via command line                     ║
+║    Revolutionizing research reproducibility through collaborative AI                ║
 ║    Same functionality as Web UI, optimized for terminal users                       ║
 ║                                                                                      ║
-║    📋 FEATURES:                                                                      ║
-║    • Multi-Agent Research Pipeline    • Intelligent Code Generation                ║
-║    • PDF/DOC/PPTX Processing         • GitHub Repository Integration               ║
-║    • Reference Analysis               • Automated Dependency Management            ║
+║    📋 KEY FEATURES:                                                                  ║
+║    • Automated Code Reproduction      • Multi-Agent Architecture                   ║
+║    • Extensible & Open-Source        • Growing Research Community                  ║
+║    • Future: One Sentence → Codebase • Join Our Mission                           ║
 ║                                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════════════════════╝
 """
@@ -134,11 +134,11 @@ def main():
     
     print(f"\n📁 Project root: {project_root}")
     print(f"📁 CLI App location: {cli_app_path}")
-    print("🖥️  Starting Paper to Code CLI interface...")
+    print("🖥️  Starting DeepCode CLI interface...")
     print("🚀 Initializing command line application")
     print("=" * 90)
     print("💡 Tip: This CLI version provides the same functionality as the Web UI")
-    print("📚 You can process URLs or upload files interactively")
+    print("🧬 Open-source code agent for revolutionizing research reproducibility")
     print("🔄 Progress tracking and results display optimized for terminal")
     print("🛑 Press Ctrl+C to exit at any time")
     print("=" * 90)
@@ -161,8 +161,8 @@ def main():
         asyncio.run(cli_main())
         
     except KeyboardInterrupt:
-        print("\n\n🛑 Paper to Code CLI stopped by user")
-        print("Thank you for using Paper to Code CLI! 🧬")
+        print("\n\n🛑 DeepCode CLI stopped by user")
+        print("Thank you for using DeepCode CLI! 🧬")
         print("🌟 Your research automation journey continues...")
     except ImportError as e:
         print(f"\n❌ Failed to import CLI application: {e}")

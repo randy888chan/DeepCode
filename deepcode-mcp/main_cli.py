@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Paper to Code - Main CLI Entry Point
-论文到代码 - 主CLI入口点
+DeepCode - Main CLI Entry Point
+DeepCode - 主CLI入口点
 
-🧬 This is the main entry point for the CLI version of Paper to Code
-⚡ Provides the same functionality as paper_to_code.py but via command line
+🧬 This is the main entry point for the CLI version of DeepCode
+⚡ Open-Source Code Agent by Data Intelligence Lab @ HKU
 
 Usage:
     python main_cli.py                 # Interactive CLI mode
@@ -24,21 +24,21 @@ if str(current_dir) not in sys.path:
 def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description="Paper to Code CLI - Transform research papers into working code",
+        description="DeepCode CLI - Open-Source Code Agent by Data Intelligence Lab @ HKU",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
     python main_cli.py                          # Interactive mode
     python main_cli.py --version                # Show version
     
-For more information, visit: https://github.com/your-repo/paper-to-code
+For more information, visit: https://github.com/your-repo/deepcode
         """
     )
     
     parser.add_argument(
         '--version', 
         action='version', 
-        version='Paper to Code CLI v2.0.0'
+        version='DeepCode CLI v2.0.0'
     )
     
     parser.add_argument(
@@ -68,7 +68,7 @@ def main():
     args = parse_arguments()
     
     # 打印欢迎信息
-    print("🧬 Paper to Code CLI - Starting...")
+    print("🧬 DeepCode CLI - Starting...")
     
     try:
         # 导入并运行CLI启动器

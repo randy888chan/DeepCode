@@ -1,7 +1,6 @@
 """
-Streamlit 事件处理模块 / Streamlit Event Handlers Module
+Streamlit Event Handlers Module
 
-包含所有事件处理和业务逻辑
 Contains all event handling and business logic
 """
 
@@ -20,87 +19,85 @@ import streamlit as st
 import nest_asyncio
 import concurrent.futures
 
-# 导入必要的模块
+# Import necessary modules
 from mcp_agent.app import MCPApp
-from workflows.initial_workflows import (
+from workflows.agent_orchestration_engine import (
     execute_multi_agent_research_pipeline,
-    run_paper_analyzer,
-    run_paper_downloader
+    run_research_analyzer,
+    run_resource_processor
 )
 
 
 def _emergency_cleanup():
     """
-    应急资源清理函数 / Emergency resource cleanup function
-    在程序异常退出时调用 / Called when program exits abnormally
+    Emergency resource cleanup function
+    Called when program exits abnormally
     """
     try:
         cleanup_resources()
     except Exception:
-        pass  # 静默处理，避免在退出时抛出新异常
+        pass  # Silent handling to avoid new exceptions during exit
 
 
 def _signal_handler(signum, frame):
     """
-    信号处理器 / Signal handler
-    处理程序终止信号 / Handle program termination signals
+    Signal handler for program termination signals
     """
     try:
         cleanup_resources()
     except Exception:
         pass
     finally:
-        # 恢复默认信号处理并重新发送信号
+        # Restore default signal handling and resend signal
         signal.signal(signum, signal.SIG_DFL)
         os.kill(os.getpid(), signum)
 
 
-# 注册退出清理函数 / Register exit cleanup function
+# Register exit cleanup function
 atexit.register(_emergency_cleanup)
 
-# 注册信号处理器 / Register signal handlers
-# 在某些环境中（如 Streamlit），信号处理可能受限，需要更加小心
+
 def _safe_register_signal_handlers():
-    """安全地注册信号处理器 / Safely register signal handlers"""
+    """Safely register signal handlers"""
     try:
-        # 检查是否在主线程中
+        # Check if running in main thread
         import threading
         if threading.current_thread() is not threading.main_thread():
-            return  # 信号处理器只能在主线程中注册
+            return  # Signal handlers can only be registered in main thread
         
-        # 尝试注册信号处理器
+        # Try to register signal handlers
         signal.signal(signal.SIGTERM, _signal_handler)
         signal.signal(signal.SIGINT, _signal_handler)
         if hasattr(signal, 'SIGBREAK'):  # Windows
             signal.signal(signal.SIGBREAK, _signal_handler)
     except (AttributeError, OSError, ValueError) as e:
-        # 某些信号在某些平台上不可用，或者在某些运行环境中被禁用
-        # 这在 Streamlit 等 Web 框架中很常见
+        # Some signals are not available on certain platforms or disabled in some environments
+        # This is common in web frameworks like Streamlit
         pass
 
-# 延迟注册信号处理器，避免在模块导入时出错
+# Delayed signal handler registration to avoid import-time errors
 try:
     _safe_register_signal_handlers()
 except Exception:
-    # 如果注册失败，静默忽略，不影响应用启动
+    # If registration fails, silently ignore and don't affect app startup
     pass
 
 
 async def process_input_async(input_source: str, input_type: str, enable_indexing: bool = True, progress_callback=None) -> Dict[str, Any]:
     """
-    异步处理输入 / Process input asynchronously
+    Process input asynchronously
     
     Args:
-        input_source: 输入源 / Input source
-        input_type: 输入类型 / Input type
-        enable_indexing: 是否启用索引功能 / Whether to enable indexing
-        progress_callback: 进度回调函数 / Progress callback function
+        input_source: Input source
+        input_type: Input type
+        enable_indexing: Whether to enable indexing functionality
+        progress_callback: Progress callback function
         
     Returns:
-        处理结果 / Processing result
+        Processing result
     """
     try:
-        # 在同一个异步上下文中创建和使用 MCP 应用
+        # Create and use MCP app in the same async context
         app = MCPApp(name="paper_to_code")
         
         async with app.run() as agent_app:
@@ -108,17 +105,17 @@ async def process_input_async(input_source: str, input_type: str, enable_indexin
             context = agent_app.context
             context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
             
-            # 初始化进度 / Initialize Progress
+            # Initialize progress
             if progress_callback:
                 progress_callback(5, "🚀 Initializing AI research engine...")
             
-            # 调用完整的多智能体研究流水线 / Call complete multi-agent research pipeline
-            # 现在execute_multi_agent_research_pipeline包含了所有步骤：分析、下载、代码准备和实现
+            # Call complete multi-agent research pipeline
+            # execute_multi_agent_research_pipeline now includes all steps: analysis, download, code preparation and implementation
             repo_result = await execute_multi_agent_research_pipeline(
                 input_source, 
                 logger, 
                 progress_callback,
-                enable_indexing=enable_indexing  # 传递索引控制参数
+                enable_indexing=enable_indexing  # Pass indexing control parameter
             )
             
             return {
@@ -141,18 +138,18 @@ async def process_input_async(input_source: str, input_type: str, enable_indexin
 
 def run_async_task(coro):
     """
-    运行异步任务的辅助函数 / Helper function to run async tasks
+    Helper function to run async tasks
     
     Args:
-        coro: 协程对象 / Coroutine object
+        coro: Coroutine object
         
     Returns:
-        任务结果 / Task result
+        Task result
     """
-    # 应用 nest_asyncio 来支持嵌套的事件循环
+    # Apply nest_asyncio to support nested event loops
     nest_asyncio.apply()
     
-    # 保存当前的 Streamlit 上下文
+    # Save current Streamlit context
     try:
         from streamlit.runtime.scriptrunner import get_script_run_ctx
         from streamlit.runtime.scriptrunner.script_run_context import SCRIPT_RUN_CONTEXT_ATTR_NAME
@@ -161,19 +158,19 @@ def run_async_task(coro):
         current_ctx = get_script_run_ctx()
         context_available = True
     except ImportError:
-        # 如果无法导入 Streamlit 上下文相关模块，使用备用方法
+        # If Streamlit context modules can't be imported, use fallback method
         current_ctx = None
         context_available = False
     
     def run_in_new_loop():
-        """在新的事件循环中运行协程 / Run coroutine in new event loop"""
-        # 在新线程中设置 Streamlit 上下文（如果可用）
+        """Run coroutine in new event loop"""
+        # Set Streamlit context in new thread (if available)
         if context_available and current_ctx:
             try:
                 import threading
                 setattr(threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME, current_ctx)
             except Exception:
-                pass  # 忽略上下文设置错误
+                pass  # Ignore context setting errors
         
         loop = None
         try:
@@ -184,7 +181,7 @@ def run_async_task(coro):
         except Exception as e:
             raise e
         finally:
-            # 清理资源
+            # Clean up resources
             if loop:
                 try:
                     loop.close()
@@ -192,37 +189,37 @@ def run_async_task(coro):
                     pass
             asyncio.set_event_loop(None)
             
-            # 清理线程上下文（如果可用）
+            # Clean up thread context (if available)
             if context_available:
                 try:
                     import threading
                     if hasattr(threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME):
                         delattr(threading.current_thread(), SCRIPT_RUN_CONTEXT_ATTR_NAME)
                 except Exception:
-                    pass  # 忽略清理错误
+                    pass  # Ignore cleanup errors
             
-            # 强制垃圾回收
+            # Force garbage collection
             import gc
             gc.collect()
     
-    # 使用线程池来运行异步任务，避免事件循环冲突
+    # Use thread pool to run async task, avoiding event loop conflicts
     executor = None
     try:
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=1,
-                            thread_name_prefix="deepcode_ctx_async"
+            thread_name_prefix="deepcode_ctx_async"
         )
         future = executor.submit(run_in_new_loop)
-        result = future.result(timeout=300)  # 5分钟超时
+        result = future.result(timeout=300)  # 5 minute timeout
         return result
     except concurrent.futures.TimeoutError:
         st.error("Processing timeout after 5 minutes. Please try again.")
         raise TimeoutError("Processing timeout")
     except Exception as e:
-        # 如果线程池执行失败，尝试直接运行
+        # If thread pool execution fails, try direct execution
         st.warning(f"Threaded async execution failed: {e}, trying direct execution...")
         try:
-            # 备用方法：直接在当前线程中运行
+            # Fallback method: run directly in current thread
             loop = None
             try:
                 loop = asyncio.new_event_loop()
@@ -242,61 +239,61 @@ def run_async_task(coro):
             st.error(f"All execution methods failed: {backup_error}")
             raise backup_error
     finally:
-        # 确保线程池被正确关闭
+        # Ensure thread pool is properly closed
         if executor:
             try:
                 executor.shutdown(wait=True, cancel_futures=True)
             except Exception:
                 pass
-        # 强制垃圾回收
+        # Force garbage collection
         import gc
         gc.collect()
 
 
 def run_async_task_simple(coro):
     """
-    简单的异步任务运行器，避免多线程问题 / Simple async task runner avoiding threading issues
+    Simple async task runner, avoiding threading issues
     
     Args:
-        coro: 协程对象 / Coroutine object
+        coro: Coroutine object
         
     Returns:
-        任务结果 / Task result
+        Task result
     """
-    # 应用 nest_asyncio 来支持嵌套的事件循环
+    # Apply nest_asyncio to support nested event loops
     nest_asyncio.apply()
     
     try:
-        # 尝试在当前事件循环中运行
+        # Try to run in current event loop
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            # 如果当前循环正在运行，使用改进的线程池方法
+            # If current loop is running, use improved thread pool method
             import concurrent.futures
             import threading
             import gc
             
             def run_in_thread():
-                # 创建新的事件循环并设置为当前线程的循环
+                # Create new event loop and set as current thread's loop
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
                 try:
                     result = new_loop.run_until_complete(coro)
                     return result
                 except Exception as e:
-                    # 确保异常信息被正确传递
+                    # Ensure exception information is properly passed
                     raise e
                 finally:
-                    # 确保循环被正确关闭
+                    # Ensure loop is properly closed
                     try:
                         new_loop.close()
                     except Exception:
                         pass
-                    # 清除当前线程的事件循环引用
+                    # Clear current thread's event loop reference
                     asyncio.set_event_loop(None)
-                    # 强制垃圾回收
+                    # Force garbage collection
                     gc.collect()
             
-            # 使用上下文管理器确保线程池被正确关闭
+            # Use context manager to ensure thread pool is properly closed
             executor = None
             try:
                 executor = concurrent.futures.ThreadPoolExecutor(
@@ -304,7 +301,7 @@ def run_async_task_simple(coro):
                     thread_name_prefix="deepcode_async"
                 )
                 future = executor.submit(run_in_thread)
-                result = future.result(timeout=300)  # 5分钟超时
+                result = future.result(timeout=300)  # 5 minute timeout
                 return result
             except concurrent.futures.TimeoutError:
                 st.error("Processing timeout after 5 minutes. Please try again with a smaller file.")
@@ -313,19 +310,19 @@ def run_async_task_simple(coro):
                 st.error(f"Async processing error: {e}")
                 raise e
             finally:
-                # 确保线程池被正确关闭
+                # Ensure thread pool is properly closed
                 if executor:
                     try:
                         executor.shutdown(wait=True, cancel_futures=True)
                     except Exception:
                         pass
-                # 强制垃圾回收
+                # Force garbage collection
                 gc.collect()
         else:
-            # 直接在当前循环中运行
+            # Run directly in current loop
             return loop.run_until_complete(coro)
     except Exception as e:
-        # 最后的备用方法：创建新的事件循环
+        # Final fallback method: create new event loop
         loop = None
         try:
             loop = asyncio.new_event_loop()
@@ -342,86 +339,86 @@ def run_async_task_simple(coro):
                 except Exception:
                     pass
             asyncio.set_event_loop(None)
-            # 强制垃圾回收
+            # Force garbage collection
             import gc
             gc.collect()
 
 
 def handle_processing_workflow(input_source: str, input_type: str, enable_indexing: bool = True) -> Dict[str, Any]:
     """
-    处理工作流的主要处理函数 / Main processing function for workflow
+    Main processing function for workflow
     
     Args:
-        input_source: 输入源 / Input source
-        input_type: 输入类型 / Input type
-        enable_indexing: 是否启用索引功能 / Whether to enable indexing
+        input_source: Input source
+        input_type: Input type
+        enable_indexing: Whether to enable indexing functionality
         
     Returns:
-        处理结果 / Processing result
+        Processing result
     """
     from .components import enhanced_progress_display_component, update_step_indicator, display_status
     
-    # 显示增强版进度组件
+    # Display enhanced progress components
     progress_bar, status_text, step_indicators, workflow_steps = enhanced_progress_display_component(enable_indexing)
     
-    # 步骤映射：将进度百分比映射到步骤索引 - 根据索引开关调整
+    # Step mapping: map progress percentages to step indices - adjust based on indexing toggle
     if not enable_indexing:
-        # 跳过索引相关步骤的进度映射 - 快速模式顺序：Initialize -> Analyze -> Download -> Plan -> Implement
+        # Skip indexing-related steps progress mapping - fast mode order: Initialize -> Analyze -> Download -> Plan -> Implement
         step_mapping = {
             5: 0,   # Initialize
             10: 1,  # Analyze
             25: 2,  # Download
-            40: 3,  # Plan (现在优先于References，40%)
-            85: 4,  # Implement (跳过 References, Repos 和 Index)
+            40: 3,  # Plan (now prioritized over References, 40%)
+            85: 4,  # Implement (skip References, Repos and Index)
             100: 4  # Complete
         }
     else:
-        # 完整工作流的步骤映射 - 新顺序：Initialize -> Analyze -> Download -> Plan -> References -> Repos -> Index -> Implement
+        # Full workflow step mapping - new order: Initialize -> Analyze -> Download -> Plan -> References -> Repos -> Index -> Implement
         step_mapping = {
             5: 0,   # Initialize
             10: 1,  # Analyze
             25: 2,  # Download
-            40: 3,  # Plan (现在在第4位，40%)
-            50: 4,  # References (现在在第5位，条件性，50%)
-            60: 5,  # Repos (GitHub下载)
-            70: 6,  # Index (代码索引)
-            85: 7,  # Implement (代码实现)
+            40: 3,  # Plan (now 4th position, 40%)
+            50: 4,  # References (now 5th position, conditional, 50%)
+            60: 5,  # Repos (GitHub download)
+            70: 6,  # Index (code indexing)
+            85: 7,  # Implement (code implementation)
             100: 7  # Complete
         }
     
     current_step = 0
     
-    # 定义增强版进度回调函数 / Define enhanced progress callback function
+    # Define enhanced progress callback function
     def update_progress(progress: int, message: str):
         nonlocal current_step
         
-        # 更新进度条
+        # Update progress bar
         progress_bar.progress(progress)
         status_text.markdown(f"**{message}**")
         
-        # 确定当前步骤
+        # Determine current step
         new_step = step_mapping.get(progress, current_step)
         if new_step != current_step:
             current_step = new_step
             update_step_indicator(step_indicators, workflow_steps, current_step, "active")
         
-        time.sleep(0.3)  # 短暂停顿以便用户看到进度变化
+        time.sleep(0.3)  # Brief pause for users to see progress changes
     
-    # 步骤1: 初始化 / Step 1: Initialization
+    # Step 1: Initialization
     if enable_indexing:
         update_progress(5, "🚀 Initializing AI research engine and loading models...")
     else:
         update_progress(5, "🚀 Initializing AI research engine (Fast mode - indexing disabled)...")
     update_step_indicator(step_indicators, workflow_steps, 0, "active")
     
-    # 开始异步处理，使用进度回调
+    # Start async processing with progress callback
     with st.spinner("🔄 Processing workflow stages..."):
         try:
-            # 首先尝试使用简单的异步处理方法
+            # First try using simple async processing method
             result = run_async_task_simple(process_input_async(input_source, input_type, enable_indexing, update_progress))
         except Exception as e:
             st.warning(f"Primary async method failed: {e}")
-            # 备用方法：使用原始的线程池方法
+            # Fallback method: use original thread pool method
             try:
                 result = run_async_task(process_input_async(input_source, input_type, enable_indexing, update_progress))
             except Exception as backup_error:
@@ -432,26 +429,26 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
                     "traceback": traceback.format_exc()
                 }
     
-    # 根据结果更新最终状态
+    # Update final status based on results
     if result["status"] == "success":
-        # 完成所有步骤
+        # Complete all steps
         update_progress(100, "✅ All processing stages completed successfully!")
         update_step_indicator(step_indicators, workflow_steps, len(workflow_steps), "completed")
         
-        # 显示成功信息
-        st.balloons()  # 添加庆祝动画
+        # Display success information
+        st.balloons()  # Add celebration animation
         if enable_indexing:
             display_status("🎉 Workflow completed! Your research paper has been successfully processed and code has been generated.", "success")
         else:
             display_status("🎉 Fast workflow completed! Your research paper has been processed (indexing skipped for faster processing).", "success")
         
     else:
-        # 处理失败
+        # Processing failed
         update_progress(0, "❌ Processing failed - see error details below")
         update_step_indicator(step_indicators, workflow_steps, current_step, "error")
         display_status(f"❌ Processing encountered an error: {result.get('error', 'Unknown error')}", "error")
     
-    # 等待一下让用户看到完成状态
+    # Wait a moment for users to see completion status
     time.sleep(2.5)
     
     return result
@@ -459,18 +456,18 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
 
 def update_session_state_with_result(result: Dict[str, Any], input_type: str):
     """
-    用结果更新session state / Update session state with result
+    Update session state with result
     
     Args:
-        result: 处理结果 / Processing result
-        input_type: 输入类型 / Input type
+        result: Processing result
+        input_type: Input type
     """
     if result["status"] == "success":
-        # 保存结果到session state
+        # Save result to session state
         st.session_state.last_result = result
         st.session_state.show_results = True
         
-        # 保存到历史记录
+        # Save to history
         st.session_state.results.append({
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "input_type": input_type,
@@ -478,10 +475,10 @@ def update_session_state_with_result(result: Dict[str, Any], input_type: str):
             "result": result
         })
     else:
-        # 保存错误信息到session state用于显示
+        # Save error information to session state for display
         st.session_state.last_error = result.get("error", "Unknown error")
         
-        # 保存错误到历史记录
+        # Save error to history
         st.session_state.results.append({
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "input_type": input_type,
@@ -489,18 +486,18 @@ def update_session_state_with_result(result: Dict[str, Any], input_type: str):
             "error": result.get("error", "Unknown error")
         })
     
-    # 限制历史记录最多保存50条
+    # Limit history to maximum 50 records
     if len(st.session_state.results) > 50:
         st.session_state.results = st.session_state.results[-50:]
 
 
 def cleanup_temp_file(input_source: str, input_type: str):
     """
-    清理临时文件 / Cleanup temporary file
+    Cleanup temporary file
     
     Args:
-        input_source: 输入源 / Input source
-        input_type: 输入类型 / Input type
+        input_source: Input source
+        input_type: Input type
     """
     if input_type == "file" and input_source and os.path.exists(input_source):
         try:
@@ -511,56 +508,54 @@ def cleanup_temp_file(input_source: str, input_type: str):
 
 def handle_start_processing_button(input_source: str, input_type: str):
     """
-    处理开始处理按钮点击 / Handle start processing button click
+    Handle start processing button click
     
     Args:
-        input_source: 输入源 / Input source
-        input_type: 输入类型 / Input type
+        input_source: Input source
+        input_type: Input type
     """
     from .components import display_status
     
     st.session_state.processing = True
     
-    # 获取索引开关状态
+    # Get indexing toggle status
     enable_indexing = st.session_state.get("enable_indexing", True)
     
     try:
-        # 处理工作流
+        # Process workflow
         result = handle_processing_workflow(input_source, input_type, enable_indexing)
         
-        # 显示结果状态
+        # Display result status
         if result["status"] == "success":
             display_status("All operations completed successfully! 🎉", "success")
         else:
             display_status(f"Error during processing", "error")
         
-        # 更新session state
+        # Update session state
         update_session_state_with_result(result, input_type)
         
     except Exception as e:
-        # 处理异常情况
+        # Handle exceptional cases
         st.error(f"Unexpected error during processing: {e}")
         result = {"status": "error", "error": str(e)}
         update_session_state_with_result(result, input_type)
     
     finally:
-        # 处理完成后重置状态和清理资源
+        # Reset state and clean up resources after processing
         st.session_state.processing = False
         
-        # 清理临时文件
+        # Clean up temporary files
         cleanup_temp_file(input_source, input_type)
         
-        # 清理系统资源
+        # Clean up system resources
         cleanup_resources()
         
-        # 重新运行以显示结果或错误
+        # Rerun to display results or errors
         st.rerun()
 
 
 def handle_error_display():
-    """
-    处理错误显示 / Handle error display
-    """
+    """Handle error display"""
     if hasattr(st.session_state, 'last_error') and st.session_state.last_error:
         st.error(f"❌ Error: {st.session_state.last_error}")
         if st.button("🔄 Try Again", type="secondary", use_container_width=True):
@@ -570,9 +565,7 @@ def handle_error_display():
 
 
 def initialize_session_state():
-    """
-    初始化session state / Initialize session state
-    """
+    """Initialize session state"""
     if 'processing' not in st.session_state:
         st.session_state.processing = False
     if 'results' not in st.session_state:
@@ -588,12 +581,12 @@ def initialize_session_state():
     if 'last_error' not in st.session_state:
         st.session_state.last_error = None
     if 'enable_indexing' not in st.session_state:
-        st.session_state.enable_indexing = True  # 默认启用索引功能 
+        st.session_state.enable_indexing = False  # Default enable indexing functionality
 
 
 def cleanup_resources():
     """
-    清理系统资源，防止内存泄露 / Clean up system resources to prevent memory leaks
+    Clean up system resources to prevent memory leaks
     """
     try:
         import gc
@@ -602,51 +595,51 @@ def cleanup_resources():
         import asyncio
         import sys
         
-        # 1. 清理asyncio相关资源
+        # 1. Clean up asyncio-related resources
         try:
-            # 获取当前事件循环（如果存在）
+            # Get current event loop (if exists)
             try:
                 loop = asyncio.get_running_loop()
-                # 取消所有挂起的任务
+                # Cancel all pending tasks
                 if loop and not loop.is_closed():
                     pending_tasks = [task for task in asyncio.all_tasks(loop) if not task.done()]
                     if pending_tasks:
                         for task in pending_tasks:
                             if not task.cancelled():
                                 task.cancel()
-                        # 等待任务取消完成
+                        # Wait for task cancellation to complete
                         try:
                             if pending_tasks:
-                                # 使用超时避免阻塞太久
+                                # Use timeout to avoid blocking too long
                                 import time
                                 time.sleep(0.1)
                         except Exception:
                             pass
             except RuntimeError:
-                # 没有运行中的事件循环，继续其他清理
+                # No running event loop, continue with other cleanup
                 pass
         except Exception:
             pass
         
-        # 2. 强制垃圾回收
+        # 2. Force garbage collection
         gc.collect()
         
-        # 3. 清理活跃线程（除主线程外）
+        # 3. Clean up active threads (except main thread)
         active_threads = threading.active_count()
         if active_threads > 1:
-            # 等待一段时间让线程自然结束
+            # Wait some time for threads to naturally finish
             import time
             time.sleep(0.5)
         
-        # 4. 清理multiprocessing资源
+        # 4. Clean up multiprocessing resources
         try:
-            # 清理可能的多进程资源
+            # Clean up possible multiprocessing resources
             if hasattr(multiprocessing, 'active_children'):
                 for child in multiprocessing.active_children():
                     if child.is_alive():
                         child.terminate()
                         child.join(timeout=1.0)
-                        # 如果join超时，强制kill
+                        # If join times out, force kill
                         if child.is_alive():
                             try:
                                 child.kill()
@@ -654,7 +647,7 @@ def cleanup_resources():
                             except Exception:
                                 pass
             
-            # 清理multiprocessing相关的资源追踪器
+            # Clean up multiprocessing-related resource tracker
             try:
                 import multiprocessing.resource_tracker
                 if hasattr(multiprocessing.resource_tracker, '_resource_tracker'):
@@ -667,22 +660,22 @@ def cleanup_resources():
         except Exception:
             pass
         
-        # 5. 强制清理Python内部缓存
+        # 5. Force clean up Python internal caches
         try:
-            # 清理模块缓存中的一些临时对象
+            # Clean up some temporary objects in module cache
             import sys
-            # 不删除关键模块，只清理可能的临时资源
+            # Don't delete key modules, only clean up possible temporary resources
             if hasattr(sys, '_clear_type_cache'):
                 sys._clear_type_cache()
         except Exception:
             pass
         
-        # 6. 最终垃圾回收
+        # 6. Final garbage collection
         gc.collect()
             
     except Exception as e:
-        # 静默处理清理错误，避免影响主流程
-        # 但在调试模式下可以记录错误
+        # Silently handle cleanup errors to avoid affecting main flow
+        # But can log errors in debug mode
         try:
             import logging
             logging.getLogger(__name__).debug(f"Resource cleanup warning: {e}")

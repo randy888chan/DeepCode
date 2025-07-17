@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Paper to Code - CLI Research Engine Launcher
-论文到代码 - CLI研究引擎启动器
+DeepCode - CLI Research Engine Launcher
+DeepCode - CLI研究引擎启动器
 
-🧬 Next-Generation AI Research Automation Platform (CLI Edition)
-⚡ Transform research papers into working code automatically via command line
+🧬 Open-Source Code Agent by Data Intelligence Lab @ HKU (CLI Edition)
+⚡ Revolutionizing research reproducibility through collaborative AI via command line
 """
 
 import os
@@ -51,7 +51,7 @@ def check_dependencies():
         if str(project_root) not in sys.path:
             sys.path.insert(0, str(project_root))
             
-        from workflows.initial_workflows import execute_multi_agent_research_pipeline
+        from workflows.agent_orchestration_engine import execute_multi_agent_research_pipeline
         print("✅ Workflow modules are available")
     except ImportError:
         print("⚠️  Workflow modules may not be properly configured")
@@ -82,11 +82,11 @@ def print_banner():
     banner = """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║    🧬 Paper to Code - CLI Research Engine                    ║
+║    🧬 DeepCode - Open-Source Code Agent                      ║
 ║                                                              ║
-║    ⚡ NEURAL • AUTONOMOUS • REVOLUTIONARY ⚡                ║
+║    ⚡ DATA INTELLIGENCE LAB @ HKU ⚡                        ║
 ║                                                              ║
-║    Transform research papers into working code               ║
+║    Revolutionizing research reproducibility                  ║
 ║    Command Line Interface Edition                           ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -114,10 +114,10 @@ def main():
         sys.exit(1)
     
     print(f"\n📁 CLI App location: {cli_app_path}")
-    print("🖥️  Starting Paper to Code CLI interface...")
+    print("🖥️  Starting DeepCode CLI interface...")
     print("🚀 Initializing command line application")
     print("=" * 70)
-    print("💡 Tip: Follow the interactive prompts to process your papers")
+    print("💡 Tip: Follow the interactive prompts to process your research")
     print("🛑 Press Ctrl+C to exit at any time")
     print("=" * 70)
     
@@ -135,8 +135,8 @@ def main():
         asyncio.run(cli_main())
         
     except KeyboardInterrupt:
-        print("\n\n🛑 Paper to Code CLI stopped by user")
-        print("Thank you for using Paper to Code CLI! 🧬")
+        print("\n\n🛑 DeepCode CLI stopped by user")
+        print("Thank you for using DeepCode CLI! 🧬")
     except ImportError as e:
         print(f"\n❌ Failed to import CLI application: {e}")
         print("Please check if all modules are properly installed.")

@@ -1,7 +1,6 @@
 """
-Streamlit UI组件模块 / Streamlit UI Components Module
+Streamlit UI Components Module
 
-包含所有可复用的UI组件
 Contains all reusable UI components
 """
 
@@ -14,23 +13,19 @@ import json
 
 
 def display_header():
-    """
-    显示应用头部 / Display application header
-    """
+    """Display application header"""
     st.markdown("""
     <div class="main-header">
         <h1>🧬 DeepCode</h1>
-        <h3>NEXT-GENERATION AI RESEARCH AUTOMATION PLATFORM</h3>
-        <p>⚡ NEURAL • AUTONOMOUS • REVOLUTIONARY ⚡</p>
+        <h3>OPEN-SOURCE CODE AGENT</h3>
+        <p>⚡ DATA INTELLIGENCE LAB @ HKU • REVOLUTIONIZING RESEARCH REPRODUCIBILITY ⚡</p>
     </div>
     """, unsafe_allow_html=True)
 
 
 def display_features():
-    """
-    显示功能特性 / Display DeepCode AI Agent capabilities
-    """
-    # AI Agent 核心能力展示区域 - 简化版，不与主header冲突
+    """Display DeepCode AI Agent capabilities"""
+    # AI Agent core capabilities display area - simplified version to avoid conflicts with main header
     st.markdown("""
     <div class="ai-capabilities-section">
         <div class="neural-network">
@@ -38,100 +33,356 @@ def display_features():
             <div class="neuron pulse-2"></div>
             <div class="neuron pulse-3"></div>
         </div>
-        <h2 class="capabilities-title">🤖 AI Agent Capabilities</h2>
+        <h2 class="capabilities-title">🤖 AI Agent Core Capabilities</h2>
         <p class="capabilities-subtitle">Advanced Neural Code Intelligence</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # 核心功能模块
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-card primary">
-            <div class="card-glow"></div>
-            <div class="feature-icon">📄→🔬</div>
-            <h3 class="feature-title">Paper-to-Code Engine</h3>
-            <div class="feature-description">
-                <div class="typing-text">Advanced AI agent that transforms research papers into production-ready codebases</div>
-                <div class="tech-specs">
-                    <span class="spec-tag">Algorithm Extraction</span>
-                    <span class="spec-tag">Code Generation</span>
-                    <span class="spec-tag">Reproduction Validation</span>
+    # Core functionality modules - Vertical Layout
+    st.markdown("""
+    <div class="feature-card-vertical primary">
+        <div class="card-glow-vertical"></div>
+        <div class="feature-header">
+            <div class="feature-logo-container">
+                <div class="ai-brain-logo">
+                    <div class="brain-node node-1"></div>
+                    <div class="brain-node node-2"></div>
+                    <div class="brain-node node-3"></div>
+                    <div class="brain-connection conn-1"></div>
+                    <div class="brain-connection conn-2"></div>
+                </div>
+                <div class="feature-icon-large">📄→⚡</div>
+            </div>
+            <div class="feature-header-content">
+                <h3 class="feature-title-large">Automated Paper-to-Code Engine</h3>
+                <p class="feature-subtitle">Revolutionary AI-powered research reproduction</p>
+            </div>
+            <div class="feature-stats">
+                <div class="stat-item">
+                    <span class="stat-number typing-number">98%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number typing-number">10x</span>
+                    <span class="stat-label">Faster</span>
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card secondary">
-            <div class="card-glow"></div>
-            <div class="feature-icon">🧠</div>
-            <h3 class="feature-title">Multi-Modal Intelligence</h3>
-            <div class="feature-description">
-                <div class="typing-text">PDF • LaTeX • arXiv • Images • Mathematical Formulas</div>
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
+        <div class="feature-content">
+            <div class="content-left">
+                <p class="feature-description-large">Transform scientific papers into executable code with unprecedented accuracy. Our multi-agent AI system reads, understands, and implements complex algorithms automatically.</p>
+                <div class="feature-flow">
+                    <div class="flow-step active">
+                        <div class="flow-icon">🔍</div>
+                        <span>Paper Analysis</span>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step active">
+                        <div class="flow-icon">🧠</div>
+                        <span>Method Extraction</span>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step active">
+                        <div class="flow-icon">⚡</div>
+                        <span>Code Generation</span>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="flow-icon">✅</div>
+                        <span>Validation</span>
+                    </div>
+                </div>
+            </div>
+            <div class="content-right">
+                <div class="code-simulation">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <div class="code-status generating">Generating...</div>
+                    </div>
+                    <div class="code-lines">
+                        <div class="code-line typing">import torch</div>
+                        <div class="code-line typing delay-1">import torch.nn as nn</div>
+                        <div class="code-line typing delay-2">class DeepNetwork(nn.Module):</div>
+                        <div class="code-line typing delay-3">    def __init__(self):</div>
+                        <div class="code-line typing delay-4">        super().__init__()</div>
+                    </div>
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
     
-    with col2:
-        st.markdown("""
-        <div class="feature-card accent">
-            <div class="card-glow"></div>
-            <div class="feature-icon">🚀</div>
-            <h3 class="feature-title">Next-Gen Vision</h3>
-            <div class="feature-description">
-                <div class="typing-text">One sentence → GitHub-level repository</div>
-                <div class="code-preview">
-                    <div class="code-line">> "Build a neural network for image classification"</div>
-                    <div class="code-line generating">Generating complete codebase...</div>
-                    <div class="code-progress">
-                        <div class="progress-dots">
-                            <span class="dot active"></span>
-                            <span class="dot active"></span>
-                            <span class="dot"></span>
+    st.markdown("""
+    <div class="feature-card-vertical secondary">
+        <div class="card-glow-vertical"></div>
+        <div class="feature-header">
+            <div class="feature-logo-container">
+                <div class="multi-agent-logo">
+                    <div class="agent-node agent-1">🔬</div>
+                    <div class="agent-node agent-2">🛠️</div>
+                    <div class="agent-node agent-3">🧪</div>
+                    <div class="agent-connection conn-12"></div>
+                    <div class="agent-connection conn-23"></div>
+                    <div class="agent-connection conn-13"></div>
+                </div>
+                <div class="feature-icon-large">🤖</div>
+            </div>
+            <div class="feature-header-content">
+                <h3 class="feature-title-large">Multi-Agent Collaboration Network</h3>
+                <p class="feature-subtitle">Intelligent agents working in perfect harmony</p>
+            </div>
+            <div class="feature-stats">
+                <div class="stat-item">
+                    <span class="stat-number typing-number">7</span>
+                    <span class="stat-label">AI Agents</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number typing-number">24/7</span>
+                    <span class="stat-label">Active</span>
+                </div>
+            </div>
+        </div>
+        <div class="feature-content">
+            <div class="content-left">
+                <p class="feature-description-large">Each specialized agent brings unique expertise to the reproduction process. They communicate, collaborate, and ensure comprehensive coverage of every aspect.</p>
+                <div class="agent-grid">
+                    <div class="agent-card active">
+                        <div class="agent-avatar">🔍</div>
+                        <h4>Research Analyzer</h4>
+                        <p>Extracts key insights</p>
+                    </div>
+                    <div class="agent-card active">
+                        <div class="agent-avatar">🏗️</div>
+                        <h4>Code Architect</h4>
+                        <p>Designs structure</p>
+                    </div>
+                    <div class="agent-card active">
+                        <div class="agent-avatar">⚙️</div>
+                        <h4>Implementation</h4>
+                        <p>Writes the code</p>
+                    </div>
+                    <div class="agent-card">
+                        <div class="agent-avatar">🧪</div>
+                        <h4>Quality Tester</h4>
+                        <p>Validates results</p>
+                    </div>
+                </div>
+            </div>
+            <div class="content-right">
+                <div class="collaboration-viz">
+                    <div class="collaboration-center">
+                        <div class="center-node">🎯</div>
+                        <span>Target Paper</span>
+                    </div>
+                    <div class="collaboration-agents">
+                        <div class="collab-agent agent-pos-1">
+                            <div class="pulse-ring"></div>
+                            🔬
+                        </div>
+                        <div class="collab-agent agent-pos-2">
+                            <div class="pulse-ring"></div>
+                            🏗️
+                        </div>
+                        <div class="collab-agent agent-pos-3">
+                            <div class="pulse-ring"></div>
+                            ⚙️
+                        </div>
+                        <div class="collab-agent agent-pos-4">
+                            <div class="pulse-ring"></div>
+                            🧪
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="feature-card tech">
-            <div class="card-glow"></div>
-            <div class="feature-icon">⚡</div>
-            <h3 class="feature-title">AI Architecture</h3>
-            <div class="feature-description">
-                <div class="tech-stack">
-                    <div class="stack-item">
-                        <span class="stack-icon">🔮</span>
-                        <span class="stack-name">Claude Sonnet</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="feature-card-vertical accent">
+        <div class="card-glow-vertical"></div>
+        <div class="feature-header">
+            <div class="feature-logo-container">
+                <div class="future-logo">
+                    <div class="orbit orbit-1">
+                        <div class="orbit-node">💡</div>
                     </div>
-                    <div class="stack-item">
-                        <span class="stack-icon">🌐</span>
-                        <span class="stack-name">MCP Protocol</span>
+                    <div class="orbit orbit-2">
+                        <div class="orbit-node">⚡</div>
                     </div>
-                    <div class="stack-item">
-                        <span class="stack-icon">🔗</span>
-                        <span class="stack-name">Multi-Agent</span>
+                    <div class="orbit-center">🚀</div>
+                </div>
+                <div class="feature-icon-large">🌟</div>
+            </div>
+            <div class="feature-header-content">
+                <h3 class="feature-title-large">Future Vision: One-Sentence Generation</h3>
+                <p class="feature-subtitle">The ultimate goal of AI-powered development</p>
+            </div>
+            <div class="feature-stats">
+                <div class="stat-item">
+                    <span class="stat-number typing-number">∞</span>
+                    <span class="stat-label">Possibilities</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number typing-number">1</span>
+                    <span class="stat-label">Sentence</span>
+                </div>
+            </div>
+        </div>
+        <div class="feature-content">
+            <div class="content-left">
+                <p class="feature-description-large">Imagine describing any algorithm or system in natural language and instantly receiving a complete, working implementation. This is our vision for the future of software development.</p>
+                <div class="vision-demo">
+                    <div class="demo-input">
+                        <div class="input-icon">💬</div>
+                        <div class="input-text typing">"Create a transformer neural network for language translation"</div>
+                    </div>
+                    <div class="demo-arrow">⬇️</div>
+                    <div class="demo-output">
+                        <div class="output-items">
+                            <div class="output-item">📁 Complete Project Structure</div>
+                            <div class="output-item">🐍 Production-Ready Code</div>
+                            <div class="output-item">📚 Documentation</div>
+                            <div class="output-item">🧪 Comprehensive Tests</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-right">
+                <div class="future-timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-marker">✅</div>
+                        <div class="timeline-content">
+                            <h4>Paper Analysis</h4>
+                            <p>Current capability</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item completed">
+                        <div class="timeline-marker">✅</div>
+                        <div class="timeline-content">
+                            <h4>Code Generation</h4>
+                            <p>Active development</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item active">
+                        <div class="timeline-marker">🔄</div>
+                        <div class="timeline-content">
+                            <h4>Natural Language</h4>
+                            <p>Next milestone</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item future">
+                        <div class="timeline-marker">🚀</div>
+                        <div class="timeline-content">
+                            <h4>Universal AI Coder</h4>
+                            <p>Ultimate vision</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="feature-card-vertical tech">
+        <div class="card-glow-vertical"></div>
+        <div class="feature-header">
+            <div class="feature-logo-container">
+                <div class="opensource-logo">
+                    <div class="github-stars">
+                        <div class="star star-1">⭐</div>
+                        <div class="star star-2">⭐</div>
+                        <div class="star star-3">⭐</div>
+                    </div>
+                    <div class="community-nodes">
+                        <div class="community-node">👩‍💻</div>
+                        <div class="community-node">👨‍🔬</div>
+                        <div class="community-node">👩‍🎓</div>
+                    </div>
+                </div>
+                <div class="feature-icon-large">🌱</div>
+            </div>
+            <div class="feature-header-content">
+                <h3 class="feature-title-large">Open Source & Community-Driven</h3>
+                <p class="feature-subtitle">Built by researchers, for researchers worldwide</p>
+            </div>
+            <div class="feature-stats">
+                <div class="stat-item">
+                    <span class="stat-number typing-number">MIT</span>
+                    <span class="stat-label">License</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number typing-number">HKU</span>
+                    <span class="stat-label">Origin</span>
+                </div>
+            </div>
+        </div>
+        <div class="feature-content">
+            <div class="content-left">
+                <p class="feature-description-large">Join a thriving community of researchers and developers. Contribute, customize, and extend DeepCode to meet your specific research needs across any domain.</p>
+                <div class="community-features">
+                    <div class="community-feature">
+                        <div class="feature-icon-small">🔧</div>
+                        <div class="feature-text">
+                            <h4>Extensible Architecture</h4>
+                            <p>Plugin system for custom agents and workflows</p>
+                        </div>
+                    </div>
+                    <div class="community-feature">
+                        <div class="feature-icon-small">🌍</div>
+                        <div class="feature-text">
+                            <h4>Global Collaboration</h4>
+                            <p>Researchers from 50+ countries contributing</p>
+                        </div>
+                    </div>
+                    <div class="community-feature">
+                        <div class="feature-icon-small">📚</div>
+                        <div class="feature-text">
+                            <h4>Rich Documentation</h4>
+                            <p>Comprehensive guides and API references</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-right">
+                <div class="tech-ecosystem">
+                    <div class="ecosystem-center">
+                        <div class="center-logo">🏛️</div>
+                        <span>DeepCode</span>
+                    </div>
+                    <div class="ecosystem-ring">
+                        <div class="ecosystem-item item-1">
+                            <div class="item-icon">🔮</div>
+                            <span>Claude Sonnet</span>
+                        </div>
+                        <div class="ecosystem-item item-2">
+                            <div class="item-icon">🌐</div>
+                            <span>MCP Protocol</span>
+                        </div>
+                        <div class="ecosystem-item item-3">
+                            <div class="item-icon">🐍</div>
+                            <span>Python</span>
+                        </div>
+                        <div class="ecosystem-item item-4">
+                            <div class="item-icon">📦</div>
+                            <span>Docker</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def display_status(message: str, status_type: str = "info"):
     """
-    显示状态消息 / Display status message
+    Display status message
     
     Args:
-        message: 状态消息 / Status message
-        status_type: 状态类型 / Status type (success, error, warning, info)
+        message: Status message
+        status_type: Status type (success, error, warning, info)
     """
     status_classes = {
         "success": "status-success",
@@ -158,12 +409,10 @@ def display_status(message: str, status_type: str = "info"):
 
 
 def system_status_component():
-    """
-    系统状态检查组件 / System status check component
-    """
+    """System status check component"""
     st.markdown("### 🔧 System Status & Diagnostics")
     
-    # 基本系统信息
+    # Basic system information
     col1, col2 = st.columns(2)
     
     with col1:
@@ -171,7 +420,7 @@ def system_status_component():
         st.info(f"**Python:** {sys.version.split()[0]}")
         st.info(f"**Platform:** {sys.platform}")
         
-        # 检查关键模块
+        # Check key modules
         modules_to_check = [
             ("streamlit", "Streamlit UI Framework"),
             ("asyncio", "Async Processing"),
@@ -190,7 +439,7 @@ def system_status_component():
     with col2:
         st.markdown("#### ⚙️ Threading & Context")
         
-        # 检查 Streamlit 上下文
+        # Check Streamlit context
         try:
             from streamlit.runtime.scriptrunner import get_script_run_ctx
             ctx = get_script_run_ctx()
@@ -201,7 +450,7 @@ def system_status_component():
         except Exception as e:
             st.error(f"❌ Context Check Failed: {e}")
         
-        # 检查事件循环
+        # Check event loop
         try:
             import asyncio
             try:
@@ -217,41 +466,39 @@ def system_status_component():
 
 
 def error_troubleshooting_component():
-    """
-    错误诊断组件 / Error troubleshooting component
-    """
+    """Error troubleshooting component"""
     with st.expander("🛠️ Troubleshooting Tips", expanded=False):
         st.markdown("""
-        ### Common Issues & Solutions / 常见问题和解决方案
+        ### Common Issues & Solutions
         
-        #### 1. ScriptRunContext Warnings / ScriptRunContext 警告
+        #### 1. ScriptRunContext Warnings
         - **What it means:** Threading context warnings in Streamlit
         - **Solution:** These warnings are usually safe to ignore
         - **Prevention:** Restart the application if persistent
         
-        #### 2. Async Processing Errors / 异步处理错误
+        #### 2. Async Processing Errors
         - **Symptoms:** "Event loop" or "Thread" errors
         - **Solution:** The app uses multiple fallback methods
         - **Action:** Try refreshing the page or restarting
         
-        #### 3. File Upload Issues / 文件上传问题
+        #### 3. File Upload Issues
         - **Check:** File size < 200MB
         - **Formats:** PDF, DOCX, TXT, HTML, MD
         - **Action:** Try a different file format
         
-        #### 4. Processing Timeout / 处理超时
+        #### 4. Processing Timeout
         - **Normal:** Large papers may take 5-10 minutes
         - **Action:** Wait patiently, check progress indicators
         - **Limit:** 5-minute maximum processing time
         
-        #### 5. Memory Issues / 内存问题
+        #### 5. Memory Issues
         - **Symptoms:** "Out of memory" errors
         - **Solution:** Close other applications
         - **Action:** Try smaller/simpler papers first
         """)
         
         if st.button("🔄 Reset Application State"):
-            # 清理所有session state
+            # Clear all session state
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.success("Application state reset! Please refresh the page.")
@@ -260,24 +507,24 @@ def error_troubleshooting_component():
 
 def sidebar_control_panel() -> Dict[str, Any]:
     """
-    侧边栏控制面板 / Sidebar control panel
+    Sidebar control panel
     
     Returns:
-        控制面板状态 / Control panel state
+        Control panel state
     """
     with st.sidebar:
         st.markdown("### 🎛️ Control Panel")
         
-        # 应用状态
+        # Application status
         if st.session_state.processing:
             st.warning("🟡 Engine Processing...")
         else:
             st.info("⚪ Engine Ready")
         
-        # 工作流配置选项
+        # Workflow configuration options
         st.markdown("### ⚙️ Workflow Settings")
         
-        # 索引功能开关
+        # Indexing functionality toggle
         enable_indexing = st.checkbox(
             "🗂️ Enable Codebase Indexing",
             value=True,
@@ -290,37 +537,37 @@ def sidebar_control_panel() -> Dict[str, Any]:
         else:
             st.info("⚡ Fast mode - indexing disabled")
         
-        # 系统信息
+        # System information
         st.markdown("### 📊 System Info")
         st.info(f"**Python:** {sys.version.split()[0]}")
         st.info(f"**Platform:** {sys.platform}")
         
-        # 添加系统状态检查
+        # Add system status check
         with st.expander("🔧 System Status"):
             system_status_component()
         
-        # 添加错误诊断
+        # Add error diagnostics
         error_troubleshooting_component()
         
         st.markdown("---")
         
-        # 处理历史
+        # Processing history
         history_info = display_processing_history()
         
         return {
             "processing": st.session_state.processing,
             "history_count": history_info["count"],
             "has_history": history_info["has_history"],
-            "enable_indexing": enable_indexing  # 添加索引开关状态
+            "enable_indexing": enable_indexing  # Add indexing toggle state
         }
 
 
 def display_processing_history() -> Dict[str, Any]:
     """
-    显示处理历史 / Display processing history
+    Display processing history
     
     Returns:
-        历史信息 / History information
+        History information
     """
     st.markdown("### 📊 Processing History")
     
@@ -328,7 +575,7 @@ def display_processing_history() -> Dict[str, Any]:
     history_count = len(st.session_state.results)
     
     if has_history:
-        # 只显示最近10条记录
+        # Only show last 10 records
         recent_results = st.session_state.results[-10:]
         for i, result in enumerate(reversed(recent_results)):
             status_icon = "✅" if result.get('status') == 'success' else "❌"
@@ -341,7 +588,7 @@ def display_processing_history() -> Dict[str, Any]:
     else:
         st.info("No processing history yet")
     
-    # 清除历史按钮
+    # Clear history button
     if has_history:
         col1, col2 = st.columns(2)
         with col1:
@@ -359,13 +606,13 @@ def display_processing_history() -> Dict[str, Any]:
 
 def file_input_component(task_counter: int) -> Optional[str]:
     """
-    文件输入组件 / File input component
+    File input component
     
     Args:
-        task_counter: 任务计数器 / Task counter
+        task_counter: Task counter
         
     Returns:
-        文件路径或None / File path or None
+        File path or None
     """
     uploaded_file = st.file_uploader(
         "Upload research paper file",
@@ -375,11 +622,11 @@ def file_input_component(task_counter: int) -> Optional[str]:
     )
     
     if uploaded_file is not None:
-        # 显示文件信息
+        # Display file information
         file_size = len(uploaded_file.getvalue())
         st.info(f"📄 **File:** {uploaded_file.name} ({format_file_size(file_size)})")
         
-        # 保存上传的文件到临时目录
+        # Save uploaded file to temporary directory
         try:
             import tempfile
             with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
@@ -395,13 +642,13 @@ def file_input_component(task_counter: int) -> Optional[str]:
 
 def url_input_component(task_counter: int) -> Optional[str]:
     """
-    URL输入组件 / URL input component
+    URL input component
     
     Args:
-        task_counter: 任务计数器 / Task counter
+        task_counter: Task counter
         
     Returns:
-        URL或None / URL or None
+        URL or None
     """
     url_input = st.text_input(
         "Enter paper URL",
@@ -411,7 +658,7 @@ def url_input_component(task_counter: int) -> Optional[str]:
     )
     
     if url_input:
-        # 简单的URL验证
+        # Simple URL validation
         if url_input.startswith(('http://', 'https://')):
             st.success(f"✅ URL entered: {url_input}")
             return url_input
@@ -424,13 +671,13 @@ def url_input_component(task_counter: int) -> Optional[str]:
 
 def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[str]]:
     """
-    输入方法选择器 / Input method selector
+    Input method selector
     
     Args:
-        task_counter: 任务计数器 / Task counter
+        task_counter: Task counter
         
     Returns:
-        (input_source, input_type) / (输入源, 输入类型)
+        (input_source, input_type)
     """
     st.markdown("""
     <h3 style="color: var(--text-primary) !important; font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 1.5rem !important; margin-bottom: 1rem !important;">
@@ -438,7 +685,7 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
     </h3>
     """, unsafe_allow_html=True)
     
-    # 输入选项
+    # Input options
     st.markdown("""
     <p style="color: var(--text-secondary) !important; font-family: 'Inter', sans-serif !important; font-weight: 500 !important; margin-bottom: 1rem !important;">
         Choose input method:
@@ -459,7 +706,7 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
     if input_method == "📁 Upload File":
         input_source = file_input_component(task_counter)
         input_type = "file" if input_source else None
-    else:  # URL输入
+    else:  # URL input
         input_source = url_input_component(task_counter)
         input_type = "url" if input_source else None
     
@@ -468,21 +715,21 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
 
 def results_display_component(result: Dict[str, Any], task_counter: int):
     """
-    结果显示组件 / Results display component
+    Results display component
     
     Args:
-        result: 处理结果 / Processing result
-        task_counter: 任务计数器 / Task counter
+        result: Processing result
+        task_counter: Task counter
     """
     st.markdown("### 📋 Processing Results")
     
-    # 显示整体状态
+    # Display overall status
     if result.get("status") == "success":
         st.success("🎉 **All workflows completed successfully!**")
     else:
         st.error("❌ **Processing encountered errors**")
     
-    # 创建标签页来组织不同阶段的结果
+    # Create tabs to organize different phase results
     tab1, tab2, tab3, tab4 = st.tabs([
         "📊 Analysis Phase", 
         "📥 Download Phase", 
@@ -495,7 +742,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         with st.expander("Analysis Output Details", expanded=True):
             analysis_result = result.get("analysis_result", "No analysis result available")
             try:
-                # 尝试解析JSON结果进行格式化显示
+                # Try to parse JSON result for formatted display
                 if analysis_result.strip().startswith('{'):
                     parsed_analysis = json.loads(analysis_result)
                     st.json(parsed_analysis)
@@ -510,7 +757,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
             download_result = result.get("download_result", "No download result available")
             st.text_area("Download Output", download_result, height=300, key=f"download_{task_counter}")
     
-            # 尝试提取文件路径信息
+            # Try to extract file path information
             if "paper_dir" in download_result or "path" in download_result.lower():
                 st.info("💡 **Tip:** Look for file paths in the output above to locate generated files")
     
@@ -518,7 +765,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         st.markdown("#### 🔧 Code Implementation Results")
         repo_result = result.get("repo_result", "No implementation result available")
         
-        # 分析实现结果以提取关键信息
+        # Analyze implementation results to extract key information
         if "successfully" in repo_result.lower():
             st.success("✅ Code implementation completed successfully!")
         elif "failed" in repo_result.lower():
@@ -529,12 +776,12 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         with st.expander("Implementation Details", expanded=True):
             st.text_area("Repository & Code Generation Output", repo_result, height=300, key=f"repo_{task_counter}")
         
-        # 尝试提取生成的代码目录信息
+        # Try to extract generated code directory information
         if "Code generated in:" in repo_result:
             code_dir = repo_result.split("Code generated in:")[-1].strip()
             st.markdown(f"**📁 Generated Code Directory:** `{code_dir}`")
         
-        # 显示工作流阶段详情
+        # Display workflow stage details
         st.markdown("#### 🔄 Workflow Stages Completed")
         stages = [
             ("📄 Document Processing", "✅"),
@@ -551,10 +798,10 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
     with tab4:
         st.markdown("#### 📁 Generated Files & Reports")
         
-        # 尝试从结果中提取文件路径
+        # Try to extract file paths from results
         all_results = f"{result.get('download_result', '')} {result.get('repo_result', '')}"
         
-        # 查找可能的文件路径模式
+        # Look for possible file path patterns
         import re
         file_patterns = [
             r'([^\s]+\.txt)',
@@ -578,12 +825,12 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         if found_files:
             st.markdown("**📄 Detected Generated Files:**")
             for file_path in sorted(found_files):
-                if file_path and len(file_path) > 3:  # 过滤掉太短的匹配
+                if file_path and len(file_path) > 3:  # Filter out too short matches
                     st.markdown(f"- `{file_path}`")
         else:
             st.info("No specific file paths detected in the output. Check the detailed results above for file locations.")
     
-        # 提供查看原始结果的选项
+        # Provide option to view raw results
         with st.expander("View Raw Processing Results"):
             st.json({
                 "analysis_result": result.get("analysis_result", ""),
@@ -592,7 +839,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
                 "status": result.get("status", "unknown")
             })
     
-    # 操作按钮
+    # Action buttons
     st.markdown("---")
     col1, col2 = st.columns(2)
     
@@ -606,7 +853,7 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
     
     with col2:
         if st.button("💾 Export Results", type="secondary", use_container_width=True):
-            # 创建结果导出
+            # Create result export
             export_data = {
                 "timestamp": datetime.now().isoformat(),
                 "processing_results": result,
@@ -623,19 +870,19 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
 
 def progress_display_component():
     """
-    进度显示组件 / Progress display component
+    Progress display component
     
     Returns:
-        (progress_bar, status_text) / (进度条, 状态文本)
+        (progress_bar, status_text)
     """
-    # 显示处理进度标题
+    # Display processing progress title
     st.markdown("### 📊 Processing Progress")
     
-    # 创建进度容器
+    # Create progress container
     progress_container = st.container()
     
     with progress_container:
-        # 添加自定义CSS样式
+        # Add custom CSS styles
         st.markdown("""
         <style>
         .progress-container {
@@ -683,7 +930,7 @@ def progress_display_component():
         
         st.markdown('<div class="progress-container">', unsafe_allow_html=True)
         
-        # 创建步骤指示器
+        # Create step indicator
         st.markdown("""
         <div class="progress-steps">
             <div class="progress-step" id="step-init">🚀 Initialize</div>
@@ -697,7 +944,7 @@ def progress_display_component():
         </div>
         """, unsafe_allow_html=True)
         
-        # 创建进度条和状态文本
+        # Create progress bar and status text
         progress_bar = st.progress(0)
         status_text = st.empty()
         
@@ -708,83 +955,101 @@ def progress_display_component():
 
 def enhanced_progress_display_component(enable_indexing: bool = True):
     """
-    增强版进度显示组件 / Enhanced progress display component
+    Enhanced progress display component
     
     Args:
-        enable_indexing: 是否启用索引功能 / Whether indexing is enabled
+        enable_indexing: Whether indexing is enabled
     
     Returns:
-        (progress_bar, status_text, step_indicator, workflow_steps) / (进度条, 状态文本, 步骤指示器, 工作流步骤)
+        (progress_bar, status_text, step_indicator, workflow_steps)
     """
-    # 显示处理进度标题
+    # Display processing progress title
     if enable_indexing:
         st.markdown("### 🚀 AI Research Engine - Full Processing Workflow")
     else:
         st.markdown("### ⚡ AI Research Engine - Fast Processing Workflow (Indexing Disabled)")
     
-    # 创建进度容器
+    # Create progress container
     progress_container = st.container()
     
     with progress_container:
-        # 工作流步骤定义 - 根据索引开关调整，并反映最新的phase顺序
+        # Workflow step definitions - adjust based on indexing toggle and reflect latest phase order
         if enable_indexing:
             workflow_steps = [
                 ("🚀", "Initialize", "Setting up AI engine"),
                 ("📊", "Analyze", "Analyzing paper content"),
                 ("📥", "Download", "Processing document"),
-                ("📋", "Plan", "Generating code plan"),        # Phase 3: 现在在Phase 4之前
-                ("🔍", "References", "Analyzing references"),   # Phase 4: 现在是条件性的
-                ("📦", "Repos", "Downloading repositories"),    # Phase 5: GitHub下载
-                ("🗂️", "Index", "Building code index"),        # Phase 6: 代码索引
-                ("⚙️", "Implement", "Implementing code")       # Phase 7: 代码实现
+                ("📋", "Plan", "Generating code plan"),        # Phase 3: code planning orchestration
+                ("🔍", "References", "Analyzing references"),   # Phase 4: now conditional
+                ("📦", "Repos", "Downloading repositories"),    # Phase 5: GitHub download
+                ("🗂️", "Index", "Building code index"),        # Phase 6: code indexing
+                ("⚙️", "Implement", "Implementing code")       # Phase 7: code implementation
             ]
         else:
-            # 快速模式 - 跳过 References, Repos 和 Index 步骤
+            # Fast mode - skip References, Repos and Index steps
             workflow_steps = [
                 ("🚀", "Initialize", "Setting up AI engine"),
                 ("📊", "Analyze", "Analyzing paper content"),
                 ("📥", "Download", "Processing document"),
-                ("📋", "Plan", "Generating code plan"),        # Phase 3: 代码规划优先
-                ("⚙️", "Implement", "Implementing code")       # 直接跳到实现
+                ("📋", "Plan", "Generating code plan"),        # Phase 3: code planning orchestration
+                ("⚙️", "Implement", "Implementing code")       # Jump directly to implementation
             ]
         
-        # 创建步骤指示器容器
+        # Create step indicator container
         step_container = st.container()
         
-        # 显示步骤网格
-        cols = st.columns(len(workflow_steps))
+        # Display step grid with fixed layout
+        # Use a maximum of 8 columns for consistent sizing
+        max_cols = 8
+        cols = st.columns(max_cols)
         step_indicators = []
         
-        for i, (icon, title, desc) in enumerate(workflow_steps):
-            with cols[i]:
-                step_placeholder = st.empty()
-                step_indicators.append(step_placeholder)
-                step_placeholder.markdown(f"""
-                <div style="
-                    text-align: center;
-                    padding: 10px;
-                    border-radius: 10px;
-                    background: rgba(255,255,255,0.05);
-                    margin: 5px 0;
-                    border: 2px solid transparent;
-                ">
-                    <div style="font-size: 1.5rem;">{icon}</div>
-                    <div style="font-size: 0.8rem; font-weight: 600;">{title}</div>
-                    <div style="font-size: 0.6rem; color: #888;">{desc}</div>
-                </div>
-                """, unsafe_allow_html=True)
+        # Calculate column spacing for centering steps
+        total_steps = len(workflow_steps)
+        if total_steps <= max_cols:
+            # Center the steps when fewer than max columns
+            start_col = (max_cols - total_steps) // 2
+        else:
+            start_col = 0
         
-        # 创建主进度条
+        for i, (icon, title, desc) in enumerate(workflow_steps):
+            col_index = start_col + i if total_steps <= max_cols else i
+            if col_index < max_cols:
+                with cols[col_index]:
+                    step_placeholder = st.empty()
+                    step_indicators.append(step_placeholder)
+                    step_placeholder.markdown(f"""
+                    <div style="
+                        text-align: center;
+                        padding: 12px 8px;
+                        border-radius: 12px;
+                        background: rgba(255,255,255,0.05);
+                        margin: 5px 2px;
+                        border: 2px solid transparent;
+                        min-height: 90px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        box-sizing: border-box;
+                    ">
+                        <div style="font-size: 1.5rem; margin-bottom: 4px;">{icon}</div>
+                        <div style="font-size: 0.75rem; font-weight: 600; line-height: 1.2; margin-bottom: 2px;">{title}</div>
+                        <div style="font-size: 0.6rem; color: #888; line-height: 1.1; text-align: center;">{desc}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Create main progress bar
         st.markdown("#### Overall Progress")
         progress_bar = st.progress(0)
         
-        # 状态文本显示
+        # Status text display
         status_text = st.empty()
         
-        # 实时信息显示
+        # Real-time information display
         info_text = st.empty()
         
-        # 显示模式信息
+        # Display mode information
         if not enable_indexing:
             st.info("⚡ Fast Mode: Reference analysis, GitHub repository download and codebase indexing are disabled for faster processing.")
     
@@ -793,13 +1058,13 @@ def enhanced_progress_display_component(enable_indexing: bool = True):
 
 def update_step_indicator(step_indicators, workflow_steps, current_step: int, status: str = "active"):
     """
-    更新步骤指示器 / Update step indicator
+    Update step indicator
     
     Args:
-        step_indicators: 步骤指示器列表 / Step indicator list
-        workflow_steps: 工作流步骤定义 / Workflow steps definition
-        current_step: 当前步骤索引 / Current step index
-        status: 状态 ("active", "completed", "error") / Status
+        step_indicators: Step indicator list
+        workflow_steps: Workflow steps definition
+        current_step: Current step index
+        status: Status ("active", "completed", "error")
     """
     status_colors = {
         "pending": ("rgba(255,255,255,0.05)", "transparent", "#888"),
@@ -822,46 +1087,50 @@ def update_step_indicator(step_indicators, workflow_steps, current_step: int, st
         step_indicators[i].markdown(f"""
         <div style="
             text-align: center;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px 8px;
+            border-radius: 12px;
             background: {bg_color};
-            margin: 5px 0;
+            margin: 5px 2px;
             border: 2px solid {border_color};
             color: {text_color};
             transition: all 0.3s ease;
             box-shadow: {f'0 0 15px {border_color}30' if i == current_step else 'none'};
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
         ">
-            <div style="font-size: 1.5rem;">{display_icon}</div>
-            <div style="font-size: 0.8rem; font-weight: 600;">{title}</div>
-            <div style="font-size: 0.6rem; opacity: 0.8;">{desc}</div>
+            <div style="font-size: 1.5rem; margin-bottom: 4px;">{display_icon}</div>
+            <div style="font-size: 0.75rem; font-weight: 600; line-height: 1.2; margin-bottom: 2px;">{title}</div>
+            <div style="font-size: 0.6rem; opacity: 0.8; line-height: 1.1; text-align: center;">{desc}</div>
         </div>
         """, unsafe_allow_html=True)
 
 
 def footer_component():
-    """
-    页脚组件 / Footer component
-    """
+    """Footer component"""
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; padding: 2rem;">
-        <p>🧬 <strong>DeepCode v3.0</strong> | Next-Gen AI Research Platform | 
+        <p>🧬 <strong>DeepCode</strong> | Open-Source Code Agent | Data Intelligence Lab @ HKU | 
         <a href="https://github.com/your-repo" target="_blank" style="color: var(--neon-blue);">GitHub</a></p>
-        <p>⚡ Powered by Neural Networks • Quantum Computing • Multi-Agent AI • Advanced NLP</p>
-        <p><small>💡 Tip: Experience the future of research automation - keep this tab active for optimal performance</small></p>
+        <p>⚡ Revolutionizing Research Reproducibility • Multi-Agent Architecture • Automated Code Generation</p>
+        <p><small>💡 Join our growing community in building the future of automated research reproducibility</small></p>
     </div>
     """, unsafe_allow_html=True)
 
 
 def format_file_size(size_bytes: int) -> str:
     """
-    格式化文件大小 / Format file size
+    Format file size
     
     Args:
-        size_bytes: 字节大小 / Size in bytes
+        size_bytes: Size in bytes
         
     Returns:
-        格式化的文件大小 / Formatted file size
+        Formatted file size
     """
     if size_bytes == 0:
         return "0B"

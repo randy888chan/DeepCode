@@ -1,164 +1,217 @@
-# Paper to Code CLI
+# DeepCode CLI - Open-Source Code Agent
 
-🧬 **Command Line Interface for AI Research Engine**
+**DeepCode** is an open-source code agent developed by the Data Intelligence Lab @ HKU. This enhanced command line interface enables revolutionizing research reproducibility through collaborative multi-agent architecture.
 
-This is the CLI version of Paper to Code, providing the same powerful functionality as the web interface but optimized for terminal users.
+## 🚀 Features
 
-## ✨ Features
+### Core Capabilities
+- **🤖 Automated Code Reproduction**: Multi-agent coordination for faithful research reproduction
+- **⚡ Dual Pipeline Modes**: Comprehensive (full analysis) and Optimized (fast processing)
+- **🧠 Collaborative Multi-Agent**: Specialized agents working together for accuracy and completeness
+- **📊 Real-time Progress Tracking**: Enhanced progress display with pipeline status monitoring
+- **🌱 Open-Source & Extensible**: Built for the community with customizable design
 
-- **Multi-Agent Research Pipeline**: Advanced AI agents work together to analyze and reproduce research papers
-- **Intelligent Document Processing**: Support for PDF, DOCX, PPTX, HTML, and TXT files
-- **URL Processing**: Direct support for arXiv, IEEE, ACM, and other academic platforms
-- **Code Generation**: Automatic code implementation based on paper analysis
-- **Progress Tracking**: Real-time terminal-based progress indicators
-- **Interactive Interface**: Professional CLI with colored output and progress bars
+### Our Mission
 
-## 🚀 Quick Start
+We believe that, in the near future, codebases can be reproduced—or even created from scratch—simply by describing them in natural language. DeepCode is making this vision a reality through:
 
-### Using the CLI Launcher
-
-```bash
-# From project root directory
-python cli/paper_to_code_cli.py
-```
-
-### Direct CLI App
-
-```bash
-# From project root directory  
-python cli/cli_app.py
-```
-
-### Using the Legacy Main (if you prefer)
-
-```bash
-# From project root directory
-python main.py
-```
+1. **Research Analysis Agent**: Intelligent content processing and extraction
+2. **Workspace Infrastructure Agent**: Automated environment synthesis
+3. **Code Architecture Agent**: AI-driven design and planning
+4. **Reference Intelligence Agent**: Automated knowledge discovery (Comprehensive mode)
+5. **Repository Acquisition Agent**: Intelligent code repository management (Comprehensive mode)
+6. **Codebase Intelligence Agent**: Advanced relationship analysis (Comprehensive mode)
+7. **Code Implementation Agent**: AI-powered code synthesis
 
 ## 📋 Usage
 
-1. **Launch the CLI**: Run the launcher script
-2. **Choose Input Method**: 
-   - `U` - Enter a URL (arXiv, IEEE, ACM, etc.)
-   - `F` - Upload a file (PDF, DOCX, PPTX, HTML, TXT)
-   - `Q` - Quit the application
-3. **Monitor Progress**: Watch the real-time processing stages
-4. **Review Results**: View analysis, download, and implementation results
-5. **Process More Papers**: Continue with additional papers or exit
+### Enhanced CLI Interface
 
-## 🔧 Processing Pipeline
+```bash
+# Interactive mode with enhanced agent orchestration
+python main_cli.py
 
-The CLI follows the same multi-stage pipeline as the web version:
+# Direct file processing
+python main_cli.py --file paper.pdf
 
-1. **🚀 Initialize** - Setting up AI engine
-2. **📊 Analyze** - Analyzing paper content  
-3. **📥 Download** - Processing document
-4. **🔍 References** - Analyzing references
-5. **📋 Plan** - Generating code plan
-6. **📦 Repos** - Downloading repositories
-7. **🗂️ Index** - Building code index
-8. **⚙️ Implement** - Implementing code
+# Direct URL processing  
+python main_cli.py --url https://arxiv.org/abs/2301.12345
 
-## 💻 Interface Features
+# Optimized mode (faster processing)
+python main_cli.py --optimized
 
-- **Enhanced ASCII Art**: Beautiful terminal logos and banners
-- **Color-Coded Output**: Different colors for different types of information
-- **Progress Indicators**: Animated progress bars and spinners
-- **Error Handling**: Comprehensive error messages with troubleshooting tips
-- **File Validation**: Smart file type detection and validation
-- **URL Validation**: Academic platform recognition and validation
+# Comprehensive mode (full intelligence analysis)
+python main_cli.py --file paper.pdf
+```
 
-## 🔗 Supported Platforms
+### Interactive Menu Options
 
-### Academic URLs
-- arXiv (arxiv.org)
-- IEEE Xplore (ieeexplore.ieee.org)
-- ACM Digital Library (dl.acm.org)
-- SpringerLink (link.springer.com)
-- Nature (nature.com)
-- Science (science.org)
-- Google Scholar
-- ResearchGate
-- Semantic Scholar
+- **[U] Process URL**: Enter research paper URL with intelligent analysis
+- **[F] Upload File**: Select and upload file for agent orchestration
+- **[C] Configure**: Access configuration menu for pipeline modes
+- **[H] History**: View processing history with pipeline mode tracking
+- **[Q] Quit**: Exit application with cleanup
 
-### File Formats
-- PDF Documents
-- Word Documents (.docx, .doc)
-- PowerPoint Presentations (.pptx, .ppt)
-- HTML Files
-- Text Files (.txt, .md)
+### Pipeline Modes
 
-## 🛠️ Technical Details
+#### 🧠 Comprehensive Mode (Default)
+- Full research reproducibility analysis with all agents
+- Research Analysis + Resource Processing
+- Reference Intelligence Discovery
+- Automated Repository Acquisition
+- Codebase Intelligence Orchestration
+- Intelligent Code Implementation Synthesis
 
-### Dependencies
+#### ⚡ Optimized Mode
+- Fast processing with core agents only
+- Research Analysis + Resource Processing
+- Code Architecture Synthesis
+- Intelligent Code Implementation Synthesis
+- Skips: Reference Intelligence, Repository Acquisition, Codebase Intelligence
+
+## 🏗️ Architecture
+
+### Enhanced Components
+
+#### CLI Workflows
+- `cli/workflows/cli_workflow_adapter.py`: CLI-optimized workflow adapter
+- `cli/workflows/__init__.py`: Workflow module initialization
+
+#### Core Files
+- `cli/main_cli.py`: Enhanced CLI launcher with argument parsing
+- `cli/cli_app.py`: Main application with agent orchestration integration
+- `cli/cli_interface.py`: Enhanced UI with configuration support
+
+#### Integration
+- **Agent Orchestration Engine**: `workflows/agent_orchestration_engine.py`
+- **MCP Framework**: Model Control Protocol for agent communication
+- **Collaborative Architecture**: Multi-agent task distribution and monitoring
+- **Data Intelligence Lab @ HKU**: Open-source research initiative
+
+## 🔧 Configuration
+
+### Pipeline Configuration
+Access via `[C] Configure` in the main menu:
+
+- **Toggle Pipeline Mode**: Switch between Comprehensive and Optimized
+- **View Current Settings**: Real-time configuration display
+- **Mode Descriptions**: Detailed explanation of each mode's capabilities
+
+### Command Line Options
+```bash
+# Available options
+--file, -f        Process specific file
+--url, -u         Process research paper from URL  
+--optimized, -o   Use optimized mode (skip indexing)
+--verbose, -v     Enable verbose output
+--help, -h        Show help message
+```
+
+## 📊 Processing Stages
+
+### Comprehensive Mode (8 stages)
+1. **🚀 Initialize**: Agent orchestration engine setup
+2. **📊 Analyze**: Research content analysis
+3. **📥 Download**: Document processing
+4. **📋 Plan**: Code architecture synthesis
+5. **🔍 References**: Reference intelligence discovery
+6. **📦 Repos**: Repository acquisition automation
+7. **🗂️ Index**: Codebase intelligence orchestration
+8. **⚙️ Implement**: Code implementation synthesis
+
+### Optimized Mode (5 stages)
+1. **🚀 Initialize**: Agent orchestration engine setup
+2. **📊 Analyze**: Research content analysis
+3. **📥 Download**: Document processing
+4. **📋 Plan**: Code architecture synthesis
+5. **⚙️ Implement**: Code implementation synthesis
+
+## 🛠️ Installation & Setup
+
+### Requirements
 - Python 3.8+
-- MCP Agent Framework
-- Asyncio for concurrent processing
-- PyYAML for configuration
-- Tkinter for file dialogs (optional)
+- Enhanced MCP agent framework
+- Agent orchestration engine dependencies
 
-### Architecture
-- **CLI Interface** (`cli_interface.py`): Terminal UI components
-- **CLI App** (`cli_app.py`): Main application logic
-- **CLI Launcher** (`paper_to_code_cli.py`): Entry point and dependency checking
-
-## 🆚 CLI vs Web UI
-
-| Feature | CLI Version | Web UI Version |
-|---------|-------------|----------------|
-| **Interface** | Terminal-based | Browser-based |
-| **Performance** | Faster startup | Slower startup |
-| **Resource Usage** | Lower memory | Higher memory |
-| **Accessibility** | SSH-friendly | GUI required |
-| **Functionality** | 100% same | 100% same |
-| **Progress Tracking** | Text-based | Visual |
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Import Errors**: Ensure all dependencies are installed
-2. **File Not Found**: Check file paths and permissions
-3. **tkinter Issues**: File dialogs will fall back to manual input
-4. **Network Issues**: Check internet connection for URL processing
-
-### Getting Help
-
-- Check the main project documentation
-- Review error messages carefully
-- Use the `--help` flag for command information
-- Submit issues on GitHub if problems persist
-
-## 📚 Examples
-
-### Processing an arXiv Paper
+### Installation
 ```bash
-# Start CLI
-python cli/paper_to_code_cli.py
+# Install dependencies
+pip install -r requirements.txt
 
-# Choose 'U' for URL
-# Enter: https://arxiv.org/abs/2301.07041
+# Run enhanced CLI
+python cli/main_cli.py
 ```
 
-### Processing a Local PDF
-```bash
-# Start CLI  
-python cli/paper_to_code_cli.py
+## 📈 Advanced Features
 
-# Choose 'F' for file
-# Select your PDF file via dialog or enter path manually
+### Enhanced Error Handling
+- **Agent-specific error recovery**: Individual agent failure handling
+- **Pipeline resilience**: Continue processing despite partial failures
+- **Intelligent retry mechanisms**: Automatic recovery strategies
+
+### Performance Optimization
+- **Adaptive mode selection**: Automatic recommendations based on input
+- **Resource monitoring**: Real-time system resource tracking
+- **Cache management**: Intelligent caching for repeated operations
+
+### Monitoring & Logging
+- **Agent activity tracking**: Detailed agent coordination logs
+- **Pipeline metrics**: Processing time and success rate analytics
+- **Configuration persistence**: Settings saved across sessions
+
+## 🎯 Examples
+
+### Comprehensive Analysis
+```bash
+# Full intelligence analysis
+python main_cli.py --file research_paper.pdf
+# Uses all 8 stages with complete agent orchestration
 ```
 
-## 🔮 Advanced Usage
+### Fast Processing
+```bash
+# Optimized for speed
+python main_cli.py --optimized --file paper.pdf
+# Uses 5 core stages, skips indexing-related agents
+```
 
-The CLI maintains full compatibility with all MCP agents and workflows used in the web version, including:
+### URL Processing with Configuration
+```bash
+# Interactive with custom configuration
+python main_cli.py
+# Select [C] to configure, then [U] to process URL
+```
 
-- Custom agent configurations
-- Workflow modifications
-- Output customization
-- Integration with external tools
+## 🔍 Troubleshooting
 
----
+### Agent Orchestration Issues
+- **Agent initialization failures**: Check MCP server connectivity
+- **Pipeline coordination errors**: Verify agent dependencies
+- **Resource conflicts**: Monitor system resource usage
 
-**Note**: This CLI version provides identical functionality to the web interface while offering better performance and accessibility for terminal users. 
+### Performance Optimization
+- **Slow processing**: Try optimized mode for faster results
+- **Memory issues**: Use optimized mode or restart application
+- **Network timeouts**: Check connectivity and retry
+
+### Configuration Problems
+- **Settings not saved**: Ensure write permissions
+- **Mode switching fails**: Restart application if persistent
+- **Display issues**: Check terminal compatibility
+
+## 🆕 Upgrade Notes
+
+### Enhanced CLI vs Legacy
+- **New**: Intelligent agent orchestration engine integration
+- **New**: Configurable pipeline modes (Comprehensive/Optimized)
+- **New**: Enhanced progress tracking with 8-stage pipeline
+- **New**: CLI workflow adapter for optimized command-line usage
+- **Improved**: Error handling with agent-specific recovery
+- **Improved**: Performance with adaptive processing modes
+
+### Migration from Legacy CLI
+The enhanced CLI maintains full backward compatibility while adding:
+- Advanced agent orchestration capabilities
+- Configurable processing modes
+- Enhanced progress tracking
+- Improved error handling and recovery 

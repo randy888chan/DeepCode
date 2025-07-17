@@ -1,19 +1,15 @@
-$schema: ./schema/llm-logger.config.schema.json
+$schema: ./schema/mcp-agent.config.schema.json
+
 
 execution_engine: asyncio
-
-# 简化的LLM响应日志配置 - 专注于记录LLM回复内容
-llm_logger:
-  enabled: true
-  output_format: "json"  # json, text, markdown
-  log_level: "basic"     # basic: 只记录响应内容, detailed: 包含基本信息
-  log_directory: "logs/llm_responses"
-  filename_pattern: "llm_responses_{timestamp}.jsonl"
-  include_models:
-    - "claude-sonnet-4"
-    - "gpt-4"
-    - "o3-mini"
-  min_response_length: 50  # 只记录50字符以上的响应
+logger:
+  transports: [console, file]
+  level: info
+  progress_display: true
+  path_settings:
+    path_pattern: "logs/mcp-agent-{unique_id}.jsonl"
+    unique_id: "timestamp" # Options: "timestamp" or "session_id"
+    timestamp_format: "%Y%m%d_%H%M%S"
 
 
 
@@ -61,11 +57,6 @@ mcp:
       args: ["tools/pdf_downloader.py"]
       env:
         PYTHONPATH: "."
-    code-generator:
-      command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
-      args: ["tools/code_generator.py"]
-      env:
-        PYTHONPATH: "."
     command-executor:
       command: "/Users/lizongwei/miniconda3/envs/paper2code/bin/python3"
       args: ["tools/command_executor.py"]
@@ -87,7 +78,7 @@ mcp:
 openai:
   # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
   #  default_model: "o3-mini"
-  default_model: "claude-sonnet-4-20250514"
+  default_model: "anthropic/claude-sonnet-4"
 
 
 anthropic:

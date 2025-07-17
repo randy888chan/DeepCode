@@ -1,7 +1,6 @@
 """
-Streamlit 页面布局模块 / Streamlit Page Layout Module
+Streamlit Page Layout Module
 
-包含主要的页面布局和流程控制
 Contains main page layout and flow control
 """
 
@@ -24,9 +23,7 @@ from .styles import get_main_styles
 
 
 def setup_page_config():
-    """
-    设置页面配置 / Setup page configuration
-    """
+    """Setup page configuration"""
     st.set_page_config(
         page_title="DeepCode - AI Research Engine",
         page_icon="🧬",
@@ -36,22 +33,18 @@ def setup_page_config():
 
 
 def apply_custom_styles():
-    """
-    应用自定义样式 / Apply custom styles
-    """
+    """Apply custom styles"""
     st.markdown(get_main_styles(), unsafe_allow_html=True)
 
 
 def render_main_content():
-    """
-    渲染主要内容区域 / Render main content area
-    """
-    # 显示头部和功能特性
+    """Render main content area"""
+    # Display header and features
     display_header()
     display_features()
     st.markdown("---")
 
-    # 如果有结果显示，先显示结果
+    # Display results if available
     if st.session_state.show_results and st.session_state.last_result:
         results_display_component(
             st.session_state.last_result, st.session_state.task_counter
@@ -59,22 +52,20 @@ def render_main_content():
         st.markdown("---")
         return
 
-    # 只有在不显示结果时才显示输入界面
+    # Show input interface only when not displaying results
     if not st.session_state.show_results:
         render_input_interface()
 
-    # 显示错误信息（如果有）
+    # Display error messages if any
     handle_error_display()
 
 
 def render_input_interface():
-    """
-    渲染输入界面 / Render input interface
-    """
-    # 获取输入源和类型
+    """Render input interface"""
+    # Get input source and type
     input_source, input_type = input_method_selector(st.session_state.task_counter)
 
-    # 处理按钮
+    # Processing button
     if input_source and not st.session_state.processing:
         if st.button("🚀 Start Processing", type="primary", use_container_width=True):
             handle_start_processing_button(input_source, input_type)
@@ -88,32 +79,28 @@ def render_input_interface():
 
 
 def render_sidebar():
-    """
-    渲染侧边栏 / Render sidebar
-    """
+    """Render sidebar"""
     return sidebar_control_panel()
 
 
 def main_layout():
-    """
-    主布局函数 / Main layout function
-    """
-    # 初始化session state
+    """Main layout function"""
+    # Initialize session state
     initialize_session_state()
 
-    # 设置页面配置
+    # Setup page configuration
     setup_page_config()
 
-    # 应用自定义样式
+    # Apply custom styles
     apply_custom_styles()
 
-    # 渲染侧边栏
+    # Render sidebar
     sidebar_info = render_sidebar()
 
-    # 渲染主要内容
+    # Render main content
     render_main_content()
 
-    # 显示页脚
+    # Display footer
     footer_component()
 
     return sidebar_info

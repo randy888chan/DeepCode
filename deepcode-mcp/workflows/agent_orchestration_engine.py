@@ -1,18 +1,29 @@
 """
-Multi-Agent Research Pipeline for Paper Code Implementation
+Intelligent Agent Orchestration Engine for Research-to-Code Automation
 
-This module orchestrates a comprehensive workflow from paper analysis to code implementation:
-1. Paper input analysis and content extraction
-2. Reference analysis and GitHub repository discovery
-3. Code planning and structure design
-4. Codebase indexing and relationship analysis
-5. Final code implementation
+This module serves as the core orchestration engine that coordinates multiple specialized
+AI agents to automate the complete research-to-code transformation pipeline:
 
-Features:
-- Docker synchronization support for seamless file access
-- Multi-agent coordination with specialized roles
-- Comprehensive error handling and progress tracking
-- Flexible indexing enable/disable for performance tuning
+1. Research Analysis Agent - Intelligent content processing and extraction
+2. Workspace Infrastructure Agent - Automated environment synthesis  
+3. Code Architecture Agent - AI-driven design and planning
+4. Reference Intelligence Agent - Automated knowledge discovery
+5. Repository Acquisition Agent - Intelligent code repository management
+6. Codebase Intelligence Agent - Advanced relationship analysis
+7. Code Implementation Agent - AI-powered code synthesis
+
+Core Features:
+- Multi-agent coordination with intelligent task distribution
+- Docker-based environment automation for seamless deployment
+- Real-time progress monitoring with comprehensive error handling
+- Adaptive workflow optimization based on processing requirements
+- Advanced intelligence analysis with configurable performance modes
+
+Architecture:
+- Async/await based high-performance agent coordination
+- Modular agent design with specialized role separation  
+- Intelligent resource management and optimization
+- Comprehensive logging and monitoring infrastructure
 """
 
 import asyncio
@@ -26,7 +37,6 @@ from mcp_agent.agents.agent import Agent
 from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm import RequestParams
-from mcp_agent.workflows.orchestrator.orchestrator import Orchestrator
 from mcp_agent.workflows.parallel.parallel_llm import ParallelLLM
 
 # Local imports
@@ -39,7 +49,6 @@ from prompts.code_prompts import (
     CODE_PLANNING_PROMPT,
     GITHUB_DOWNLOAD_PROMPT,
 )
-from tools.github_downloader import GitHubDownloader
 from utils.docker_sync_manager import setup_docker_sync, get_sync_directory
 from utils.file_processor import FileProcessor
 from workflows.code_implementation_workflow import CodeImplementationWorkflow
@@ -117,12 +126,12 @@ def extract_clean_json(llm_output: str) -> str:
     return llm_output
 
 
-async def run_paper_analyzer(prompt_text: str, logger) -> str:
+async def run_research_analyzer(prompt_text: str, logger) -> str:
     """
-    Run the paper analysis workflow using PaperInputAnalyzerAgent.
+    Run the research analysis workflow using ResearchAnalyzerAgent.
     
     Args:
-        prompt_text: Input prompt text containing paper information
+        prompt_text: Input prompt text containing research information
         logger: Logger instance for logging information
         
     Returns:
@@ -130,15 +139,15 @@ async def run_paper_analyzer(prompt_text: str, logger) -> str:
     """
     try:
         # Log input information for debugging
-        print(f"📊 Starting paper analysis...")
+        print(f"📊 Starting research analysis...")
         print(f"Input prompt length: {len(prompt_text) if prompt_text else 0}")
         print(f"Input preview: {prompt_text[:200] if prompt_text else 'None'}...")
         
         if not prompt_text or prompt_text.strip() == "":
-            raise ValueError("Empty or None prompt_text provided to run_paper_analyzer")
+            raise ValueError("Empty or None prompt_text provided to run_research_analyzer")
         
         analyzer_agent = Agent(
-            name="PaperInputAnalyzerAgent",
+            name="ResearchAnalyzerAgent",
             instruction=PAPER_INPUT_ANALYZER_PROMPT,
             server_names=["brave"],
         )
@@ -158,7 +167,7 @@ async def run_paper_analyzer(prompt_text: str, logger) -> str:
                 print(f"❌ Failed to attach LLM: {e}")
                 raise
             
-            # Set higher token output for paper analysis
+            # Set higher token output for research analysis
             analysis_params = RequestParams(
                 max_tokens=6144,
                 temperature=0.3,
@@ -198,7 +207,7 @@ async def run_paper_analyzer(prompt_text: str, logger) -> str:
                 
                 # Log to SimpleLLMLogger
                 if hasattr(logger, 'log_response'):
-                    logger.log_response(clean_result, model="PaperInputAnalyzer", agent="PaperInputAnalyzerAgent")
+                    logger.log_response(clean_result, model="ResearchAnalyzer", agent="ResearchAnalyzerAgent")
                 
                 if not clean_result or clean_result.strip() == "":
                     print("❌ CRITICAL: clean_result is empty after JSON extraction!")
@@ -213,67 +222,72 @@ async def run_paper_analyzer(prompt_text: str, logger) -> str:
                 raise
             
     except Exception as e:
-        print(f"❌ run_paper_analyzer failed: {e}")
+        print(f"❌ run_research_analyzer failed: {e}")
         print(f"Exception details: {type(e).__name__}: {str(e)}")
         raise
 
 
-async def run_paper_downloader(analysis_result: str, logger) -> str:
+async def run_resource_processor(analysis_result: str, logger) -> str:
     """
-    Run the paper download workflow using PaperDownloaderAgent.
+    Run the resource processing workflow using ResourceProcessorAgent.
     
     Args:
-        analysis_result: Result from the paper analyzer
+        analysis_result: Result from the research analyzer
         logger: Logger instance for logging information
         
     Returns:
-        str: Download result from the agent
+        str: Processing result from the agent
     """
-    downloader_agent = Agent(
-        name="PaperDownloaderAgent",
+    processor_agent = Agent(
+        name="ResourceProcessorAgent",
         instruction=PAPER_DOWNLOADER_PROMPT,
         server_names=["filesystem", "file-downloader"],
     )
     
-    async with downloader_agent:
-        print("downloader: Connected to server, calling list_tools...")
-        tools = await downloader_agent.list_tools()
+    async with processor_agent:
+        print("processor: Connected to server, calling list_tools...")
+        tools = await processor_agent.list_tools()
         print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
         
-        downloader = await downloader_agent.attach_llm(OpenAIAugmentedLLM)
+        processor = await processor_agent.attach_llm(OpenAIAugmentedLLM)
         
-        # Set higher token output for downloader
-        downloader_params = RequestParams(
+        # Set higher token output for resource processing
+        processor_params = RequestParams(
             max_tokens=4096,
             temperature=0.2,
         )
         
-        return await downloader.generate_str(
+        return await processor.generate_str(
             message=analysis_result,
-            request_params=downloader_params
+            request_params=processor_params
         )
 
 
-async def paper_code_analyzer(document: str, logger) -> str:
+async def run_code_analyzer(paper_dir: str, logger) -> str:
     """
-    Run the paper code analysis workflow using multiple agents.
+    Run the code analysis workflow using multiple agents for comprehensive code planning.
+    
+    This function orchestrates three specialized agents:
+    - ConceptAnalysisAgent: Analyzes system architecture and conceptual framework
+    - AlgorithmAnalysisAgent: Extracts algorithms, formulas, and technical details  
+    - CodePlannerAgent: Integrates outputs into a comprehensive implementation plan
     
     Args:
-        document: Document to analyze
+        paper_dir: Directory path containing the research paper and related resources
         logger: Logger instance for logging information
         
     Returns:
-        str: Analysis result from the agents
+        str: Comprehensive analysis result from the coordinated agents
     """
     concept_analysis_agent = Agent(
         name="ConceptAnalysisAgent",
         instruction=PAPER_CONCEPT_ANALYSIS_PROMPT,
-        server_names=[],
+        server_names=["filesystem"],
     )
     algorithm_analysis_agent = Agent(
         name="AlgorithmAnalysisAgent",
         instruction=PAPER_ALGORITHM_ANALYSIS_PROMPT,
-        server_names=["brave"],
+        server_names=["filesystem","brave"],
     )
     code_planner_agent = Agent(
         name="CodePlannerAgent",
@@ -292,9 +306,20 @@ async def paper_code_analyzer(document: str, logger) -> str:
         max_tokens=26384,
         temperature=0.3,
     )
+
+    # Concise message for multi-agent paper analysis and code planning
+    message = f"""Analyze the research paper in directory: {paper_dir}
+
+Please locate and analyze the markdown (.md) file containing the research paper. Based on your analysis, generate a comprehensive code reproduction plan that includes:
+
+1. Complete system architecture and component breakdown
+2. All algorithms, formulas, and implementation details  
+3. Detailed file structure and implementation roadmap
+
+The goal is to create a reproduction plan detailed enough for independent implementation."""
     
     result = await code_aggregator_agent.generate_str(
-        message=document,
+        message=message,
         request_params=enhanced_params
     )
     print(f"Code analysis result: {result}")
@@ -388,22 +413,25 @@ async def _process_input_source(input_source: str, logger) -> str:
     return input_source
 
 
-async def _execute_paper_analysis_phase(input_source: str, logger, progress_callback: Optional[Callable] = None) -> Tuple[str, str]:
+async def orchestrate_research_analysis_agent(input_source: str, logger, progress_callback: Optional[Callable] = None) -> Tuple[str, str]:
     """
-    Execute paper analysis and download phase.
+    Orchestrate intelligent research analysis and resource processing automation.
+    
+    This agent coordinates multiple AI components to analyze research content
+    and process associated resources with automated workflow management.
     
     Args:
-        input_source: Input source
-        logger: Logger instance
-        progress_callback: Progress callback function
+        input_source: Research input source for analysis
+        logger: Logger instance for process tracking
+        progress_callback: Progress callback function for workflow monitoring
         
     Returns:
-        tuple: (analysis_result, download_result)
+        tuple: (analysis_result, resource_processing_result)
     """
-    # Step 1: Paper Analysis
+    # Step 1: Research Analysis
     if progress_callback:
-        progress_callback(10, "📊 Analyzing paper content and extracting key information...")
-    analysis_result = await run_paper_analyzer(input_source, logger)
+        progress_callback(10, "📊 Analyzing research content and extracting key information...")
+    analysis_result = await run_research_analyzer(input_source, logger)
     
     # Add brief pause for system stability
     await asyncio.sleep(5)
@@ -411,31 +439,35 @@ async def _execute_paper_analysis_phase(input_source: str, logger, progress_call
     # Step 2: Download Processing
     if progress_callback:
         progress_callback(25, "📥 Processing downloads and preparing document structure...")
-    download_result = await run_paper_downloader(analysis_result, logger)
+    download_result = await run_resource_processor(analysis_result, logger)
     
     return analysis_result, download_result
 
 
-async def _setup_paper_directory_structure(download_result: str, logger, sync_directory: Optional[str] = None) -> Dict[str, str]:
+async def synthesize_workspace_infrastructure_agent(download_result: str, logger, sync_directory: Optional[str] = None) -> Dict[str, str]:
     """
-    Setup paper directory structure and prepare file paths.
+    Synthesize intelligent research workspace infrastructure with automated structure generation.
+    
+    This agent autonomously creates and configures the optimal workspace architecture
+    for research project implementation with AI-driven path optimization.
     
     Args:
-        download_result: Download result from previous phase
-        logger: Logger instance
-        sync_directory: Optional sync directory path override
+        download_result: Resource processing result from analysis agent
+        logger: Logger instance for infrastructure tracking
+        sync_directory: Optional sync directory path for environment customization
         
     Returns:
-        dict: Directory structure information
+        dict: Comprehensive workspace infrastructure metadata
     """
     # Parse download result to get file information
     result = await FileProcessor.process_file_input(download_result, base_dir=sync_directory)
     paper_dir = result['paper_dir']
     
-    # Log directory structure setup
-    print(f"📁 Paper directory structure:")
-    print(f"   Base sync directory: {sync_directory or 'default'}")
-    print(f"   Paper directory: {paper_dir}")
+    # Log workspace infrastructure synthesis
+    print(f"🏗️ Intelligent workspace infrastructure synthesized:")
+    print(f"   Base sync environment: {sync_directory or 'auto-detected'}")
+    print(f"   Research workspace: {paper_dir}")
+    print(f"   AI-driven path optimization: active")
     
     return {
         'paper_dir': paper_dir,
@@ -449,20 +481,23 @@ async def _setup_paper_directory_structure(download_result: str, logger, sync_di
     }
 
 
-async def _execute_reference_analysis_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> str:
+async def orchestrate_reference_intelligence_agent(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> str:
     """
-    Execute reference analysis phase.
+    Orchestrate intelligent reference analysis with automated research discovery.
+    
+    This agent autonomously processes research references and discovers
+    related work using advanced AI-powered analysis algorithms.
     
     Args:
-        dir_info: Directory structure information
-        logger: Logger instance
-        progress_callback: Progress callback function
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for intelligence tracking
+        progress_callback: Progress callback function for monitoring
         
     Returns:
-        str: Reference analysis result
+        str: Comprehensive reference intelligence analysis result
     """
     if progress_callback:
-        progress_callback(50, "🔍 Analyzing paper references and related work...")
+        progress_callback(50, "🧠 Orchestrating reference intelligence discovery...")
     
     reference_path = dir_info['reference_path']
     
@@ -483,40 +518,46 @@ async def _execute_reference_analysis_phase(dir_info: Dict[str, str], logger, pr
     return reference_result
 
 
-async def _execute_code_planning_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
+async def orchestrate_code_planning_agent(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
     """
-    Execute code planning phase.
+    Orchestrate intelligent code planning with automated design analysis.
+    
+    This agent autonomously generates optimal code reproduction plans and implementation
+    strategies using AI-driven code analysis and planning principles.
     
     Args:
-        dir_info: Directory structure information
-        logger: Logger instance
-        progress_callback: Progress callback function
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for planning tracking
+        progress_callback: Progress callback function for monitoring
     """
     if progress_callback:
-        progress_callback(40, "📋 Generating initial code implementation plan...")
+        progress_callback(40, "🏗️ Synthesizing intelligent code architecture...")
     
     initial_plan_path = dir_info['initial_plan_path']
     
     # Check if initial plan already exists
     if not os.path.exists(initial_plan_path):
-        initial_plan_result = await paper_code_analyzer(dir_info['standardized_text'], logger)
+        initial_plan_result = await run_code_analyzer(dir_info['paper_dir'], logger)
         with open(initial_plan_path, 'w', encoding='utf-8') as f:
             f.write(initial_plan_result)
         print(f"Initial plan saved to {initial_plan_path}")
 
 
-async def _execute_github_download_phase(reference_result: str, dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
+async def automate_repository_acquisition_agent(reference_result: str, dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None):
     """
-    Execute GitHub repository download phase.
+    Automate intelligent repository acquisition with AI-guided selection.
+    
+    This agent autonomously identifies, evaluates, and acquires relevant
+    repositories using intelligent filtering and automated download protocols.
     
     Args:
-        reference_result: Reference analysis result
-        dir_info: Directory structure information
-        logger: Logger instance
-        progress_callback: Progress callback function
+        reference_result: Reference intelligence analysis result
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for acquisition tracking
+        progress_callback: Progress callback function for monitoring
     """
     if progress_callback:
-        progress_callback(60, "📦 Downloading relevant GitHub repositories...")
+        progress_callback(60, "🤖 Automating intelligent repository acquisition...")
     
     await asyncio.sleep(5)  # Brief pause for stability
     
@@ -557,22 +598,25 @@ async def _execute_github_download_phase(reference_result: str, dir_info: Dict[s
         raise e  # Re-raise to be handled by the main pipeline
 
 
-async def _execute_codebase_indexing_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
+async def orchestrate_codebase_intelligence_agent(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
     """
-    Execute codebase indexing phase.
+    Orchestrate intelligent codebase analysis with automated knowledge extraction.
+    
+    This agent autonomously processes and indexes codebases using advanced
+    AI algorithms for intelligent relationship mapping and knowledge synthesis.
     
     Args:
-        dir_info: Directory structure information
-        logger: Logger instance
-        progress_callback: Progress callback function
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for intelligence tracking
+        progress_callback: Progress callback function for monitoring
         
     Returns:
-        dict: Indexing result
+        dict: Comprehensive codebase intelligence analysis result
     """
     if progress_callback:
-        progress_callback(70, "🗂️ Building codebase index and analyzing relationships...")
+        progress_callback(70, "🧮 Orchestrating codebase intelligence analysis...")
     
-    print("Starting codebase indexing to build relationships between downloaded code and target structure...")
+    print("Initiating intelligent codebase analysis with AI-powered relationship mapping...")
     await asyncio.sleep(2)  # Brief pause before starting indexing
     
     # Check if code_base directory exists and has content
@@ -668,22 +712,25 @@ async def _execute_codebase_indexing_phase(dir_info: Dict[str, str], logger, pro
         return error_report
 
 
-async def _execute_code_implementation_phase(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
+async def synthesize_code_implementation_agent(dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None) -> Dict:
     """
-    Execute code implementation phase.
+    Synthesize intelligent code implementation with automated development.
+    
+    This agent autonomously generates high-quality code implementations using
+    AI-powered development strategies and intelligent code synthesis algorithms.
     
     Args:
-        dir_info: Directory structure information
-        logger: Logger instance
-        progress_callback: Progress callback function
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for implementation tracking
+        progress_callback: Progress callback function for monitoring
         
     Returns:
-        dict: Implementation result
+        dict: Comprehensive code implementation synthesis result
     """
     if progress_callback:
-        progress_callback(85, "⚙️ Implementing code based on the generated plan...")
+        progress_callback(85, "🔬 Synthesizing intelligent code implementation...")
     
-    print("Starting code implementation based on the initial plan...")
+    print("Launching intelligent code synthesis with AI-driven implementation strategies...")
     await asyncio.sleep(3)  # Brief pause before starting implementation
     
     try:
@@ -731,21 +778,21 @@ async def execute_multi_agent_research_pipeline(
     enable_indexing: bool = True
 ) -> str:
     """
-    Execute the complete multi-agent research pipeline from paper input to code implementation.
+    Execute the complete intelligent multi-agent research orchestration pipeline.
     
-    This is the main orchestration function that coordinates all research workflow phases:
-    - Docker synchronization setup for seamless file access
-    - Paper analysis and content extraction
-    - Code planning and structure design
-    - Reference analysis and GitHub repository discovery (optional)
-    - Codebase indexing and relationship analysis (optional)
-    - Final code implementation
+    This is the main AI orchestration engine that coordinates autonomous research workflow agents:
+    - Docker synchronization automation for seamless environment management
+    - Intelligent research analysis with automated content processing
+    - AI-driven code architecture synthesis and design automation
+    - Reference intelligence discovery with automated knowledge extraction (optional)
+    - Codebase intelligence orchestration with automated relationship analysis (optional)
+    - Intelligent code implementation synthesis with AI-powered development
     
     Args:
-        input_source: Input source (file path, URL, or analysis result)
-        logger: Logger instance for comprehensive logging
-        progress_callback: Progress callback function for UI updates
-        enable_indexing: Whether to enable codebase indexing (default: True)
+        input_source: Research input source (file path, URL, or preprocessed analysis)
+        logger: Logger instance for comprehensive workflow intelligence tracking
+        progress_callback: Progress callback function for real-time monitoring
+        enable_indexing: Whether to enable advanced intelligence analysis (default: True)
         
     Returns:
         str: The comprehensive pipeline execution result with status and outcomes
@@ -755,7 +802,7 @@ async def execute_multi_agent_research_pipeline(
         if progress_callback:
             progress_callback(5, "🔄 Setting up Docker synchronization for seamless file access...")
         
-        print("🚀 Starting multi-agent research pipeline with Docker sync support")
+        print("🚀 Initializing intelligent multi-agent research orchestration system")
         
         # Setup Docker synchronization
         sync_result = await setup_docker_sync(logger=logger)
@@ -765,11 +812,11 @@ async def execute_multi_agent_research_pipeline(
         print(f"📂 Sync directory: {sync_directory}")
         print(f"✅ Sync status: {sync_result['message']}")
         
-        # Log indexing functionality status
+        # Log intelligence functionality status
         if enable_indexing:
-            print("🗂️ Codebase indexing enabled - full workflow")
+            print("🧠 Advanced intelligence analysis enabled - comprehensive workflow")
         else:
-            print("⚡ Fast mode - codebase indexing disabled")
+            print("⚡ Optimized mode - advanced intelligence analysis disabled")
         
         # Update file processor to use sync directory
         if sync_result['environment'] == 'docker':
@@ -781,58 +828,58 @@ async def execute_multi_agent_research_pipeline(
         # Phase 1: Input Processing and Validation
         input_source = await _process_input_source(input_source, logger)
         
-        # Phase 2: Paper Analysis and Download (if needed)
+        # Phase 2: Research Analysis and Resource Processing (if needed)
         if isinstance(input_source, str) and (input_source.endswith(('.pdf', '.docx', '.txt', '.html', '.md')) or 
             input_source.startswith(('http', 'file://'))):
-            analysis_result, download_result = await _execute_paper_analysis_phase(input_source, logger, progress_callback)
+            analysis_result, download_result = await orchestrate_research_analysis_agent(input_source, logger, progress_callback)
         else:
             download_result = input_source  # Use input directly if already processed
         
-        # Phase 3: Directory Structure Setup
+        # Phase 3: Workspace Infrastructure Synthesis
         if progress_callback:
-            progress_callback(40, "🔧 Starting comprehensive code preparation workflow...")
+            progress_callback(40, "🏗️ Synthesizing intelligent workspace infrastructure...")
         
-        dir_info = await _setup_paper_directory_structure(download_result, logger, sync_directory)
+        dir_info = await synthesize_workspace_infrastructure_agent(download_result, logger, sync_directory)
         await asyncio.sleep(30)
         
-        # Phase 4: Code Planning
-        await _execute_code_planning_phase(dir_info, logger, progress_callback)
+        # Phase 4: Code Planning Orchestration
+        await orchestrate_code_planning_agent(dir_info, logger, progress_callback)
         
-        # Phase 5: Reference Analysis (only when indexing is enabled)
+        # Phase 5: Reference Intelligence (only when indexing is enabled)
         if enable_indexing:
-            reference_result = await _execute_reference_analysis_phase(dir_info, logger, progress_callback)
+            reference_result = await orchestrate_reference_intelligence_agent(dir_info, logger, progress_callback)
         else:
-            print("🔶 Skipping reference analysis (indexing disabled)")
+            print("🔶 Skipping reference intelligence analysis (fast mode enabled)")
             # Create empty reference analysis result to maintain file structure consistency
-            reference_result = "Reference analysis skipped - indexing disabled for faster processing"
+            reference_result = "Reference intelligence analysis skipped - fast mode enabled for optimized processing"
             with open(dir_info['reference_path'], 'w', encoding='utf-8') as f:
                 f.write(reference_result)
         
-        # Phase 6: GitHub Repository Download (optional)
+        # Phase 6: Repository Acquisition Automation (optional)
         if enable_indexing:
-            await _execute_github_download_phase(reference_result, dir_info, logger, progress_callback)
+            await automate_repository_acquisition_agent(reference_result, dir_info, logger, progress_callback)
         else:
-            print("🔶 Skipping GitHub repository download (indexing disabled)")
+            print("🔶 Skipping automated repository acquisition (fast mode enabled)")
             # Create empty download result file to maintain file structure consistency
             with open(dir_info['download_path'], 'w', encoding='utf-8') as f:
-                f.write("GitHub repository download skipped - indexing disabled for faster processing")
+                f.write("Automated repository acquisition skipped - fast mode enabled for optimized processing")
         
-        # Phase 7: Codebase Indexing (optional)
+        # Phase 7: Codebase Intelligence Orchestration (optional)
         if enable_indexing:
-            index_result = await _execute_codebase_indexing_phase(dir_info, logger, progress_callback)
+            index_result = await orchestrate_codebase_intelligence_agent(dir_info, logger, progress_callback)
         else:
-            print("🔶 Skipping codebase indexing (indexing disabled)")
+            print("🔶 Skipping codebase intelligence orchestration (fast mode enabled)")
             # Create a skipped indexing result
             index_result = {
                 'status': 'skipped',
-                'reason': 'indexing_disabled',
-                'message': 'Codebase indexing skipped for faster processing'
+                'reason': 'fast_mode_enabled',
+                'message': 'Codebase intelligence orchestration skipped for optimized processing'
             }
             with open(dir_info['index_report_path'], 'w', encoding='utf-8') as f:
                 f.write(str(index_result))
         
-        # Phase 8: Code Implementation
-        implementation_result = await _execute_code_implementation_phase(dir_info, logger, progress_callback)
+        # Phase 8: Code Implementation Synthesis
+        implementation_result = await synthesize_code_implementation_agent(dir_info, logger, progress_callback)
         
         # Final Status Report
         if enable_indexing:
