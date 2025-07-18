@@ -606,18 +606,18 @@ def display_processing_history() -> Dict[str, Any]:
 
 def file_input_component(task_counter: int) -> Optional[str]:
     """
-    File input component
+    File input component with automatic PDF conversion
     
     Args:
         task_counter: Task counter
         
     Returns:
-        File path or None
+        PDF file path or None
     """
     uploaded_file = st.file_uploader(
         "Upload research paper file",
-        type=['pdf', 'docx', 'doc', 'html', 'htm', 'txt', 'md'],
-        help="Supported formats: PDF, Word, PowerPoint, HTML, Text",
+        type=['pdf', 'docx', 'doc', 'ppt', 'pptx', 'xls', 'xlsx', 'html', 'htm', 'txt', 'md'],
+        help="Supported formats: PDF, Word, PowerPoint, Excel, HTML, Text (all files will be converted to PDF)",
         key=f"file_uploader_{task_counter}"
     )
     
@@ -629,12 +629,97 @@ def file_input_component(task_counter: int) -> Optional[str]:
         # Save uploaded file to temporary directory
         try:
             import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
+            import sys
+            import os
+            from pathlib import Path
+            
+            # Add project root to path for imports
+            current_dir = Path(__file__).parent
+            project_root = current_dir.parent
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+            
+            # Import PDF converter
+            from tools.pdf_converter import PDFConverter
+            
+            # Save original file
+            file_ext = uploaded_file.name.split('.')[-1].lower()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_ext}") as tmp_file:
                 tmp_file.write(uploaded_file.getvalue())
-                st.success(f"✅ File uploaded successfully!")
-                return tmp_file.name
+                original_file_path = tmp_file.name
+            
+            st.success(f"✅ File uploaded successfully!")
+            
+            # Check if file is already PDF
+            if file_ext == 'pdf':
+                st.info("📑 File is already in PDF format, no conversion needed.")
+                return original_file_path
+            
+            # Convert to PDF
+            with st.spinner(f"🔄 Converting {file_ext.upper()} to PDF..."):
+                try:
+                    converter = PDFConverter()
+                    
+                    # Check dependencies
+                    deps = converter.check_dependencies()
+                    missing_deps = []
+                    
+                    if file_ext in {'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'} and not deps['libreoffice']:
+                        missing_deps.append('LibreOffice')
+                    
+                    if file_ext in {'txt', 'md'} and not deps['reportlab']:
+                        missing_deps.append('ReportLab')
+                    
+                    if missing_deps:
+                        st.error(f"❌ Missing dependencies: {', '.join(missing_deps)}")
+                        st.info("💡 Please install the required dependencies:")
+                        if 'LibreOffice' in missing_deps:
+                            st.code("# Install LibreOffice\n"
+                                   "# Windows: Download from https://www.libreoffice.org/\n"
+                                   "# macOS: brew install --cask libreoffice\n"
+                                   "# Ubuntu: sudo apt-get install libreoffice")
+                        if 'ReportLab' in missing_deps:
+                            st.code("pip install reportlab")
+                        
+                        # Clean up original file
+                        try:
+                            os.unlink(original_file_path)
+                        except:
+                            pass
+                        return None
+                    
+                    # Perform conversion
+                    pdf_path = converter.convert_to_pdf(original_file_path)
+                    
+                    # Clean up original file
+                    try:
+                        os.unlink(original_file_path)
+                    except:
+                        pass
+                    
+                    # Display conversion result
+                    pdf_size = Path(pdf_path).stat().st_size
+                    st.success(f"✅ Successfully converted to PDF!")
+                    st.info(f"📑 **PDF File:** {Path(pdf_path).name} ({format_file_size(pdf_size)})")
+                    
+                    return str(pdf_path)
+                    
+                except Exception as e:
+                    st.error(f"❌ PDF conversion failed: {str(e)}")
+                    st.warning("💡 You can try:")
+                    st.markdown("- Converting the file to PDF manually")
+                    st.markdown("- Using a different file format")
+                    st.markdown("- Checking if the file is corrupted")
+                    
+                    # Clean up original file
+                    try:
+                        os.unlink(original_file_path)
+                    except:
+                        pass
+                    return None
+                    
         except Exception as e:
-            st.error(f"❌ Failed to save uploaded file: {str(e)}")
+            st.error(f"❌ Failed to process uploaded file: {str(e)}")
             return None
     
     return None

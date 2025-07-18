@@ -17,6 +17,7 @@ def check_dependencies():
     print("🔍 Checking dependencies...")
     
     missing_deps = []
+    missing_system_deps = []
     
     try:
         import streamlit
@@ -36,15 +37,75 @@ def check_dependencies():
     except ImportError:
         missing_deps.append("asyncio")
     
-    if missing_deps:
-        print("\n❌ Missing dependencies:")
-        for dep in missing_deps:
-            print(f"   - {dep}")
-        print("\nPlease install missing dependencies using:")
-        print(f"pip install {' '.join(missing_deps)}")
-        return False
+    # Check PDF conversion dependencies
+    try:
+        import reportlab
+        print("✅ ReportLab is installed (for text-to-PDF conversion)")
+    except ImportError:
+        missing_deps.append("reportlab")
+        print("⚠️  ReportLab not found (text files won't convert to PDF)")
     
-    print("✅ All dependencies satisfied")
+    # Check LibreOffice for Office document conversion
+    try:
+        import subprocess
+        import platform
+        
+        subprocess_kwargs = {
+            "capture_output": True,
+            "text": True,
+            "timeout": 5,
+        }
+        
+        if platform.system() == "Windows":
+            subprocess_kwargs["creationflags"] = 0x08000000  # Hide console window
+        
+        # Try different LibreOffice commands
+        libreoffice_found = False
+        for cmd in ["libreoffice", "soffice"]:
+            try:
+                result = subprocess.run([cmd, "--version"], **subprocess_kwargs)
+                if result.returncode == 0:
+                    print(f"✅ LibreOffice is installed (for Office document conversion)")
+                    libreoffice_found = True
+                    break
+            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+        
+        if not libreoffice_found:
+            missing_system_deps.append("LibreOffice")
+            print("⚠️  LibreOffice not found (Office documents won't convert to PDF)")
+    
+    except Exception:
+        missing_system_deps.append("LibreOffice")
+        print("⚠️  Could not check LibreOffice installation")
+    
+    # Display missing dependencies
+    if missing_deps or missing_system_deps:
+        print("\n📋 Dependency Status:")
+        
+        if missing_deps:
+            print("❌ Missing Python dependencies:")
+            for dep in missing_deps:
+                print(f"   - {dep}")
+            print(f"\nInstall with: pip install {' '.join(missing_deps)}")
+        
+        if missing_system_deps:
+            print("\n⚠️  Missing system dependencies (optional for full functionality):")
+            for dep in missing_system_deps:
+                print(f"   - {dep}")
+            print("\nInstall LibreOffice:")
+            print("   - Windows: Download from https://www.libreoffice.org/")
+            print("   - macOS: brew install --cask libreoffice")
+            print("   - Ubuntu/Debian: sudo apt-get install libreoffice")
+        
+        # Only fail if critical Python dependencies are missing
+        if missing_deps:
+            return False
+        else:
+            print("\n✅ Core dependencies satisfied (optional dependencies missing)")
+    else:
+        print("✅ All dependencies satisfied")
+    
     return True
 
 def cleanup_cache():

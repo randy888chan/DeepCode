@@ -1,0 +1,24 @@
+{"level":"INFO","timestamp":"2025-07-18T14:10:46.530484","namespace":"mcp_agent.core.context","message":"Configuring logger with level: info"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:46.533077","namespace":"mcp_agent.paper_to_code","message":"MCPApp initialized","data":{"data":{"progress_action":"Running","target":"paper_to_code","agent_name":"mcp_application_loop","session_id":"271f8b09-95cd-4cdf-8dbd-081f42745470"}}}
+{"level":"INFO","timestamp":"2025-07-18T14:10:47.144964","namespace":"mcp_agent.paper_to_code","message":"\ud83d\udd0d Setting up Docker synchronization..."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:47.145040","namespace":"mcp_agent.paper_to_code","message":"\ud83d\udcbb Detected local environment"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:47.145165","namespace":"mcp_agent.paper_to_code","message":"\u2705 Local sync directory ready: /Users/lizongwei/Desktop/LLM_research/Code-Agent/deepcode-mcp/deepcode_lab"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:47.466904","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"brave: Up and running with a persistent connection!"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:51.892803","namespace":"mcp_agent.mcp.mcp_aggregator.ResearchAnalyzerAgent","message":"Last aggregator closing, shutting down all persistent connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:51.892873","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:51.893436","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"brave: Requesting shutdown..."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:51.893473","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"All persistent server connections signaled to disconnect."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:51.893497","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:10:52.398195","namespace":"mcp_agent.mcp.mcp_aggregator.ResearchAnalyzerAgent","message":"Connection manager successfully closed and removed from context"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:57.707839","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"filesystem: Up and running with a persistent connection!"}
+{"level":"INFO","timestamp":"2025-07-18T14:10:57.708319","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"file-downloader: Up and running with a persistent connection!"}
+{"level":"INFO","timestamp":"2025-07-18T14:11:05.192431","namespace":"mcp_agent.mcp.mcp_aggregator.ResourceProcessorAgent","message":"Requesting tool call","data":{"data":{"progress_action":"Calling Tool","tool_name":"list_directory","server_name":"filesystem","agent_name":"ResourceProcessorAgent"}}}
+{"level":"INFO","timestamp":"2025-07-18T14:11:08.378959","namespace":"mcp_agent.mcp.mcp_aggregator.ResourceProcessorAgent","message":"Requesting tool call","data":{"data":{"progress_action":"Calling Tool","tool_name":"create_directory","server_name":"filesystem","agent_name":"ResourceProcessorAgent"}}}
+{"level":"INFO","timestamp":"2025-07-18T14:11:08.379219","namespace":"mcp_agent.mcp.mcp_aggregator.ResourceProcessorAgent","message":"Requesting tool call","data":{"data":{"progress_action":"Calling Tool","tool_name":"convert_document_to_markdown","server_name":"file-downloader","agent_name":"ResourceProcessorAgent"}}}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132397","namespace":"mcp_agent.mcp.mcp_aggregator.ResourceProcessorAgent","message":"Last aggregator closing, shutting down all persistent connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132463","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132837","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"filesystem: Requesting shutdown..."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132872","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"file-downloader: Requesting shutdown..."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132891","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"All persistent server connections signaled to disconnect."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.132924","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
+{"level":"INFO","timestamp":"2025-07-18T14:11:16.638756","namespace":"mcp_agent.mcp.mcp_aggregator.ResourceProcessorAgent","message":"Connection manager successfully closed and removed from context"}
