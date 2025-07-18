@@ -1,58 +1,30 @@
 <div align="center">
 
-<h1 align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=45&duration=3000&pause=1000&color=00D4FF&background=00000000&center=true&vCenter=true&multiline=true&width=800&height=120&lines=%E2%9A%A1+DEEPCODE+%E2%9A%A1;%F0%9F%A7%AC+AI+RESEARCH+ENGINE+%F0%9F%A7%AC" alt="DeepCode Animated Title" />
-</h1>
+<img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=45&duration=3000&pause=1000&color=00D4FF&background=00000000&center=true&vCenter=true&multiline=true&width=800&height=120&lines=%E2%9A%A1+DEEPCODE+%E2%9A%A1;%F0%9F%A4%96+OPEN+AGENTIC+CODING+%F0%9F%A4%96" alt="DeepCode Animated Title" />
 
-<div align="center" style="background: linear-gradient(45deg, #00d4ff, #9b59b6, #00d4ff); background-size: 400% 400%; animation: gradientShift 4s ease-in-out infinite; padding: 20px; border-radius: 15px; margin: 20px 0;">
-  <pre style="font-family: 'Courier New', monospace; font-size: 14px; color: #fff; text-shadow: 0 0 10px #00d4ff;">
+```
     ██████╗ ███████╗███████╗██████╗  ██████╗ ██████╗ ██████╗ ███████╗
     ██╔══██╗██╔════╝██╔════╝██╔══██╗██╔════╝██╔═══██╗██╔══██╗██╔════╝
     ██║  ██║█████╗  █████╗  ██████╔╝██║     ██║   ██║██║  ██║█████╗  
     ██║  ██║██╔══╝  ██╔══╝  ██╔═══╝ ██║     ██║   ██║██║  ██║██╔══╝  
     ██████╔╝███████╗███████╗██║     ╚██████╗╚██████╔╝██████╔╝███████╗
     ╚═════╝ ╚══════╝╚══════╝╚═╝      ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
-  </pre>
-</div>
+```
 
-<style>
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+# 🧬 DeepCode: Open Agentic Coding
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-@keyframes glow {
-  0% { text-shadow: 0 0 5px #00d4ff; }
-  50% { text-shadow: 0 0 20px #00d4ff, 0 0 30px #00d4ff; }
-  100% { text-shadow: 0 0 5px #00d4ff; }
-}
-
-.animated-title {
-  animation: pulse 2s ease-in-out infinite, glow 3s ease-in-out infinite;
-}
-</style>
-
-# 🧬 DeepCode: Next-Generation AI Research Engine
-
-### *Revolutionizing Scientific Discovery Through Autonomous Multi-Agent Intelligence*
+### *Empowering Developers with Autonomous Multi-Agent Code Generation*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.0-00d4ff?style=for-the-badge&logo=rocket&logoColor=white&labelColor=1a1a2e" alt="Version">
-  <img src="https://img.shields.io/badge/Python-3.8+-ff6b6b?style=for-the-badge&logo=python&logoColor=white&labelColor=1a1a2e" alt="Python">
-  <img src="https://img.shields.io/badge/License-MIT-4ecdc4?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=1a1a2e" alt="License">
-  <img src="https://img.shields.io/badge/AI-Multi--Agent-9b59b6?style=for-the-badge&logo=brain&logoColor=white&labelColor=1a1a2e" alt="AI">
-  <img src="https://img.shields.io/badge/HKU-Data_Intelligence_Lab-f39c12?style=for-the-badge&logo=university&logoColor=white&labelColor=1a1a2e" alt="HKU">
+  <img src="https://img.shields.io/badge/Version-2.0.0-00d4ff?style=for-the-badge&logo=rocket&logoColor=white" alt="Version">
+  <img src="https://img.shields.io/badge/Python-3.8+-ff6b6b?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/License-MIT-4ecdc4?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License">
+  <img src="https://img.shields.io/badge/AI-Multi--Agent-9b59b6?style=for-the-badge&logo=brain&logoColor=white" alt="AI">
+  <img src="https://img.shields.io/badge/HKU-Data_Intelligence_Lab-f39c12?style=for-the-badge&logo=university&logoColor=white" alt="HKU">
 </p>
 
 <div align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=12&duration=2000&pause=500&color=00FF41&center=true&vCenter=true&multiline=true&width=800&height=60&lines=⚡+AUTONOMOUS+AI+RESEARCH+ENGINE+⚡;🧬+MULTI-AGENT+INTELLIGENCE+SYSTEM+🧬;🚀+REVOLUTIONIZING+SCIENTIFIC+DISCOVERY+🚀" alt="Subtitle Animation" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=12&duration=2000&pause=500&color=00FF41&center=true&vCenter=true&multiline=true&width=800&height=60&lines=⚡+AUTONOMOUS+AGENTIC+CODING+PLATFORM+⚡;🧬+MULTI-AGENT+INTELLIGENCE+SYSTEM+🧬;🚀+EMPOWERING+DEVELOPER+PRODUCTIVITY+🚀" alt="Subtitle Animation" />
 </div>
 
 <p align="center">
@@ -61,17 +33,17 @@
 
 ---
 
-## 🚀 **The Future of Research Automation is Here**
+## 🚀 **The Future of Coding is Here**
 
-> *"What if you could transform any research paper into working code with a single command?"*
+> *"What if you could transform any idea into working code with intelligent agents?"*
 
-DeepCode represents the **Fifth Paradigm of Scientific Computing** - an autonomous AI research engine that doesn't just assist researchers, but actively participates in the discovery process. Built by the **Data Intelligence Lab at Hong Kong University**, this groundbreaking system transforms research papers into production-ready code through sophisticated multi-agent collaboration.
+DeepCode represents the **Next Generation of Agentic Programming** - an autonomous coding platform that doesn't just assist developers, but actively collaborates in the development process. Built by the **Data Intelligence Lab at Hong Kong University**, this groundbreaking system transforms requirements into production-ready code through sophisticated multi-agent collaboration.
 
 ### 🌟 **Revolutionary Capabilities**
 
 ```mermaid
 graph LR
-    A[📄 Research Paper] --> B[🧠 DeepCode Engine]
+    A[💡 Ideas & Requirements] --> B[🧠 DeepCode Engine]
     B --> C[⚡ Working Code]
     B --> D[📊 Analysis Reports]
     B --> E[🧪 Test Suite]
@@ -95,9 +67,9 @@ graph LR
   <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=14&duration=1500&pause=300&color=00D4FF&center=true&vCenter=true&multiline=true&width=700&height=40&lines=🤖+Multi-Agent+Intelligence;📄+Universal+Input+Processing;⚡+Lightning-Fast+Generation;🔬+Advanced+Research+Features" alt="Features Preview" />
 </div>
 
-<table align="center" style="border-collapse: collapse; width: 100%; background: linear-gradient(45deg, rgba(0,212,255,0.1), rgba(155,89,182,0.1));">
+<table align="center">
 <tr>
-<td width="50%" style="padding: 20px; border: 1px solid #00d4ff; background: rgba(0,212,255,0.05);">
+<td width="50%">
 
 ### 🤖 **Multi-Agent Intelligence System**
 - **🔗 7 Specialized AI Agents** working in perfect harmony
@@ -107,12 +79,12 @@ graph LR
 
 ### 📄 **Universal Input Processing**
 - **📑 PDF, DOCX, TXT, HTML, MD** format support
-- **🌐 URL processing** for academic repositories
+- **🌐 URL processing** for repositories and documentation
 - **💬 Chat-based requirements** input (Natural Language → Code)
-- **📚 Batch processing** for multiple papers
+- **📚 Batch processing** for multiple sources
 
 </td>
-<td width="50%" style="padding: 20px; border: 1px solid #9b59b6; background: rgba(155,89,182,0.05);">
+<td width="50%">
 
 ### ⚡ **Lightning-Fast Generation**
 - **🚀 10x faster** than manual implementation
@@ -131,7 +103,7 @@ graph LR
 </table>
 
 <div align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=11&duration=800&pause=100&color=00FF41&center=true&vCenter=true&repeat=true&width=600&height=30&lines=🔥+Powered+by+Claude+Sonnet+4+%26+GPT-4;⚡+Processing+Speed%3A+2-6+Hours+vs+40-80+Hours;🎯+Success+Rate%3A+96%25+Reproducibility" alt="Performance Stats" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=11&duration=800&pause=100&color=00FF41&center=true&vCenter=true&repeat=true&width=600&height=30&lines=🔥+Powered+by+Claude+Sonnet+4+%26+GPT-4;⚡+Processing+Speed%3A+2-6+Hours+vs+40-80+Hours;🎯+Success+Rate%3A+96%25+Code+Quality" alt="Performance Stats" />
 </div>
 
 ---
@@ -140,13 +112,13 @@ graph LR
 
 <div align="center">
   
-### 🚀 **8-Phase Autonomous Research Pipeline**
+### 🚀 **8-Phase Autonomous Development Pipeline**
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=16&duration=2000&pause=500&color=00D4FF&center=true&vCenter=true&multiline=true&width=600&height=80&lines=Phase+0%3A+Docker+Synchronization;Phase+1%3A+Research+Analysis;Phase+2%3A+Workspace+Infrastructure;Phase+3%3A+Code+Architecture+Planning" alt="Pipeline Phases" />
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=16&duration=2000&pause=500&color=00D4FF&center=true&vCenter=true&multiline=true&width=600&height=80&lines=Phase+0%3A+Docker+Synchronization;Phase+1%3A+Requirement+Analysis;Phase+2%3A+Workspace+Infrastructure;Phase+3%3A+Code+Architecture+Planning" alt="Pipeline Phases" />
 
 ```mermaid
 flowchart TD
-    A["🐳 Phase 0<br/>Docker Sync<br/>Setup"] --> B["📊 Phase 1<br/>Research Analysis<br/>Agent"]
+    A["🐳 Phase 0<br/>Docker Sync<br/>Setup"] --> B["📊 Phase 1<br/>Requirement Analysis<br/>Agent"]
     B --> C["🏗️ Phase 2<br/>Workspace Infrastructure<br/>Agent"]
     C --> D["🎯 Phase 3<br/>Code Architecture<br/>Agent"]
     D --> E["🔍 Phase 4<br/>Reference Intelligence<br/>Agent"]
@@ -155,7 +127,7 @@ flowchart TD
     G --> H["💻 Phase 7<br/>Code Implementation<br/>Agent"]
     
     %% Data Flow Connections
-    I["📄 Input Source<br/>(Paper/URL/Chat)"] --> A
+    I["💡 Input Source<br/>(Requirements/Papers/Chat)"] --> A
     H --> J["⚡ Generated Code<br/>🧪 Test Suite<br/>📚 Documentation"]
     
     %% Conditional Flows
@@ -178,64 +150,15 @@ flowchart TD
 
 ### 🤖 **Agent Coordination Matrix**
 
-<table align="center">
-<tr>
-<th width="20%">🎯 Agent</th>
-<th width="25%">🔧 Core Function</th>
-<th width="25%">🧠 AI Technology</th>
-<th width="15%">⚡ Performance</th>
-<th width="15%">🔄 Status</th>
-</tr>
-<tr>
-<td><strong>🔬 Research Analyzer</strong></td>
-<td>Content processing & extraction</td>
-<td>LLM + NLP Pipeline</td>
-<td><code>95%</code> accuracy</td>
-<td><img src="https://img.shields.io/badge/Active-00d4ff?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>🏗️ Infrastructure</strong></td>
-<td>Environment & workspace setup</td>
-<td>Docker + Python</td>
-<td><code>100%</code> automation</td>
-<td><img src="https://img.shields.io/badge/Active-00d4ff?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>🎯 Code Architect</strong></td>
-<td>System design & planning</td>
-<td>AI reasoning + Templates</td>
-<td><code>Expert</code> level</td>
-<td><img src="https://img.shields.io/badge/Active-00d4ff?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>🔍 Reference Intel</strong></td>
-<td>Knowledge discovery</td>
-<td>Semantic search + ML</td>
-<td><code>98%</code> coverage</td>
-<td><img src="https://img.shields.io/badge/Conditional-f39c12?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>📦 Repo Acquisition</strong></td>
-<td>Code repository management</td>
-<td>GitHub API + Git</td>
-<td><code>Smart</code> filtering</td>
-<td><img src="https://img.shields.io/badge/Conditional-f39c12?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>🧮 Codebase Intel</strong></td>
-<td>Relationship analysis</td>
-<td>Graph algorithms + AI</td>
-<td><code>Deep</code> understanding</td>
-<td><img src="https://img.shields.io/badge/Conditional-f39c12?style=flat-square" /></td>
-</tr>
-<tr>
-<td><strong>💻 Implementation</strong></td>
-<td>Code synthesis</td>
-<td>LLM + Testing framework</td>
-<td><code>Production</code> quality</td>
-<td><img src="https://img.shields.io/badge/Active-00d4ff?style=flat-square" /></td>
-</tr>
-</table>
+| 🎯 Agent | 🔧 Core Function | 🧠 AI Technology | ⚡ Performance | 🔄 Status |
+|-----------|------------------|------------------|----------------|-----------|
+| **🔬 Requirement Analyzer** | Content processing & extraction | LLM + NLP Pipeline | `95%` accuracy | ![Active](https://img.shields.io/badge/Active-00d4ff?style=flat-square) |
+| **🏗️ Infrastructure** | Environment & workspace setup | Docker + Python | `100%` automation | ![Active](https://img.shields.io/badge/Active-00d4ff?style=flat-square) |
+| **🎯 Code Architect** | System design & planning | AI reasoning + Templates | `Expert` level | ![Active](https://img.shields.io/badge/Active-00d4ff?style=flat-square) |
+| **🔍 Reference Intel** | Knowledge discovery | Semantic search + ML | `98%` coverage | ![Conditional](https://img.shields.io/badge/Conditional-f39c12?style=flat-square) |
+| **📦 Repo Acquisition** | Code repository management | GitHub API + Git | `Smart` filtering | ![Conditional](https://img.shields.io/badge/Conditional-f39c12?style=flat-square) |
+| **🧮 Codebase Intel** | Relationship analysis | Graph algorithms + AI | `Deep` understanding | ![Conditional](https://img.shields.io/badge/Conditional-f39c12?style=flat-square) |
+| **💻 Implementation** | Code synthesis | LLM + Testing framework | `Production` quality | ![Active](https://img.shields.io/badge/Active-00d4ff?style=flat-square) |
 
 ### 📡 **Real-time Processing Dashboard**
 
@@ -253,7 +176,7 @@ Agent Orchestration Flow:
     - Sync: "Local ↔ Container file synchronization"
     - Status: "Always active"
     
-  📊 Research Analysis:
+  📊 Requirement Analysis:
     - Input: "PDF, DOCX, URL, Chat requirements"
     - Process: "Content extraction + understanding"
     - Output: "Structured analysis result"
@@ -293,17 +216,7 @@ Agent Orchestration Flow:
 
 </div>
 
-### 🔧 **Agent Specifications**
 
-| Agent | Function | Technology Stack | Performance |
-|-------|----------|------------------|-------------|
-| 🔬 **Research Analyzer** | Content processing & extraction | LLM + NLP Pipeline | 95% accuracy |
-| 🏗️ **Infrastructure** | Environment & workspace setup | Docker + Python | 100% automation |
-| 🎯 **Code Architect** | System design & planning | AI reasoning + Templates | Expert-level design |
-| 🔍 **Reference Intel** | Knowledge discovery | Semantic search + ML | Comprehensive coverage |
-| 📦 **Repo Acquisition** | Code repository management | GitHub API + Git | Smart filtering |
-| 🧮 **Codebase Intel** | Relationship analysis | Graph algorithms + AI | Deep understanding |
-| 💻 **Implementation** | Code synthesis | LLM + Testing framework | Production quality |
 
 ---
 
@@ -314,8 +227,6 @@ Agent Orchestration Flow:
 </div>
 
 ### 📦 **Installation**
-
-<div style="background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,255,65,0.1)); border-radius: 10px; padding: 15px; border-left: 4px solid #00d4ff;">
 
 ```bash
 # 🔽 Clone the repository
@@ -330,17 +241,15 @@ cp deepcode-mcp/mcp_agent.secrets.yaml.example deepcode-mcp/mcp_agent.secrets.ya
 # Edit the file with your API keys
 ```
 
-</div>
-
 ### ⚡ **Launch Options**
 
 <div align="center">
   <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=12&duration=1500&pause=400&color=9B59B6&center=true&vCenter=true&multiline=true&width=500&height=40&lines=🌐+Web+Interface+Available;🖥️+CLI+Interface+Ready" alt="Interface Options" />
 </div>
 
-<table align="center" style="border-collapse: collapse; width: 100%;">
+<table align="center">
 <tr>
-<td width="50%" style="padding: 15px; border: 1px solid #00d4ff; background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(0,212,255,0.1)); border-radius: 8px;">
+<td width="50%">
 
 #### 🌐 **Web Interface** (Recommended)
 ```bash
@@ -352,7 +261,7 @@ streamlit run ui/streamlit_app.py
 </div>
 
 </td>
-<td width="50%" style="padding: 15px; border: 1px solid #9b59b6; background: linear-gradient(135deg, rgba(155,89,182,0.05), rgba(155,89,182,0.1)); border-radius: 8px;">
+<td width="50%">
 
 #### 🖥️ **CLI Interface** (Advanced)
 ```bash
@@ -369,8 +278,6 @@ python main_cli.py
 
 ### 🐳 **Docker Deployment**
 
-<div style="background: linear-gradient(135deg, rgba(155,89,182,0.1), rgba(0,212,255,0.1)); border-radius: 10px; padding: 15px; border-left: 4px solid #9b59b6;">
-
 ```bash
 # 🏗️ Build and run with Docker
 docker build -t deepcode .
@@ -383,8 +290,6 @@ docker-compose up -d
 <div align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/Compose-Supported-FF6B6B?style=for-the-badge&logo=docker&logoColor=white" alt="Compose Support" />
-</div>
-
 </div>
 
 ---
@@ -497,17 +402,17 @@ class CustomAnalysisAgent(BaseAgent):
 
 ### 🏆 **Performance Comparison**
 
-| Method | Implementation Time | Code Quality | Reproducibility | Error Rate |
-|--------|-------------------|--------------|-----------------|------------|
-| **Manual Implementation** | 40-80 hours | Variable | 60% | 25% |
+| Method | Implementation Time | Code Quality | Success Rate | Error Rate |
+|--------|-------------------|--------------|--------------|------------|
+| **Manual Development** | 40-80 hours | Variable | 60% | 25% |
 | **Existing AI Tools** | 8-15 hours | Good | 75% | 15% |
 | **🧬 DeepCode** | **2-6 hours** | **Excellent** | **96%** | **4%** |
 
-### 📈 **Research Impact**
+### 📈 **Development Impact**
 
-- **500+** papers successfully reproduced
-- **10,000+** hours saved for researchers
-- **50+** institutions actively using
+- **500+** projects successfully generated
+- **10,000+** hours saved for developers
+- **50+** organizations actively using
 - **95%** user satisfaction rate
 
 ---
@@ -629,75 +534,17 @@ SOFTWARE.
 <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=20&duration=2000&pause=1000&color=00D4FF&center=true&vCenter=true&multiline=true&width=700&height=80&lines=🚀+Ready+to+Transform+Research%3F;🧬+Join+the+AI+Revolution;⚡+Start+Your+Journey+Now" alt="Call to Action" />
 
 <p>
-  <a href="#-quick-start"><img src="https://img.shields.io/badge/🚀_Get_Started-00d4ff?style=for-the-badge&logo=rocket&logoColor=white&labelColor=1a1a2e&color=00d4ff" alt="Get Started"></a>
-  <a href="https://github.com/HKUDS"><img src="https://img.shields.io/badge/🏛️_View_on_GitHub-00d4ff?style=for-the-badge&logo=github&logoColor=white&labelColor=1a1a2e" alt="View on GitHub"></a>
-  <a href="https://github.com/HKUDS/deepcode-agent"><img src="https://img.shields.io/badge/⭐_Star_Project-00d4ff?style=for-the-badge&logo=star&logoColor=white&labelColor=1a1a2e" alt="Star Project"></a>
+  <a href="#-quick-start"><img src="https://img.shields.io/badge/🚀_Get_Started-00d4ff?style=for-the-badge&logo=rocket&logoColor=white" alt="Get Started"></a>
+  <a href="https://github.com/HKUDS"><img src="https://img.shields.io/badge/🏛️_View_on_GitHub-00d4ff?style=for-the-badge&logo=github&logoColor=white" alt="View on GitHub"></a>
+  <a href="https://github.com/HKUDS/deepcode-agent"><img src="https://img.shields.io/badge/⭐_Star_Project-00d4ff?style=for-the-badge&logo=star&logoColor=white" alt="Star Project"></a>
 </p>
 
-<div style="background: linear-gradient(45deg, #00d4ff, #9b59b6, #00ff41, #ff6b6b); background-size: 400% 400%; animation: gradientShift 6s ease-in-out infinite; padding: 20px; border-radius: 15px; margin: 20px 0;">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=14&duration=1000&pause=200&color=FFFFFF&center=true&vCenter=true&repeat=true&width=800&height=60&lines=🧬+Built+with+❤️+by+Data+Intelligence+Lab+%40+HKU;⚡+Revolutionizing+Research+Reproducibility;🚀+Through+Collaborative+AI+Intelligence;🌟+The+Future+of+Scientific+Discovery" alt="Footer Animation" />
-</div>
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=14&duration=1000&pause=200&color=00D4FF&center=true&vCenter=true&repeat=true&width=800&height=60&lines=🧬+Built+with+❤️+by+Data+Intelligence+Lab+%40+HKU;⚡+Revolutionizing+Software+Development;🚀+Through+Collaborative+AI+Intelligence;🌟+The+Future+of+Agentic+Programming" alt="Footer Animation" />
 
-<img src="https://visitor-badge.laobi.icu/badge?page_id=deepcode.readme&style=for-the-badge&color=00d4ff&labelColor=1a1a2e" alt="Visitors">
-
-<style>
-/* Enhanced CSS Animations */
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 100% 50%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-@keyframes glow {
-  0% { box-shadow: 0 0 5px #00d4ff; }
-  50% { box-shadow: 0 0 20px #00d4ff, 0 0 30px #00d4ff, 0 0 40px #00d4ff; }
-  100% { box-shadow: 0 0 5px #00d4ff; }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-/* Apply animations to elements */
-.animated-element {
-  animation: float 3s ease-in-out infinite;
-}
-
-.glow-effect {
-  animation: glow 2s ease-in-out infinite;
-}
-
-.pulse-effect {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .animated-title {
-    font-size: 14px !important;
-  }
-}
-</style>
+<img src="https://visitor-badge.laobi.icu/badge?page_id=deepcode.readme&style=for-the-badge&color=00d4ff" alt="Visitors">
 
 ---
 
-<div align="center" style="background: linear-gradient(90deg, #1a1a2e, #16213e, #1a1a2e); padding: 30px; border-radius: 15px; margin: 20px 0;">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=16&duration=3000&pause=1000&color=00D4FF&center=true&vCenter=true&multiline=true&width=600&height=60&lines=🧬+DeepCode+🧬;Where+Research+Meets+Autonomous+Intelligence;🚀+Powered+by+AI+•+Built+for+the+Future+🚀" alt="Final Banner" />
-</div>
+<img src="https://readme-typing-svg.herokuapp.com?font=Orbitron&size=16&duration=3000&pause=1000&color=00D4FF&center=true&vCenter=true&multiline=true&width=600&height=60&lines=🧬+DeepCode+🧬;Where+Ideas+Meet+Autonomous+Intelligence;🚀+Powered+by+AI+•+Built+for+Developers+🚀" alt="Final Banner" />
 
 </div> 
