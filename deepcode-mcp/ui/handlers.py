@@ -23,6 +23,7 @@ import concurrent.futures
 from mcp_agent.app import MCPApp
 from workflows.agent_orchestration_engine import (
     execute_multi_agent_research_pipeline,
+    execute_chat_based_planning_pipeline,
     run_research_analyzer,
     run_resource_processor
 )
@@ -107,16 +108,27 @@ async def process_input_async(input_source: str, input_type: str, enable_indexin
             
             # Initialize progress
             if progress_callback:
-                progress_callback(5, "🚀 Initializing AI research engine...")
+                if input_type == "chat":
+                    progress_callback(5, "🚀 Initializing chat-based planning pipeline...")
+                else:
+                    progress_callback(5, "🚀 Initializing AI research engine...")
             
-            # Call complete multi-agent research pipeline
-            # execute_multi_agent_research_pipeline now includes all steps: analysis, download, code preparation and implementation
-            repo_result = await execute_multi_agent_research_pipeline(
-                input_source, 
-                logger, 
-                progress_callback,
-                enable_indexing=enable_indexing  # Pass indexing control parameter
-            )
+            # Choose pipeline based on input type
+            if input_type == "chat":
+                # Use chat-based planning pipeline for user requirements
+                repo_result = await execute_chat_based_planning_pipeline(
+                    input_source,  # User's coding requirements
+                    logger,
+                    progress_callback
+                )
+            else:
+                # Use traditional multi-agent research pipeline for files/URLs
+                repo_result = await execute_multi_agent_research_pipeline(
+                    input_source, 
+                    logger, 
+                    progress_callback,
+                    enable_indexing=enable_indexing  # Pass indexing control parameter
+                )
             
             return {
                 "analysis_result": "Integrated into complete workflow",
@@ -359,10 +371,21 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
     from .components import enhanced_progress_display_component, update_step_indicator, display_status
     
     # Display enhanced progress components
-    progress_bar, status_text, step_indicators, workflow_steps = enhanced_progress_display_component(enable_indexing)
+    chat_mode = (input_type == "chat")
+    progress_bar, status_text, step_indicators, workflow_steps = enhanced_progress_display_component(enable_indexing, chat_mode)
     
-    # Step mapping: map progress percentages to step indices - adjust based on indexing toggle
-    if not enable_indexing:
+    # Step mapping: map progress percentages to step indices - adjust based on mode and indexing toggle
+    if chat_mode:
+        # Chat mode step mapping: Initialize -> Planning -> Setup -> Save Plan -> Implement
+        step_mapping = {
+            5: 0,   # Initialize
+            30: 1,  # Planning (analyzing requirements)
+            50: 2,  # Setup (creating workspace)
+            70: 3,  # Save Plan (saving implementation plan)
+            85: 4,  # Implement (generating code)
+            100: 4  # Complete
+        }
+    elif not enable_indexing:
         # Skip indexing-related steps progress mapping - fast mode order: Initialize -> Analyze -> Download -> Plan -> Implement
         step_mapping = {
             5: 0,   # Initialize
@@ -405,7 +428,9 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
         time.sleep(0.3)  # Brief pause for users to see progress changes
     
     # Step 1: Initialization
-    if enable_indexing:
+    if chat_mode:
+        update_progress(5, "🚀 Initializing chat-based planning engine...")
+    elif enable_indexing:
         update_progress(5, "🚀 Initializing AI research engine and loading models...")
     else:
         update_progress(5, "🚀 Initializing AI research engine (Fast mode - indexing disabled)...")
@@ -437,7 +462,9 @@ def handle_processing_workflow(input_source: str, input_type: str, enable_indexi
         
         # Display success information
         st.balloons()  # Add celebration animation
-        if enable_indexing:
+        if chat_mode:
+            display_status("🎉 Chat workflow completed! Your requirements have been analyzed and code has been generated.", "success")
+        elif enable_indexing:
             display_status("🎉 Workflow completed! Your research paper has been successfully processed and code has been generated.", "success")
         else:
             display_status("🎉 Fast workflow completed! Your research paper has been processed (indexing skipped for faster processing).", "success")

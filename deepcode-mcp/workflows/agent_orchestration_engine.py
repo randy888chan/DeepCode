@@ -49,6 +49,7 @@ from prompts.code_prompts import (
     PAPER_CONCEPT_ANALYSIS_PROMPT,
     CODE_PLANNING_PROMPT,
     GITHUB_DOWNLOAD_PROMPT,
+    CHAT_AGENT_PLANNING_PROMPT,
 )
 from utils.docker_sync_manager import setup_docker_sync, get_sync_directory
 from utils.file_processor import FileProcessor
@@ -811,6 +812,105 @@ async def synthesize_code_implementation_agent(dir_info: Dict[str, str], logger,
         return {'status': 'error', 'message': str(e)}
 
 
+async def run_chat_planning_agent(user_input: str, logger) -> str:
+    """
+    Run the chat-based planning agent for user-provided coding requirements.
+    
+    This agent transforms user's coding description into a comprehensive implementation plan
+    that can be directly used for code generation. It handles both academic and engineering
+    requirements with intelligent context adaptation.
+    
+    Args:
+        user_input: User's coding requirements and description
+        logger: Logger instance for logging information
+        
+    Returns:
+        str: Comprehensive implementation plan in YAML format
+    """
+    try:
+        print(f"💬 Starting chat-based planning agent...")
+        print(f"Input length: {len(user_input) if user_input else 0}")
+        print(f"Input preview: {user_input[:200] if user_input else 'None'}...")
+        
+        if not user_input or user_input.strip() == "":
+            raise ValueError("Empty or None user_input provided to run_chat_planning_agent")
+        
+        # Create the chat planning agent
+        chat_planning_agent = Agent(
+            name="ChatPlanningAgent",
+            instruction=CHAT_AGENT_PLANNING_PROMPT,
+            server_names=["brave"],  # Add tools if needed for web search or other capabilities
+        )
+        
+        async with chat_planning_agent:
+            print("chat_planning: Connected to server, calling list_tools...")
+            try:
+                tools = await chat_planning_agent.list_tools()
+                print("Tools available:", tools.model_dump() if hasattr(tools, 'model_dump') else str(tools))
+            except Exception as e:
+                print(f"Failed to list tools: {e}")
+            
+            try:
+                planner = await chat_planning_agent.attach_llm(get_preferred_llm_class())
+                print("✅ LLM attached successfully")
+            except Exception as e:
+                print(f"❌ Failed to attach LLM: {e}")
+                raise
+            
+            # Set higher token output for comprehensive planning
+            planning_params = RequestParams(
+                max_tokens=8192,  # Higher token limit for detailed plans
+                temperature=0.2,  # Lower temperature for more structured output
+            )
+            
+            print(f"🔄 Making LLM request with params: max_tokens={planning_params.max_tokens}, temperature={planning_params.temperature}")
+            
+            # Format the input message for the agent
+            formatted_message = f"""Please analyze the following coding requirements and generate a comprehensive implementation plan:
+
+User Requirements:
+{user_input}
+
+Please provide a detailed implementation plan that covers all aspects needed for successful development."""
+            
+            try:
+                raw_result = await planner.generate_str(
+                    message=formatted_message,
+                    request_params=planning_params
+                )
+                
+                print(f"✅ Planning request completed")
+                print(f"Raw result type: {type(raw_result)}")
+                print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+                
+                if not raw_result:
+                    print("❌ CRITICAL: raw_result is empty or None!")
+                    raise ValueError("Chat planning agent returned empty result")
+                
+            except Exception as e:
+                print(f"❌ Planning generation failed: {e}")
+                print(f"Exception type: {type(e)}")
+                raise
+            
+            # Log to SimpleLLMLogger
+            if hasattr(logger, 'log_response'):
+                logger.log_response(raw_result, model="ChatPlanningAgent", agent="ChatPlanningAgent")
+            
+            if not raw_result or raw_result.strip() == "":
+                print("❌ CRITICAL: Planning result is empty!")
+                raise ValueError("Chat planning agent produced empty output")
+            
+            print(f"🎯 Chat planning completed successfully")
+            print(f"Planning result preview: {raw_result[:500]}...")
+            
+            return raw_result
+                
+    except Exception as e:
+        print(f"❌ run_chat_planning_agent failed: {e}")
+        print(f"Exception details: {type(e).__name__}: {str(e)}")
+        raise
+
+
 async def execute_multi_agent_research_pipeline(
     input_source: str, 
     logger, 
@@ -969,3 +1069,162 @@ async def paper_code_preparation(input_source: str, logger, progress_callback: O
     """
     print("paper_code_preparation is deprecated. Use execute_multi_agent_research_pipeline instead.")
     return await execute_multi_agent_research_pipeline(input_source, logger, progress_callback)
+
+
+async def execute_chat_based_planning_pipeline(
+    user_input: str, 
+    logger, 
+    progress_callback: Optional[Callable] = None
+) -> str:
+    """
+    Execute the chat-based planning and implementation pipeline.
+    
+    This pipeline is designed for users who provide coding requirements directly through chat,
+    bypassing the traditional paper analysis phases (Phase 0-7) and jumping directly to
+    planning and code implementation.
+    
+    Pipeline Flow:
+    - Chat Planning: Transform user input into implementation plan
+    - Workspace Setup: Create necessary directory structure  
+    - Code Implementation: Generate code based on the plan
+    
+    Args:
+        user_input: User's coding requirements and description
+        logger: Logger instance for comprehensive workflow tracking
+        progress_callback: Progress callback function for real-time monitoring
+        
+    Returns:
+        str: The pipeline execution result with status and outcomes
+    """
+    try:
+        print("🚀 Initializing chat-based planning and implementation pipeline")
+        print(f"💬 Chat mode: Direct user requirements to code implementation")
+        
+        # Phase 0: Docker Synchronization Setup (same as original pipeline)
+        if progress_callback:
+            progress_callback(5, "🔄 Setting up Docker synchronization for seamless file access...")
+        
+        # Setup Docker synchronization
+        sync_result = await setup_docker_sync(logger=logger)
+        sync_directory = get_sync_directory()
+        
+        print(f"📁 Sync environment: {sync_result['environment']}")
+        print(f"📂 Sync directory: {sync_directory}")
+        print(f"✅ Sync status: {sync_result['message']}")
+        
+        # Update file processor to use sync directory
+        if sync_result['environment'] == 'docker':
+            print("🐳 Running in Docker container - files will sync to local machine")
+        else:
+            print("💻 Running locally - use Docker container for full sync experience")
+            print("💡 Tip: Run 'python start_docker_sync.py' for Docker sync mode")
+        
+        # Phase 1: Chat-Based Planning
+        if progress_callback:
+            progress_callback(30, "💬 Generating comprehensive implementation plan from user requirements...")
+        
+        print("🧠 Running chat-based planning agent...")
+        planning_result = await run_chat_planning_agent(user_input, logger)
+        
+        # Phase 2: Workspace Infrastructure Synthesis
+        if progress_callback:
+            progress_callback(50, "🏗️ Synthesizing intelligent workspace infrastructure...")
+        
+        # Create workspace directory structure for chat mode
+        # First, let's create a temporary directory structure that mimics a paper workspace
+        import tempfile
+        import time
+        
+        # Generate a unique paper directory name
+        timestamp = str(int(time.time()))
+        paper_name = f"chat_project_{timestamp}"
+        
+        if sync_directory:
+            # Use sync directory if available
+            chat_paper_dir = os.path.join(sync_directory, 'papers', paper_name)
+        else:
+            # Fall back to default location
+            chat_paper_dir = os.path.join('deepcode_lab', 'papers', paper_name)
+            
+        os.makedirs(chat_paper_dir, exist_ok=True)
+        
+        # Create a synthetic markdown file with user requirements
+        markdown_content = f"""# User Coding Requirements
+
+## Project Description
+This is a coding project generated from user requirements via chat interface.
+
+## User Requirements
+{user_input}
+
+## Generated Implementation Plan
+The following implementation plan was generated by the AI chat planning agent:
+
+```yaml
+{planning_result}
+```
+
+## Project Metadata
+- **Input Type**: Chat Input
+- **Generation Method**: AI Chat Planning Agent
+- **Timestamp**: {timestamp}
+"""
+        
+        # Save the markdown file
+        markdown_file_path = os.path.join(chat_paper_dir, f"{paper_name}.md")
+        with open(markdown_file_path, 'w', encoding='utf-8') as f:
+            f.write(markdown_content)
+        
+        print(f"💾 Created chat project workspace: {chat_paper_dir}")
+        print(f"📄 Saved requirements to: {markdown_file_path}")
+        
+        # Create a download result that matches FileProcessor expectations
+        synthetic_download_result = json.dumps({
+            "status": "success",
+            "paper_path": markdown_file_path,
+            "input_type": "chat_input",
+            "paper_info": {
+                "title": "User-Provided Coding Requirements",
+                "source": "chat_input",
+                "description": "Implementation plan generated from user requirements"
+            }
+        })
+        
+        dir_info = await synthesize_workspace_infrastructure_agent(synthetic_download_result, logger, sync_directory)
+        await asyncio.sleep(10)  # Brief pause for file system operations
+        
+        # Phase 3: Save Planning Result 
+        if progress_callback:
+            progress_callback(70, "📝 Saving implementation plan...")
+        
+        # Save the planning result to the initial_plan.txt file (same location as Phase 4 in original pipeline)
+        initial_plan_path = dir_info['initial_plan_path']
+        with open(initial_plan_path, 'w', encoding='utf-8') as f:
+            f.write(planning_result)
+        print(f"💾 Implementation plan saved to {initial_plan_path}")
+        
+        # Phase 4: Code Implementation Synthesis (same as Phase 8 in original pipeline)
+        if progress_callback:
+            progress_callback(85, "🔬 Synthesizing intelligent code implementation...")
+        
+        implementation_result = await synthesize_code_implementation_agent(dir_info, logger, progress_callback)
+        
+        # Final Status Report
+        pipeline_summary = f"Chat-based planning and implementation pipeline completed for {dir_info['paper_dir']}"
+        
+        # Add implementation status to summary
+        if implementation_result['status'] == 'success':
+            pipeline_summary += f"\n🎉 Code implementation completed successfully!"
+            pipeline_summary += f"\n📁 Code generated in: {implementation_result['code_directory']}"
+            pipeline_summary += f"\n💬 Generated from user requirements via chat interface"
+            return pipeline_summary
+        elif implementation_result['status'] == 'warning':
+            pipeline_summary += f"\n⚠️ Code implementation: {implementation_result['message']}"
+            return pipeline_summary
+        else:
+            pipeline_summary += f"\n❌ Code implementation failed: {implementation_result['message']}"
+            return pipeline_summary
+        
+    except Exception as e:
+        print(f"Error in execute_chat_based_planning_pipeline: {e}")
+        raise e

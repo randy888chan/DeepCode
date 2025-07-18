@@ -669,6 +669,87 @@ def url_input_component(task_counter: int) -> Optional[str]:
     return None
 
 
+def chat_input_component(task_counter: int) -> Optional[str]:
+    """
+    Chat input component for coding requirements
+    
+    Args:
+        task_counter: Task counter
+        
+    Returns:
+        User coding requirements or None
+    """
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+                border-radius: 10px; 
+                padding: 15px; 
+                margin-bottom: 20px; 
+                border-left: 4px solid #4dd0e1;">
+        <h4 style="color: white; margin: 0 0 10px 0; font-size: 1.1rem;">
+            💬 Describe Your Coding Requirements
+        </h4>
+        <p style="color: #e0f7fa; margin: 0; font-size: 0.9rem;">
+            Tell us what you want to build. Our AI will analyze your requirements and generate a comprehensive implementation plan.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Examples to help users understand what they can input
+    with st.expander("💡 See Examples", expanded=False):
+        st.markdown("""
+        **Academic Research Examples:**
+        - "I need to implement a reinforcement learning algorithm for robotic control"
+        - "Create a neural network for image classification with attention mechanisms"
+        - "Build a natural language processing pipeline for sentiment analysis"
+        
+        **Engineering Project Examples:**
+        - "Develop a web application for project management with user authentication"
+        - "Create a data visualization dashboard for sales analytics"
+        - "Build a REST API for a e-commerce platform with database integration"
+        
+        **Mixed Project Examples:**
+        - "Implement a machine learning model with a web interface for real-time predictions"
+        - "Create a research tool with user-friendly GUI for data analysis"
+        - "Build a chatbot with both academic evaluation metrics and production deployment"
+        """)
+    
+    # Main text area for user input
+    user_input = st.text_area(
+        "Enter your coding requirements:",
+        placeholder="""Example: I want to build a web application that can analyze user sentiment from social media posts. The application should have:
+
+1. A user-friendly interface where users can input text or upload files
+2. A machine learning backend that performs sentiment analysis 
+3. Visualization of results with charts and statistics
+4. User authentication and data storage
+5. REST API for integration with other applications
+
+The system should be scalable and production-ready, with proper error handling and documentation.""",
+        height=200,
+        help="Describe what you want to build, including functionality, technologies, and any specific requirements",
+        key=f"chat_input_{task_counter}"
+    )
+    
+    if user_input and len(user_input.strip()) > 20:  # Minimum length check
+        # Display input summary
+        word_count = len(user_input.split())
+        char_count = len(user_input)
+        
+        st.success(f"✅ **Requirements captured!** ({word_count} words, {char_count} characters)")
+        
+        # Show a preview of what will be analyzed
+        with st.expander("📋 Preview your requirements", expanded=False):
+            st.text_area("Your input:", user_input, height=100, disabled=True, key=f"preview_{task_counter}")
+        
+        return user_input.strip()
+    
+    elif user_input and len(user_input.strip()) <= 20:
+        st.warning("⚠️ Please provide more detailed requirements (at least 20 characters)")
+        return None
+    
+    return None
+
+
 def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[str]]:
     """
     Input method selector
@@ -694,7 +775,7 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
     
     input_method = st.radio(
         "Choose your input method:",
-        ["📁 Upload File", "🌐 Enter URL"],
+        ["📁 Upload File", "🌐 Enter URL", "💬 Chat Input"],
         horizontal=True,
         label_visibility="hidden",
         key=f"input_method_{task_counter}"
@@ -706,9 +787,12 @@ def input_method_selector(task_counter: int) -> tuple[Optional[str], Optional[st
     if input_method == "📁 Upload File":
         input_source = file_input_component(task_counter)
         input_type = "file" if input_source else None
-    else:  # URL input
+    elif input_method == "🌐 Enter URL":
         input_source = url_input_component(task_counter)
         input_type = "url" if input_source else None
+    else:  # Chat input
+        input_source = chat_input_component(task_counter)
+        input_type = "chat" if input_source else None
     
     return input_source, input_type
 
@@ -953,18 +1037,21 @@ def progress_display_component():
     return progress_bar, status_text
 
 
-def enhanced_progress_display_component(enable_indexing: bool = True):
+def enhanced_progress_display_component(enable_indexing: bool = True, chat_mode: bool = False):
     """
     Enhanced progress display component
     
     Args:
         enable_indexing: Whether indexing is enabled
+        chat_mode: Whether in chat mode (user requirements input)
     
     Returns:
         (progress_bar, status_text, step_indicator, workflow_steps)
     """
     # Display processing progress title
-    if enable_indexing:
+    if chat_mode:
+        st.markdown("### 💬 AI Chat Planning - Requirements to Code Workflow")
+    elif enable_indexing:
         st.markdown("### 🚀 AI Research Engine - Full Processing Workflow")
     else:
         st.markdown("### ⚡ AI Research Engine - Fast Processing Workflow (Indexing Disabled)")
@@ -973,8 +1060,17 @@ def enhanced_progress_display_component(enable_indexing: bool = True):
     progress_container = st.container()
     
     with progress_container:
-        # Workflow step definitions - adjust based on indexing toggle and reflect latest phase order
-        if enable_indexing:
+        # Workflow step definitions - adjust based on mode and indexing toggle
+        if chat_mode:
+            # Chat mode - simplified workflow for user requirements
+            workflow_steps = [
+                ("🚀", "Initialize", "Setting up chat engine"),
+                ("💬", "Planning", "Analyzing requirements"),
+                ("🏗️", "Setup", "Creating workspace"),
+                ("📝", "Save Plan", "Saving implementation plan"),
+                ("⚙️", "Implement", "Generating code")
+            ]
+        elif enable_indexing:
             workflow_steps = [
                 ("🚀", "Initialize", "Setting up AI engine"),
                 ("📊", "Analyze", "Analyzing paper content"),
