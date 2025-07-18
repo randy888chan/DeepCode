@@ -94,6 +94,7 @@ def parse_arguments():
   {Colors.CYAN}python main_cli.py{Colors.ENDC}                    # Interactive mode
   {Colors.CYAN}python main_cli.py --file paper.pdf{Colors.ENDC}     # Process file directly
   {Colors.CYAN}python main_cli.py --url https://...{Colors.ENDC}    # Process URL directly
+  {Colors.CYAN}python main_cli.py --chat "Build a web app..."{Colors.ENDC} # Process chat requirements
   {Colors.CYAN}python main_cli.py --optimized{Colors.ENDC}          # Use optimized mode
 
 {Colors.BOLD}Pipeline Modes:{Colors.ENDC}
@@ -112,6 +113,12 @@ def parse_arguments():
         '--url', '-u',
         type=str,
         help='Process a research paper from URL'
+    )
+    
+    parser.add_argument(
+        '--chat', '-t',
+        type=str,
+        help='Process coding requirements via chat input (provide requirements as argument)'
     )
     
     parser.add_argument(
@@ -185,7 +192,7 @@ async def main():
             print(f"\n{Colors.GREEN}🧠 Comprehensive mode enabled - full intelligence analysis{Colors.ENDC}")
         
         # 检查是否为直接处理模式
-        if args.file or args.url:
+        if args.file or args.url or args.chat:
             if args.file:
                 # 验证文件存在
                 if not os.path.exists(args.file):
@@ -194,6 +201,12 @@ async def main():
                 success = await run_direct_processing(app, args.file, 'file')
             elif args.url:
                 success = await run_direct_processing(app, args.url, 'url')
+            elif args.chat:
+                # 验证chat输入长度
+                if len(args.chat.strip()) < 20:
+                    print(f"{Colors.FAIL}❌ Chat input too short. Please provide more detailed requirements (at least 20 characters){Colors.ENDC}")
+                    sys.exit(1)
+                success = await run_direct_processing(app, args.chat, 'chat')
             
             sys.exit(0 if success else 1)
         else:

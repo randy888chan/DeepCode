@@ -1,217 +1,180 @@
 # DeepCode CLI - Open-Source Code Agent
 
-**DeepCode** is an open-source code agent developed by the Data Intelligence Lab @ HKU. This enhanced command line interface enables revolutionizing research reproducibility through collaborative multi-agent architecture.
+🧬 **Data Intelligence Lab @ HKU** • ⚡ **Revolutionizing Research Reproducibility**
 
-## 🚀 Features
+DeepCode CLI is a command-line interface for the DeepCode multi-agent system that transforms research papers and user requirements into working code through intelligent AI orchestration.
 
-### Core Capabilities
-- **🤖 Automated Code Reproduction**: Multi-agent coordination for faithful research reproduction
-- **⚡ Dual Pipeline Modes**: Comprehensive (full analysis) and Optimized (fast processing)
-- **🧠 Collaborative Multi-Agent**: Specialized agents working together for accuracy and completeness
-- **📊 Real-time Progress Tracking**: Enhanced progress display with pipeline status monitoring
-- **🌱 Open-Source & Extensible**: Built for the community with customizable design
+## ✨ Key Features
 
-### Our Mission
+### 🎯 **Multiple Input Methods**
+- **📁 File Processing**: Upload PDF, DOCX, PPTX, HTML, or TXT files
+- **🌐 URL Processing**: Process research papers from academic URLs (arXiv, IEEE, ACM, etc.)
+- **💬 Chat Input**: ⭐ **NEW!** Describe coding requirements in natural language
 
-We believe that, in the near future, codebases can be reproduced—or even created from scratch—simply by describing them in natural language. DeepCode is making this vision a reality through:
+### 🤖 **AI-Powered Processing Modes**
+- **🧠 Comprehensive Mode**: Full intelligence analysis with codebase indexing
+- **⚡ Optimized Mode**: Fast processing without indexing for quicker results
+- **💬 Chat Planning Mode**: ⭐ **NEW!** Direct requirements-to-code pipeline
 
-1. **Research Analysis Agent**: Intelligent content processing and extraction
-2. **Workspace Infrastructure Agent**: Automated environment synthesis
-3. **Code Architecture Agent**: AI-driven design and planning
-4. **Reference Intelligence Agent**: Automated knowledge discovery (Comprehensive mode)
-5. **Repository Acquisition Agent**: Intelligent code repository management (Comprehensive mode)
-6. **Codebase Intelligence Agent**: Advanced relationship analysis (Comprehensive mode)
-7. **Code Implementation Agent**: AI-powered code synthesis
+### 🔄 **Intelligent Workflows**
+- Multi-agent collaborative architecture
+- Real-time progress tracking
+- Automated workspace setup
+- Code generation and validation
 
-## 📋 Usage
+## 🚀 Quick Start
 
-### Enhanced CLI Interface
-
+### Interactive Mode
 ```bash
-# Interactive mode with enhanced agent orchestration
-python main_cli.py
-
-# Direct file processing
-python main_cli.py --file paper.pdf
-
-# Direct URL processing  
-python main_cli.py --url https://arxiv.org/abs/2301.12345
-
-# Optimized mode (faster processing)
-python main_cli.py --optimized
-
-# Comprehensive mode (full intelligence analysis)
-python main_cli.py --file paper.pdf
-```
-
-### Interactive Menu Options
-
-- **[U] Process URL**: Enter research paper URL with intelligent analysis
-- **[F] Upload File**: Select and upload file for agent orchestration
-- **[C] Configure**: Access configuration menu for pipeline modes
-- **[H] History**: View processing history with pipeline mode tracking
-- **[Q] Quit**: Exit application with cleanup
-
-### Pipeline Modes
-
-#### 🧠 Comprehensive Mode (Default)
-- Full research reproducibility analysis with all agents
-- Research Analysis + Resource Processing
-- Reference Intelligence Discovery
-- Automated Repository Acquisition
-- Codebase Intelligence Orchestration
-- Intelligent Code Implementation Synthesis
-
-#### ⚡ Optimized Mode
-- Fast processing with core agents only
-- Research Analysis + Resource Processing
-- Code Architecture Synthesis
-- Intelligent Code Implementation Synthesis
-- Skips: Reference Intelligence, Repository Acquisition, Codebase Intelligence
-
-## 🏗️ Architecture
-
-### Enhanced Components
-
-#### CLI Workflows
-- `cli/workflows/cli_workflow_adapter.py`: CLI-optimized workflow adapter
-- `cli/workflows/__init__.py`: Workflow module initialization
-
-#### Core Files
-- `cli/main_cli.py`: Enhanced CLI launcher with argument parsing
-- `cli/cli_app.py`: Main application with agent orchestration integration
-- `cli/cli_interface.py`: Enhanced UI with configuration support
-
-#### Integration
-- **Agent Orchestration Engine**: `workflows/agent_orchestration_engine.py`
-- **MCP Framework**: Model Control Protocol for agent communication
-- **Collaborative Architecture**: Multi-agent task distribution and monitoring
-- **Data Intelligence Lab @ HKU**: Open-source research initiative
-
-## 🔧 Configuration
-
-### Pipeline Configuration
-Access via `[C] Configure` in the main menu:
-
-- **Toggle Pipeline Mode**: Switch between Comprehensive and Optimized
-- **View Current Settings**: Real-time configuration display
-- **Mode Descriptions**: Detailed explanation of each mode's capabilities
-
-### Command Line Options
-```bash
-# Available options
---file, -f        Process specific file
---url, -u         Process research paper from URL  
---optimized, -o   Use optimized mode (skip indexing)
---verbose, -v     Enable verbose output
---help, -h        Show help message
-```
-
-## 📊 Processing Stages
-
-### Comprehensive Mode (8 stages)
-1. **🚀 Initialize**: Agent orchestration engine setup
-2. **📊 Analyze**: Research content analysis
-3. **📥 Download**: Document processing
-4. **📋 Plan**: Code architecture synthesis
-5. **🔍 References**: Reference intelligence discovery
-6. **📦 Repos**: Repository acquisition automation
-7. **🗂️ Index**: Codebase intelligence orchestration
-8. **⚙️ Implement**: Code implementation synthesis
-
-### Optimized Mode (5 stages)
-1. **🚀 Initialize**: Agent orchestration engine setup
-2. **📊 Analyze**: Research content analysis
-3. **📥 Download**: Document processing
-4. **📋 Plan**: Code architecture synthesis
-5. **⚙️ Implement**: Code implementation synthesis
-
-## 🛠️ Installation & Setup
-
-### Requirements
-- Python 3.8+
-- Enhanced MCP agent framework
-- Agent orchestration engine dependencies
-
-### Installation
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run enhanced CLI
 python cli/main_cli.py
 ```
 
-## 📈 Advanced Features
-
-### Enhanced Error Handling
-- **Agent-specific error recovery**: Individual agent failure handling
-- **Pipeline resilience**: Continue processing despite partial failures
-- **Intelligent retry mechanisms**: Automatic recovery strategies
-
-### Performance Optimization
-- **Adaptive mode selection**: Automatic recommendations based on input
-- **Resource monitoring**: Real-time system resource tracking
-- **Cache management**: Intelligent caching for repeated operations
-
-### Monitoring & Logging
-- **Agent activity tracking**: Detailed agent coordination logs
-- **Pipeline metrics**: Processing time and success rate analytics
-- **Configuration persistence**: Settings saved across sessions
-
-## 🎯 Examples
-
-### Comprehensive Analysis
+### Direct Processing
 ```bash
-# Full intelligence analysis
-python main_cli.py --file research_paper.pdf
-# Uses all 8 stages with complete agent orchestration
+# Process a research paper file
+python cli/main_cli.py --file paper.pdf
+
+# Process from URL
+python cli/main_cli.py --url "https://arxiv.org/abs/..."
+
+# 💬 NEW: Process coding requirements via chat
+python cli/main_cli.py --chat "Build a web application with user authentication and data visualization dashboard"
+
+# Use optimized mode for faster processing
+python cli/main_cli.py --optimized
 ```
 
-### Fast Processing
+## 💬 Chat Input Feature (NEW!)
+
+The Chat Input feature allows you to describe your coding requirements in natural language, and DeepCode will automatically generate a comprehensive implementation plan and working code.
+
+### Usage Examples
+
+**Academic Research:**
 ```bash
-# Optimized for speed
-python main_cli.py --optimized --file paper.pdf
-# Uses 5 core stages, skips indexing-related agents
+python cli/main_cli.py --chat "I need to implement a reinforcement learning algorithm for robotic control with deep neural networks"
 ```
 
-### URL Processing with Configuration
+**Engineering Projects:**
 ```bash
-# Interactive with custom configuration
-python main_cli.py
-# Select [C] to configure, then [U] to process URL
+python cli/main_cli.py --chat "Develop a web application for project management with user authentication, task tracking, and real-time collaboration features"
 ```
 
-## 🔍 Troubleshooting
+**Mixed Projects:**
+```bash
+python cli/main_cli.py --chat "Implement a machine learning model with a web interface for real-time predictions and data visualization"
+```
 
-### Agent Orchestration Issues
-- **Agent initialization failures**: Check MCP server connectivity
-- **Pipeline coordination errors**: Verify agent dependencies
-- **Resource conflicts**: Monitor system resource usage
+### Interactive Chat Mode
 
-### Performance Optimization
-- **Slow processing**: Try optimized mode for faster results
-- **Memory issues**: Use optimized mode or restart application
-- **Network timeouts**: Check connectivity and retry
+In interactive mode, select option **[T] Chat Input** to access the enhanced chat interface:
 
-### Configuration Problems
-- **Settings not saved**: Ensure write permissions
-- **Mode switching fails**: Restart application if persistent
-- **Display issues**: Check terminal compatibility
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                MAIN MENU                                      ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║  🌐 [U] Process URL       │  📁 [F] Upload File    │  💬 [T] Chat Input    ║
+║  ⚙️  [C] Configure        │  📊 [H] History        │  ❌ [Q] Quit         ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
 
-## 🆕 Upgrade Notes
+### Chat Workflow
 
-### Enhanced CLI vs Legacy
-- **New**: Intelligent agent orchestration engine integration
-- **New**: Configurable pipeline modes (Comprehensive/Optimized)
-- **New**: Enhanced progress tracking with 8-stage pipeline
-- **New**: CLI workflow adapter for optimized command-line usage
-- **Improved**: Error handling with agent-specific recovery
-- **Improved**: Performance with adaptive processing modes
+1. **🚀 Initialize**: Setup chat-based planning engine
+2. **💬 Planning**: AI analyzes your requirements and generates implementation plan
+3. **🏗️ Setup**: Creates optimized workspace structure
+4. **📝 Save Plan**: Saves detailed implementation plan
+5. **⚙️ Implement**: Generates complete, working code
 
-### Migration from Legacy CLI
-The enhanced CLI maintains full backward compatibility while adding:
-- Advanced agent orchestration capabilities
-- Configurable processing modes
-- Enhanced progress tracking
-- Improved error handling and recovery 
+## 📋 Command-Line Options
+
+```
+Usage: main_cli.py [-h] [--file FILE] [--url URL] [--chat CHAT] [--optimized] [--verbose]
+
+Options:
+  -h, --help       Show help message and exit
+  --file, -f FILE  Process a specific file (PDF, DOCX, TXT, etc.)
+  --url, -u URL    Process a research paper from URL
+  --chat, -t CHAT  Process coding requirements via chat input
+  --optimized, -o  Use optimized mode (skip indexing for faster processing)
+  --verbose, -v    Enable verbose output
+```
+
+## 🎯 Pipeline Modes Comparison
+
+| Mode | Description | Speed | Features | Best For |
+|------|-------------|-------|----------|----------|
+| **💬 Chat Planning** | Requirements → Code | ⚡⚡⚡ Fastest | AI Planning, Direct Implementation | Custom coding projects |
+| **⚡ Optimized** | Fast paper processing | ⚡⚡ Fast | Paper analysis, Code generation | Quick prototypes |
+| **🧠 Comprehensive** | Full intelligence analysis | ⚡ Thorough | All features, Codebase indexing | Research reproduction |
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/your-org/deepcode-mcp.git
+cd deepcode-mcp
+```
+
+2. **Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Configure API keys** (optional)
+```bash
+cp mcp_agent.secrets.yaml.example mcp_agent.secrets.yaml
+# Edit the file with your API keys
+```
+
+4. **Run CLI**
+```bash
+python cli/main_cli.py
+```
+
+## 🔧 Configuration
+
+### Pipeline Mode Settings
+- **Comprehensive Mode**: Enables all features including codebase indexing
+- **Optimized Mode**: Skips indexing for faster processing
+- **Chat Mode**: Automatically selected when using chat input
+
+### API Configuration
+Configure your preferred LLM provider in `mcp_agent.secrets.yaml`:
+- Anthropic Claude (recommended)
+- OpenAI GPT (fallback)
+
+## 📊 Example Output
+
+### Chat Mode Results
+```
+🤖 PIPELINE MODE: 💬 Chat Planning Mode
+
+🔄 COMPLETED WORKFLOW STAGES:
+  ✅ 🚀 Engine Initialization
+  ✅ 💬 Requirements Analysis
+  ✅ 🏗️ Workspace Setup
+  ✅ 📝 Implementation Plan Generation
+  ✅ ⚙️ Code Implementation
+
+📁 Generated Code Directory: /path/to/generated/code
+💬 Generated from user requirements via chat interface
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our contributing guidelines for more information.
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🙋 Support
+
+- **Issues**: Report bugs on GitHub Issues
+- **Documentation**: See full documentation at [link]
+- **Community**: Join our research community
+
+---
+
+🧬 **Data Intelligence Lab @ HKU** • Building the future of AI-powered development 

@@ -61,19 +61,12 @@ class CLIInterface:
         logo = f"""
 {Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║  {Colors.BOLD}{Colors.MAGENTA}██████╗  █████╗ ██████╗ ███████╗██████╗     ████████╗ ██████╗ {Colors.CYAN}               ║
-║  {Colors.BOLD}{Colors.PURPLE}██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗    ╚══██╔══╝██╔═══██╗{Colors.CYAN}               ║
-║  {Colors.BOLD}{Colors.BLUE}██████╔╝███████║██████╔╝█████╗  ██████╔╝       ██║   ██║   ██║{Colors.CYAN}               ║
-║  {Colors.BOLD}{Colors.OKBLUE}██╔═══╝ ██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗       ██║   ██║   ██║{Colors.CYAN}               ║
-║  {Colors.BOLD}{Colors.OKCYAN}██║     ██║  ██║██║     ███████╗██║  ██║       ██║   ╚██████╔╝{Colors.CYAN}               ║
-║  {Colors.BOLD}{Colors.GREEN}╚═╝     ╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝       ╚═╝    ╚═════╝ {Colors.CYAN}               ║
-║                                                                               ║
-║  {Colors.BOLD}{Colors.YELLOW} ██████╗ ██████╗ ██████╗ ███████╗    ██████╗██╗     ██╗{Colors.CYAN}                    ║
-║  {Colors.BOLD}{Colors.YELLOW}██╔════╝██╔═══██╗██╔══██╗██╔════╝   ██╔════╝██║     ██║{Colors.CYAN}                    ║
-║  {Colors.BOLD}{Colors.YELLOW}██║     ██║   ██║██║  ██║█████╗     ██║     ██║     ██║{Colors.CYAN}                    ║
-║  {Colors.BOLD}{Colors.YELLOW}██║     ██║   ██║██║  ██║██╔══╝     ██║     ██║     ██║{Colors.CYAN}                    ║
-║  {Colors.BOLD}{Colors.YELLOW}╚██████╗╚██████╔╝██████╔╝███████╗   ╚██████╗███████╗██║{Colors.CYAN}                    ║
-║  {Colors.BOLD}{Colors.YELLOW} ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝    ╚═════╝╚══════╝╚═╝{Colors.CYAN}                    ║
+║  {Colors.BOLD}{Colors.MAGENTA}██████╗ ███████╗███████╗██████╗  ██████╗ ██████╗ ██████╗ ███████╗{Colors.CYAN}               ║
+║  {Colors.BOLD}{Colors.PURPLE}██╔══██╗██╔════╝██╔════╝██╔══██╗██╔════╝██╔═══██╗██╔══██╗██╔════╝{Colors.CYAN}               ║
+║  {Colors.BOLD}{Colors.BLUE}██║  ██║█████╗  █████╗  ██████╔╝██║     ██║   ██║██║  ██║█████╗  {Colors.CYAN}               ║
+║  {Colors.BOLD}{Colors.OKBLUE}██║  ██║██╔══╝  ██╔══╝  ██╔═══╝ ██║     ██║   ██║██║  ██║██╔══╝  {Colors.CYAN}               ║
+║  {Colors.BOLD}{Colors.OKCYAN}██████╔╝███████╗███████╗██║     ╚██████╗╚██████╔╝██████╔╝███████╗{Colors.CYAN}               ║
+║  {Colors.BOLD}{Colors.GREEN}╚═════╝ ╚══════╝╚══════╝╚═╝      ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝{Colors.CYAN}               ║
 ║                                                                               ║
 ║  {Colors.BOLD}{Colors.GREEN}🧬 OPEN-SOURCE CODE AGENT • DATA INTELLIGENCE LAB @ HKU 🚀           {Colors.CYAN}║
 ║  {Colors.BOLD}{Colors.GREEN}⚡ REVOLUTIONIZING RESEARCH REPRODUCIBILITY ⚡                      {Colors.CYAN}║
@@ -134,8 +127,8 @@ class CLIInterface:
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                MAIN MENU                                      ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
-║  {Colors.OKGREEN}🌐 [U] Process URL       {Colors.CYAN}│  {Colors.PURPLE}📁 [F] Upload File    {Colors.CYAN}│  {Colors.FAIL}❌ [Q] Quit{Colors.CYAN}         ║
-║  {Colors.OKCYAN}⚙️  [C] Configure        {Colors.CYAN}│  {Colors.YELLOW}📊 [H] History        {Colors.CYAN}│                 ║
+║  {Colors.OKGREEN}🌐 [U] Process URL       {Colors.CYAN}│  {Colors.PURPLE}📁 [F] Upload File    {Colors.CYAN}│  {Colors.MAGENTA}💬 [T] Chat Input{Colors.CYAN}    ║
+║  {Colors.OKCYAN}⚙️  [C] Configure        {Colors.CYAN}│  {Colors.YELLOW}📊 [H] History        {Colors.CYAN}│  {Colors.FAIL}❌ [Q] Quit{Colors.CYAN}         ║
 ║                                                                               ║
 ║  {Colors.BOLD}🤖 Current Pipeline Mode: {pipeline_mode}{Colors.CYAN}                          ║
 ║  {Colors.BOLD}🗂️  Codebase Indexing: {index_status}{Colors.CYAN}                                    ║
@@ -147,6 +140,10 @@ class CLIInterface:
 ║  {Colors.PURPLE}📁 File Processing:{Colors.CYAN}                                                        ║
 ║  {Colors.PURPLE}   ▶ Upload PDF, DOCX, PPTX, HTML, or TXT files                          {Colors.CYAN}║
 ║  {Colors.PURPLE}   ▶ Intelligent file format detection and processing                     {Colors.CYAN}║
+║                                                                               ║
+║  {Colors.MAGENTA}💬 Chat Input:{Colors.CYAN}                                                           ║
+║  {Colors.MAGENTA}   ▶ Describe your coding requirements in natural language                {Colors.CYAN}║
+║  {Colors.MAGENTA}   ▶ AI generates implementation plan and code automatically             {Colors.CYAN}║
 ║                                                                               ║
 ║  {Colors.OKCYAN}🔄 Processing Pipeline:{Colors.CYAN}                                                    ║
 ║  {Colors.OKCYAN}   ▶ Intelligent agent orchestration → Code synthesis                     {Colors.CYAN}║
@@ -301,6 +298,94 @@ class CLIInterface:
                     
             self.print_status(f"URL validated: {url}", "success")
             return url
+    
+    def get_chat_input(self) -> str:
+        """Enhanced chat input interface for coding requirements"""
+        self.print_separator("─", 79, Colors.PURPLE)
+        print(f"{Colors.BOLD}{Colors.PURPLE}💬 Chat Input Interface{Colors.ENDC}")
+        print(f"{Colors.CYAN}Describe your coding requirements in natural language.{Colors.ENDC}")
+        print(f"{Colors.CYAN}Our AI will analyze your needs and generate a comprehensive implementation plan.{Colors.ENDC}")
+        self.print_separator("─", 79, Colors.PURPLE)
+        
+        # Display examples to help users
+        print(f"\n{Colors.BOLD}{Colors.YELLOW}💡 Examples:{Colors.ENDC}")
+        print(f"{Colors.CYAN}Academic Research:{Colors.ENDC}")
+        print(f"  • 'I need to implement a reinforcement learning algorithm for robotic control'")
+        print(f"  • 'Create a neural network for image classification with attention mechanisms'")
+        print(f"{Colors.CYAN}Engineering Projects:{Colors.ENDC}")
+        print(f"  • 'Develop a web application for project management with user authentication'")
+        print(f"  • 'Create a data visualization dashboard for sales analytics'")
+        print(f"{Colors.CYAN}Mixed Projects:{Colors.ENDC}")
+        print(f"  • 'Implement a machine learning model with a web interface for real-time predictions'")
+        
+        self.print_separator("─", 79, Colors.PURPLE)
+        
+        print(f"\n{Colors.BOLD}{Colors.OKCYAN}✏️  Enter your coding requirements below:{Colors.ENDC}")
+        print(f"{Colors.YELLOW}(Type your description, press Enter twice when finished, or Ctrl+C to cancel){Colors.ENDC}")
+        
+        lines = []
+        empty_line_count = 0
+        
+        while True:
+            try:
+                if len(lines) == 0:
+                    print(f"{Colors.BOLD}> {Colors.ENDC}", end="")
+                else:
+                    print(f"{Colors.BOLD}  {Colors.ENDC}", end="")
+                
+                line = input()
+                
+                if line.strip() == "":
+                    empty_line_count += 1
+                    if empty_line_count >= 2:
+                        # Two consecutive empty lines means user finished input
+                        break
+                    lines.append("")  # Keep empty line for formatting
+                else:
+                    empty_line_count = 0
+                    lines.append(line)
+                    
+            except KeyboardInterrupt:
+                print(f"\n{Colors.WARNING}Input cancelled by user{Colors.ENDC}")
+                return ""
+        
+        # Join all lines and clean up
+        user_input = "\n".join(lines).strip()
+        
+        if not user_input:
+            self.print_status("No input provided", "warning")
+            return ""
+        
+        if len(user_input) < 20:
+            self.print_status("Input too short. Please provide more detailed requirements (at least 20 characters)", "warning")
+            retry = input(f"{Colors.YELLOW}Try again? (y/n): {Colors.ENDC}").strip().lower()
+            if retry == 'y':
+                return self.get_chat_input()  # Recursive call for retry
+            return ""
+        
+        # Display input summary
+        word_count = len(user_input.split())
+        char_count = len(user_input)
+        
+        print(f"\n{Colors.BOLD}{Colors.GREEN}📋 Input Summary:{Colors.ENDC}")
+        print(f"  • {Colors.CYAN}Word count: {word_count}{Colors.ENDC}")
+        print(f"  • {Colors.CYAN}Character count: {char_count}{Colors.ENDC}")
+        
+        # Show preview
+        preview = user_input[:200] + "..." if len(user_input) > 200 else user_input
+        print(f"\n{Colors.BOLD}{Colors.CYAN}📄 Preview:{Colors.ENDC}")
+        print(f"{Colors.YELLOW}{preview}{Colors.ENDC}")
+        
+        # Confirm with user
+        confirm = input(f"\n{Colors.BOLD}{Colors.OKCYAN}Proceed with this input? (y/n): {Colors.ENDC}").strip().lower()
+        if confirm != 'y':
+            retry = input(f"{Colors.YELLOW}Edit input? (y/n): {Colors.ENDC}").strip().lower()
+            if retry == 'y':
+                return self.get_chat_input()  # Recursive call for retry
+            return ""
+        
+        self.print_status(f"Chat input captured: {word_count} words, {char_count} characters", "success")
+        return user_input
             
     def show_progress_bar(self, message: str, duration: float = 2.0):
         """Show animated progress bar"""
@@ -332,9 +417,19 @@ class CLIInterface:
             
         print(f"\r{Colors.BOLD}{Colors.CYAN}{message}... {Colors.OKGREEN}✓{Colors.ENDC}")
         
-    def display_processing_stages(self, current_stage: int = 0, enable_indexing: bool = True):
+    def display_processing_stages(self, current_stage: int = 0, enable_indexing: bool = True, chat_mode: bool = False):
         """Display processing pipeline stages with current progress"""
-        if enable_indexing:
+        if chat_mode:
+            # Chat mode - simplified workflow for user requirements
+            stages = [
+                ("🚀", "Initialize", "Setting up chat engine"),
+                ("💬", "Planning", "Analyzing requirements"),
+                ("🏗️", "Setup", "Creating workspace"),
+                ("📝", "Save Plan", "Saving implementation plan"),
+                ("⚙️", "Implement", "Generating code")
+            ]
+            pipeline_mode = "CHAT PLANNING"
+        elif enable_indexing:
             # Full pipeline with all stages
             stages = [
                 ("🚀", "Initialize", "Setting up AI engine"),

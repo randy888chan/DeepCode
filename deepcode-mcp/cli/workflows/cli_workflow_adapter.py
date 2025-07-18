@@ -184,6 +184,78 @@ class CLIWorkflowAdapter:
                 "pipeline_mode": "comprehensive" if enable_indexing else "optimized"
             }
     
+    async def execute_chat_pipeline(self, user_input: str) -> Dict[str, Any]:
+        """
+        Execute the chat-based planning and implementation pipeline.
+        
+        Args:
+            user_input: User's coding requirements and description
+            
+        Returns:
+            dict: Chat pipeline execution result
+        """
+        try:
+            # Import the chat-based pipeline
+            from workflows.agent_orchestration_engine import execute_chat_based_planning_pipeline
+            
+            # Create CLI progress callback for chat mode
+            def chat_progress_callback(progress: int, message: str):
+                if self.cli_interface:
+                    # Map progress to CLI stages for chat mode
+                    if progress <= 5:
+                        self.cli_interface.display_processing_stages(0, chat_mode=True)  # Initialize
+                    elif progress <= 30:
+                        self.cli_interface.display_processing_stages(1, chat_mode=True)  # Planning
+                    elif progress <= 50:
+                        self.cli_interface.display_processing_stages(2, chat_mode=True)  # Setup
+                    elif progress <= 70:
+                        self.cli_interface.display_processing_stages(3, chat_mode=True)  # Save Plan
+                    else:
+                        self.cli_interface.display_processing_stages(4, chat_mode=True)  # Implement
+                    
+                    # Display status message
+                    self.cli_interface.print_status(message, "processing")
+            
+            # Display pipeline start
+            if self.cli_interface:
+                self.cli_interface.print_status(
+                    "🚀 Starting chat-based planning pipeline...", 
+                    "processing"
+                )
+                self.cli_interface.display_processing_stages(0, chat_mode=True)
+            
+            # Execute the chat pipeline
+            result = await execute_chat_based_planning_pipeline(
+                user_input=user_input,
+                logger=self.logger,
+                progress_callback=chat_progress_callback
+            )
+            
+            # Display completion
+            if self.cli_interface:
+                self.cli_interface.display_processing_stages(4, chat_mode=True)  # Final stage for chat mode
+                self.cli_interface.print_status(
+                    "🎉 Chat-based planning pipeline completed successfully!", 
+                    "complete"
+                )
+            
+            return {
+                "status": "success",
+                "result": result,
+                "pipeline_mode": "chat"
+            }
+            
+        except Exception as e:
+            error_msg = f"Chat pipeline execution failed: {str(e)}"
+            if self.cli_interface:
+                self.cli_interface.print_status(error_msg, "error")
+            
+            return {
+                "status": "error",
+                "error": error_msg,
+                "pipeline_mode": "chat"
+            }
+    
     async def process_input_with_orchestration(
         self, 
         input_source: str, 
@@ -211,18 +283,23 @@ class CLIWorkflowAdapter:
             if init_result["status"] != "success":
                 return init_result
             
-            # Process file:// URLs
+            # Process file:// URLs for traditional file/URL inputs
             if input_source.startswith("file://"):
                 file_path = input_source[7:]
                 if os.name == 'nt' and file_path.startswith('/'):
                     file_path = file_path.lstrip('/')
                 input_source = file_path
             
-            # Execute the full pipeline using the latest agent orchestration engine
-            pipeline_result = await self.execute_full_pipeline(
-                input_source, 
-                enable_indexing=enable_indexing
-            )
+            # Execute appropriate pipeline based on input type
+            if input_type == 'chat':
+                # Use chat-based planning pipeline for user requirements
+                pipeline_result = await self.execute_chat_pipeline(input_source)
+            else:
+                # Use traditional multi-agent research pipeline for files/URLs
+                pipeline_result = await self.execute_full_pipeline(
+                    input_source, 
+                    enable_indexing=enable_indexing
+                )
             
             return {
                 "status": pipeline_result["status"],

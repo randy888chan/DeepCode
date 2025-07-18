@@ -111,7 +111,12 @@ class CLIApp:
         self.cli.print_results_header()
         
         # 显示流水线模式
-        mode_display = "🧠 Comprehensive Mode" if pipeline_mode == 'comprehensive' else "⚡ Optimized Mode"
+        if pipeline_mode == 'chat':
+            mode_display = "💬 Chat Planning Mode"
+        elif pipeline_mode == 'comprehensive':
+            mode_display = "🧠 Comprehensive Mode"
+        else:
+            mode_display = "⚡ Optimized Mode"
         print(f"{Colors.BOLD}{Colors.PURPLE}🤖 PIPELINE MODE: {mode_display}{Colors.ENDC}")
         self.cli.print_separator("─", 79, Colors.PURPLE)
         
@@ -143,14 +148,24 @@ class CLIApp:
             
         # 显示处理完成的工作流阶段
         print(f"\n{Colors.BOLD}{Colors.OKCYAN}🔄 COMPLETED WORKFLOW STAGES:{Colors.ENDC}")
-        stages = [
-            "📄 Document Processing",
-            "🔍 Reference Analysis", 
-            "📋 Plan Generation",
-            "📦 Repository Download",
-            "🗂️ Codebase Indexing",
-            "⚙️ Code Implementation"
-        ]
+        
+        if pipeline_mode == 'chat':
+            stages = [
+                "🚀 Engine Initialization",
+                "💬 Requirements Analysis",
+                "🏗️ Workspace Setup",
+                "📝 Implementation Plan Generation",
+                "⚙️ Code Implementation"
+            ]
+        else:
+            stages = [
+                "📄 Document Processing",
+                "🔍 Reference Analysis", 
+                "📋 Plan Generation",
+                "📦 Repository Download",
+                "🗂️ Codebase Indexing",
+                "⚙️ Code Implementation"
+            ]
         
         for stage in stages:
             print(f"  ✅ {stage}")
@@ -187,6 +202,11 @@ class CLIApp:
                     if file_path:
                         await self.process_input(f"file://{file_path}", 'file')
                         
+                elif choice in ['t', 'chat', 'text']:
+                    chat_input = self.cli.get_chat_input()
+                    if chat_input:
+                        await self.process_input(chat_input, 'chat')
+                        
                 elif choice in ['h', 'history']:
                     self.cli.show_history()
                     
@@ -194,10 +214,10 @@ class CLIApp:
                     self.cli.show_configuration_menu()
                     
                 else:
-                    self.cli.print_status("Invalid choice. Please select U, F, C, H, or Q.", "warning")
+                    self.cli.print_status("Invalid choice. Please select U, F, T, C, H, or Q.", "warning")
                 
                 # 询问是否继续
-                if self.cli.is_running and choice in ['u', 'f']:
+                if self.cli.is_running and choice in ['u', 'f', 't', 'chat', 'text']:
                     if not self.cli.ask_continue():
                         self.cli.is_running = False
                         self.cli.print_status("Session ended by user", "info")
