@@ -541,6 +541,18 @@ python cli/main_cli.py
   <img src="https://img.shields.io/badge/Mode-Interactive_Terminal-9b59b6?style=flat-square&logo=terminal&logoColor=white" alt="CLI Mode" />
 </div>
 
+##### 🎩 **Docker** (Advanced Users)
+
+```bash
+#To build dockerfile
+
+git clone https://github.com/HKUDS/DeepCode.git
+cd DeepCode
+docker build . --tag deepcode:<version>
+
+docker run -d -p 8501:8501 -v mcp_configuration:/app/mcp_configuration deepcode:<version>
+```
+
 ### 🎯 **Step 3: Generate Code**
 
 1. **📄 Input**: Upload your research paper, provide requirements, or paste a URL
