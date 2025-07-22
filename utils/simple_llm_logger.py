@@ -16,7 +16,7 @@ from typing import Dict, Any
 class SimpleLLMLogger:
     """超简化的LLM响应日志记录器"""
 
-    def __init__(self, config_path: str = "mcp_agent.config.yaml"):
+    def __init__(self, config_path: str = "mcp_configuration/mcp_agent.config.yaml"):
         """
         初始化日志记录器
 

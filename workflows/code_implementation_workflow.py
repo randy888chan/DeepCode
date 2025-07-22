@@ -8,7 +8,7 @@ Features:
 MCP Architecture:
 - MCP Server: tools/code_implementation_server.py
 - MCP Client: Called through mcp_agent framework
-- Configuration: mcp_agent.config.yaml
+- Configuration: mcp_configuration/mcp_agent.config.yaml
 """
 
 import json
@@ -76,7 +76,7 @@ def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
         return OpenAIAugmentedLLM
 
 
-def get_default_models(config_path: str = "mcp_agent.config.yaml"):
+def get_default_models(config_path: str = "mcp_configuration/mcp_agent.config.yaml"):
     """
     Get default models from configuration file.
 
@@ -122,7 +122,7 @@ class CodeImplementationWorkflow:
         """Initialize workflow with configuration"""
         self.config_path = config_path
         self.api_config = self._load_api_config()
-        self.default_models = get_default_models("mcp_agent.config.yaml")
+        self.default_models = get_default_models("mcp_configuration/mcp_agent.config.yaml")
         self.logger = self._create_logger()
         self.mcp_agent = None
         self.enable_read_tools = (

@@ -66,7 +66,7 @@ def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
         return OpenAIAugmentedLLM
 
 
-def get_default_models(config_path: str = "mcp_agent.config.yaml"):
+def get_default_models(config_path: str = "mcp_configuration/mcp_agent.config.yaml"):
     """
     Get default models from configuration file.
 
@@ -151,7 +151,7 @@ class CodeIndexer:
         self.indexer_config_path = indexer_config_path
         self.api_config = self._load_api_config()
         self.indexer_config = self._load_indexer_config()
-        self.default_models = get_default_models("mcp_agent.config.yaml")
+        self.default_models = get_default_models("mcp_configuration/mcp_agent.config.yaml")
 
         # Use config paths if not provided as parameters
         paths_config = self.indexer_config.get("paths", {})
