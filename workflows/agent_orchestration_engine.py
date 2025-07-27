@@ -56,6 +56,9 @@ from workflows.code_implementation_workflow_index import (
     CodeImplementationWorkflowWithIndex,
 )
 
+# RAG imports
+from rag.rag_manager import RAGManager
+
 # Environment configuration
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"  # Prevent .pyc file generation
 
@@ -368,22 +371,74 @@ async def run_resource_processor(analysis_result: str, logger) -> str:
         )
 
 
-async def run_code_analyzer(paper_dir: str, logger) -> str:
+async def run_code_analyzer(
+    paper_dir: str, logger, rag_manager: Optional[RAGManager] = None
+) -> str:
     """
-    Run the code analysis workflow using multiple agents for comprehensive code planning.
+    Run the code analysis workflow with optional RAG enhancement.
 
-    This function orchestrates three specialized agents:
-    - ConceptAnalysisAgent: Analyzes system architecture and conceptual framework
-    - AlgorithmAnalysisAgent: Extracts algorithms, formulas, and technical details
-    - CodePlannerAgent: Integrates outputs into a comprehensive implementation plan
+    This function automatically uses RAG if available, otherwise falls back to traditional analysis.
 
     Args:
         paper_dir: Directory path containing the research paper and related resources
         logger: Logger instance for logging information
+        rag_manager: Optional RAG manager for enhanced analysis
 
     Returns:
-        str: Comprehensive analysis result from the coordinated agents
+        str: Comprehensive analysis result
     """
+    # Try RAG-enhanced analysis first if available
+    if rag_manager and rag_manager.is_rag_available():
+        try:
+            print("🧠 Using RAG-enhanced code analysis...")
+
+            # Generate and execute optimized queries for each analysis type
+            concept_results = await rag_manager.analyze_with_agent(
+                "concept",
+                "Focus on system architecture, component design, and implementation patterns",
+            )
+
+            algorithm_results = await rag_manager.analyze_with_agent(
+                "algorithm",
+                "Extract all algorithms, formulas, pseudocode, and implementation details",
+            )
+
+            planning_results = await rag_manager.analyze_with_agent(
+                "planning",
+                "Create complete implementation roadmap with dependencies and structure",
+            )
+
+            # Combine results for comprehensive planning
+            if concept_results and algorithm_results and planning_results:
+                combined_analysis = f"""
+                    # RAG-Enhanced Code Analysis Results
+
+                    ## System Architecture and Concepts
+                    {concept_results}
+
+                    ## Algorithm and Implementation Details
+                    {algorithm_results}
+
+                    ## Implementation Planning
+                    {planning_results}
+
+                    ---
+                    Generated using intelligent RAG analysis with optimized queries for efficient paper comprehension.
+                    """
+                print("✅ RAG-enhanced code analysis completed successfully")
+                return combined_analysis
+            else:
+                print(
+                    "⚠️ Some RAG queries failed, falling back to traditional analysis..."
+                )
+
+        except Exception as e:
+            print(f"❌ RAG-enhanced analysis failed: {e}")
+            print("🔄 Falling back to traditional code analysis...")
+
+    # Traditional multi-agent analysis (fallback or default)
+    print("📖 Using traditional code analysis...")
+
     concept_analysis_agent = Agent(
         name="ConceptAnalysisAgent",
         instruction=PAPER_CONCEPT_ANALYSIS_PROMPT,
@@ -426,7 +481,7 @@ The goal is to create a reproduction plan detailed enough for independent implem
     result = await code_aggregator_agent.generate_str(
         message=message, request_params=enhanced_params
     )
-    print(f"Code analysis result: {result}")
+    print(f"Traditional code analysis result: {result}")
     return result
 
 
@@ -465,22 +520,52 @@ async def github_repo_download(search_result: str, paper_dir: str, logger) -> st
         )
 
 
-async def paper_reference_analyzer(paper_dir: str, logger) -> str:
+async def paper_reference_analyzer(
+    paper_dir: str, logger, rag_manager: Optional[RAGManager] = None
+) -> str:
     """
-    Run the paper reference analysis and GitHub repository workflow.
+    Run the paper reference analysis with optional RAG enhancement.
 
     Args:
-        analysis_result: Result from the paper analyzer
+        paper_dir: Directory path containing the research paper
         logger: Logger instance for logging information
+        rag_manager: Optional RAG manager for enhanced analysis
 
     Returns:
         str: Reference analysis result
     """
+    # Try RAG-enhanced analysis first if available
+    if rag_manager and rag_manager.is_rag_available():
+        try:
+            print("🧠 Using RAG-enhanced reference analysis...")
+
+            # Generate and execute optimized query for reference analysis
+            reference_results = await rag_manager.analyze_with_agent(
+                "reference",
+                "Focus on papers with available GitHub repositories and implementation details from References section",
+            )
+
+            if reference_results:
+                print("✅ RAG-enhanced reference analysis completed")
+                return reference_results
+            else:
+                print(
+                    "⚠️ RAG reference query failed, falling back to traditional analysis..."
+                )
+
+        except Exception as e:
+            print(f"❌ RAG-enhanced reference analysis failed: {e}")
+            print("🔄 Falling back to traditional reference analysis...")
+
+    # Traditional reference analysis (fallback or default)
+    print("📖 Using traditional reference analysis...")
+
     reference_analysis_agent = Agent(
         name="ReferenceAnalysisAgent",
         instruction=PAPER_REFERENCE_ANALYZER_PROMPT,
         server_names=["filesystem", "fetch"],
     )
+
     message = f"""Analyze the research paper in directory: {paper_dir}
 
 Please locate and analyze the markdown (.md) file containing the research paper. **Focus specifically on the References/Bibliography section** to identify and analyze the 5 most relevant references that have GitHub repositories.
@@ -500,6 +585,80 @@ Goal: Find the most valuable GitHub repositories from the paper's reference list
 
         reference_result = await analyzer.generate_str(message=message)
         return reference_result
+
+
+async def automate_repository_acquisition_agent(
+    reference_result: str,
+    dir_info: Dict[str, str],
+    logger,
+    progress_callback: Optional[Callable] = None,
+):
+    """
+    Automate intelligent repository acquisition with AI-guided selection.
+
+    This agent autonomously identifies, evaluates, and acquires relevant
+    repositories using intelligent filtering and automated download protocols.
+
+    Args:
+        reference_result: Reference intelligence analysis result
+        dir_info: Workspace infrastructure metadata
+        logger: Logger instance for acquisition tracking
+        progress_callback: Progress callback function for monitoring
+    """
+    if progress_callback:
+        progress_callback(60, "🤖 Automating intelligent repository acquisition...")
+
+    await asyncio.sleep(5)  # Brief pause for stability
+
+    try:
+        download_result = await github_repo_download(
+            reference_result, dir_info["paper_dir"], logger
+        )
+
+        # Save download results
+        with open(dir_info["download_path"], "w", encoding="utf-8") as f:
+            f.write(download_result)
+        print(f"GitHub download results saved to {dir_info['download_path']}")
+
+        # Verify if any repositories were actually downloaded
+        code_base_path = os.path.join(dir_info["paper_dir"], "code_base")
+        if os.path.exists(code_base_path):
+            downloaded_repos = [
+                d
+                for d in os.listdir(code_base_path)
+                if os.path.isdir(os.path.join(code_base_path, d))
+                and not d.startswith(".")
+            ]
+
+            if downloaded_repos:
+                print(
+                    f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}"
+                )
+            else:
+                print(
+                    "GitHub download phase completed, but no repositories were found in the code_base directory"
+                )
+                print("This might indicate:")
+                print(
+                    "1. No relevant repositories were identified in the reference analysis"
+                )
+                print(
+                    "2. Repository downloads failed due to access permissions or network issues"
+                )
+                print(
+                    "3. The download agent encountered errors during the download process"
+                )
+        else:
+            print(f"Code base directory was not created: {code_base_path}")
+
+    except Exception as e:
+        print(f"Error during GitHub repository download: {e}")
+        # Still save the error information
+        error_message = f"GitHub download failed: {str(e)}"
+        with open(dir_info["download_path"], "w", encoding="utf-8") as f:
+            f.write(error_message)
+        print(f"GitHub download error saved to {dir_info['download_path']}")
+        raise e  # Re-raise to be handled by the main pipeline
 
 
 async def _process_input_source(input_source: str, logger) -> str:
@@ -601,58 +760,76 @@ async def synthesize_workspace_infrastructure_agent(
     }
 
 
-async def orchestrate_reference_intelligence_agent(
+async def initialize_rag_system(
     dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None
-) -> str:
+) -> RAGManager:
     """
-    Orchestrate intelligent reference analysis with automated research discovery.
+    Initialize RAG system for intelligent paper analysis.
 
-    This agent autonomously processes research references and discovers
-    related work using advanced AI-powered analysis algorithms.
+    This function sets up the RAG (Retrieval-Augmented Generation) system
+    to enable intelligent querying of research papers instead of direct file reading.
 
     Args:
         dir_info: Workspace infrastructure metadata
-        logger: Logger instance for intelligence tracking
+        logger: Logger instance for RAG tracking
         progress_callback: Progress callback function for monitoring
 
     Returns:
-        str: Comprehensive reference intelligence analysis result
+        RAGManager: Initialized RAG manager instance
     """
     if progress_callback:
-        progress_callback(50, "🧠 Orchestrating reference intelligence discovery...")
+        progress_callback(35, "🧠 Initializing intelligent RAG system...")
 
-    reference_path = dir_info["reference_path"]
+    # Find the paper markdown file
+    paper_dir = dir_info["paper_dir"]
+    paper_files = []
 
-    # Check if reference analysis already exists
-    if os.path.exists(reference_path):
-        print(f"Found existing reference analysis at {reference_path}")
-        with open(reference_path, "r", encoding="utf-8") as f:
-            return f.read()
+    if os.path.exists(paper_dir):
+        for file in os.listdir(paper_dir):
+            if file.endswith(".md") and not file.startswith("."):
+                paper_files.append(os.path.join(paper_dir, file))
 
-    # Execute reference analysis
-    reference_result = await paper_reference_analyzer(dir_info["paper_dir"], logger)
+    if not paper_files:
+        print("⚠️ No markdown paper file found in workspace")
+        rag_manager = RAGManager()
+        return rag_manager
 
-    # Save reference analysis result
-    with open(reference_path, "w", encoding="utf-8") as f:
-        f.write(reference_result)
-    print(f"Reference analysis saved to {reference_path}")
+    # Use the first markdown file found
+    paper_path = paper_files[0]
+    print(f"📄 Found paper file: {paper_path}")
 
-    return reference_result
+    # Initialize RAG manager
+    rag_manager = RAGManager()
+
+    # Attempt to initialize RAG with the paper
+    rag_success = await rag_manager.initialize_rag(paper_path)
+
+    if rag_success:
+        print("✅ RAG system initialized successfully")
+        print("🎯 Paper indexed and ready for intelligent querying")
+    else:
+        print("🔶 RAG initialization failed, falling back to traditional methods")
+
+    return rag_manager
 
 
 async def orchestrate_code_planning_agent(
-    dir_info: Dict[str, str], logger, progress_callback: Optional[Callable] = None
+    dir_info: Dict[str, str],
+    logger,
+    progress_callback: Optional[Callable] = None,
+    rag_manager: Optional[RAGManager] = None,
 ):
     """
-    Orchestrate intelligent code planning with automated design analysis.
+    Orchestrate intelligent code planning with optional RAG enhancement.
 
-    This agent autonomously generates optimal code reproduction plans and implementation
-    strategies using AI-driven code analysis and planning principles.
+    This agent uses RAG if available for optimal code reproduction planning,
+    otherwise falls back to traditional multi-agent analysis.
 
     Args:
         dir_info: Workspace infrastructure metadata
         logger: Logger instance for planning tracking
         progress_callback: Progress callback function for monitoring
+        rag_manager: Optional RAG manager for enhanced planning
     """
     if progress_callback:
         progress_callback(40, "🏗️ Synthesizing intelligent code architecture...")
@@ -661,84 +838,71 @@ async def orchestrate_code_planning_agent(
 
     # Check if initial plan already exists
     if not os.path.exists(initial_plan_path):
-        initial_plan_result = await run_code_analyzer(dir_info["paper_dir"], logger)
-        with open(initial_plan_path, "w", encoding="utf-8") as f:
-            f.write(initial_plan_result)
-        print(f"Initial plan saved to {initial_plan_path}")
+        try:
+            # Use integrated RAG-enhanced code analysis
+            initial_plan_result = await run_code_analyzer(
+                dir_info["paper_dir"], logger, rag_manager
+            )
+
+            with open(initial_plan_path, "w", encoding="utf-8") as f:
+                f.write(initial_plan_result)
+            print(f"✅ Initial plan saved to {initial_plan_path}")
+
+        except Exception as e:
+            print(f"❌ Code planning failed: {e}")
+            raise e
+    else:
+        print(f"📄 Existing initial plan found at {initial_plan_path}")
 
 
-async def automate_repository_acquisition_agent(
-    reference_result: str,
+async def orchestrate_reference_intelligence_agent(
     dir_info: Dict[str, str],
     logger,
     progress_callback: Optional[Callable] = None,
-):
+    rag_manager: Optional[RAGManager] = None,
+) -> str:
     """
-    Automate intelligent repository acquisition with AI-guided selection.
+    Orchestrate intelligent reference analysis with optional RAG enhancement.
 
-    This agent autonomously identifies, evaluates, and acquires relevant
-    repositories using intelligent filtering and automated download protocols.
+    This agent uses RAG if available for intelligent reference discovery,
+    otherwise falls back to traditional analysis methods.
 
     Args:
-        reference_result: Reference intelligence analysis result
         dir_info: Workspace infrastructure metadata
-        logger: Logger instance for acquisition tracking
+        logger: Logger instance for intelligence tracking
         progress_callback: Progress callback function for monitoring
+        rag_manager: Optional RAG manager for enhanced analysis
+
+    Returns:
+        str: Comprehensive reference intelligence analysis result
     """
     if progress_callback:
-        progress_callback(60, "🤖 Automating intelligent repository acquisition...")
+        progress_callback(50, "🧠 Orchestrating intelligent reference discovery...")
 
-    await asyncio.sleep(5)  # Brief pause for stability
+    reference_path = dir_info["reference_path"]
+
+    # Check if reference analysis already exists
+    if os.path.exists(reference_path):
+        print(f"📄 Found existing reference analysis at {reference_path}")
+        with open(reference_path, "r", encoding="utf-8") as f:
+            return f.read()
 
     try:
-        download_result = await github_repo_download(
-            reference_result, dir_info["paper_dir"], logger
+        # Execute RAG-enhanced reference analysis
+        reference_result = await paper_reference_analyzer(
+            dir_info["paper_dir"], logger, rag_manager
         )
 
-        # Save download results
-        with open(dir_info["download_path"], "w", encoding="utf-8") as f:
-            f.write(download_result)
-        print(f"GitHub download results saved to {dir_info['download_path']}")
+        # Save reference analysis result
+        with open(reference_path, "w", encoding="utf-8") as f:
+            f.write(reference_result)
+        print(f"✅ Reference analysis saved to {reference_path}")
 
-        # Verify if any repositories were actually downloaded
-        code_base_path = os.path.join(dir_info["paper_dir"], "code_base")
-        if os.path.exists(code_base_path):
-            downloaded_repos = [
-                d
-                for d in os.listdir(code_base_path)
-                if os.path.isdir(os.path.join(code_base_path, d))
-                and not d.startswith(".")
-            ]
-
-            if downloaded_repos:
-                print(
-                    f"Successfully downloaded {len(downloaded_repos)} repositories: {downloaded_repos}"
-                )
-            else:
-                print(
-                    "GitHub download phase completed, but no repositories were found in the code_base directory"
-                )
-                print("This might indicate:")
-                print(
-                    "1. No relevant repositories were identified in the reference analysis"
-                )
-                print(
-                    "2. Repository downloads failed due to access permissions or network issues"
-                )
-                print(
-                    "3. The download agent encountered errors during the download process"
-                )
-        else:
-            print(f"Code base directory was not created: {code_base_path}")
+        return reference_result
 
     except Exception as e:
-        print(f"Error during GitHub repository download: {e}")
-        # Still save the error information
-        error_message = f"GitHub download failed: {str(e)}"
-        with open(dir_info["download_path"], "w", encoding="utf-8") as f:
-            f.write(error_message)
-        print(f"GitHub download error saved to {dir_info['download_path']}")
-        raise e  # Re-raise to be handled by the main pipeline
+        print(f"❌ Reference analysis failed: {e}")
+        raise e
 
 
 async def orchestrate_codebase_intelligence_agent(
@@ -1067,6 +1231,7 @@ async def execute_multi_agent_research_pipeline(
     logger,
     progress_callback: Optional[Callable] = None,
     enable_indexing: bool = True,
+    enable_rag: bool = True,  # New parameter for RAG support
 ) -> str:
     """
     Execute the complete intelligent multi-agent research orchestration pipeline.
@@ -1084,6 +1249,7 @@ async def execute_multi_agent_research_pipeline(
         logger: Logger instance for comprehensive workflow intelligence tracking
         progress_callback: Progress callback function for real-time monitoring
         enable_indexing: Whether to enable advanced intelligence analysis (default: True)
+        enable_rag: Whether to enable RAG-enhanced paper analysis (default: True)
 
     Returns:
         str: The comprehensive pipeline execution result with status and outcomes
@@ -1108,6 +1274,12 @@ async def execute_multi_agent_research_pipeline(
             print("🧠 Advanced intelligence analysis enabled - comprehensive workflow")
         else:
             print("⚡ Optimized mode - advanced intelligence analysis disabled")
+
+        # Log RAG functionality status
+        if enable_rag:
+            print("🤖 RAG-enhanced paper analysis enabled")
+        else:
+            print("📖 Traditional paper analysis mode")
 
         # Phase 1: Input Processing and Validation
         input_source = await _process_input_source(input_source, logger)
@@ -1137,14 +1309,33 @@ async def execute_multi_agent_research_pipeline(
         )
         await asyncio.sleep(30)
 
-        # Phase 4: Code Planning Orchestration
-        await orchestrate_code_planning_agent(dir_info, logger, progress_callback)
-
-        # Phase 5: Reference Intelligence (only when indexing is enabled)
-        if enable_indexing:
-            reference_result = await orchestrate_reference_intelligence_agent(
+        # Phase 3.5: RAG System Initialization (New Addition)
+        rag_manager = None
+        if enable_rag:
+            rag_manager = await initialize_rag_system(
                 dir_info, logger, progress_callback
             )
+        else:
+            print("🔶 RAG functionality disabled, using traditional methods")
+
+        # Phase 4: Code Planning Orchestration (Modified for RAG)
+        if enable_rag and rag_manager and rag_manager.is_rag_available():
+            await orchestrate_code_planning_agent(
+                dir_info, logger, progress_callback, rag_manager
+            )
+        else:
+            await orchestrate_code_planning_agent(dir_info, logger, progress_callback)
+
+        # Phase 5: Reference Intelligence (Modified for RAG)
+        if enable_indexing:
+            if enable_rag and rag_manager and rag_manager.is_rag_available():
+                reference_result = await orchestrate_reference_intelligence_agent(
+                    dir_info, logger, progress_callback, rag_manager
+                )
+            else:
+                reference_result = await orchestrate_reference_intelligence_agent(
+                    dir_info, logger, progress_callback
+                )
         else:
             print("🔶 Skipping reference intelligence analysis (fast mode enabled)")
             # Create empty reference analysis result to maintain file structure consistency
@@ -1186,6 +1377,10 @@ async def execute_multi_agent_research_pipeline(
             dir_info, logger, progress_callback, enable_indexing
         )
 
+        # Cleanup RAG resources if used
+        if rag_manager:
+            await rag_manager.cleanup()
+
         # Final Status Report
         if enable_indexing:
             pipeline_summary = (
@@ -1193,6 +1388,14 @@ async def execute_multi_agent_research_pipeline(
             )
         else:
             pipeline_summary = f"Multi-agent research pipeline completed (fast mode) for {dir_info['paper_dir']}"
+
+        # Add RAG status to summary
+        if enable_rag and rag_manager and rag_manager.is_rag_available():
+            pipeline_summary += "\n🤖 RAG-enhanced analysis completed successfully"
+        elif enable_rag:
+            pipeline_summary += "\n🔶 RAG functionality attempted but not available"
+        else:
+            pipeline_summary += "\n📖 Traditional analysis methods used"
 
         # Add indexing status to summary
         if not enable_indexing:
@@ -1329,24 +1532,24 @@ async def execute_chat_based_planning_pipeline(
         # Create a synthetic markdown file with user requirements
         markdown_content = f"""# User Coding Requirements
 
-## Project Description
-This is a coding project generated from user requirements via chat interface.
+            ## Project Description
+            This is a coding project generated from user requirements via chat interface.
 
-## User Requirements
-{user_input}
+            ## User Requirements
+            {user_input}
 
-## Generated Implementation Plan
-The following implementation plan was generated by the AI chat planning agent:
+            ## Generated Implementation Plan
+            The following implementation plan was generated by the AI chat planning agent:
 
-```yaml
-{planning_result}
-```
+            ```yaml
+            {planning_result}
+            ```
 
-## Project Metadata
-- **Input Type**: Chat Input
-- **Generation Method**: AI Chat Planning Agent
-- **Timestamp**: {timestamp}
-"""
+            ## Project Metadata
+            - **Input Type**: Chat Input
+            - **Generation Method**: AI Chat Planning Agent
+            - **Timestamp**: {timestamp}
+            """
 
         # Save the markdown file
         markdown_file_path = os.path.join(chat_paper_dir, f"{paper_name}.md")

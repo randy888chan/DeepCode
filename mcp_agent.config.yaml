@@ -14,7 +14,29 @@ logger:
     unique_id: "timestamp" # Options: "timestamp" or "session_id"
     timestamp_format: "%Y%m%d_%H%M%S"
 
+# RAG Configuration (New Addition)
+rag:
+  enabled: true
+  parser: "mineru"  # mineru or docling
+  parse_method: "auto"  # auto, ocr, or txt
+  enable_image_processing: true
+  enable_table_processing: true
+  enable_equation_processing: true
+  working_dir: "./rag_storage"
 
+  # Embedding Configuration
+  embedding:
+    model: "text-embedding-3-large"
+    dimension: 3072
+    max_token_size: 8192
+
+  # LLM Configuration
+  llm:
+    model: "gpt-4o-mini"
+
+  # Vision Model Configuration
+  vision:
+    model: "gpt-4o"
 
 mcp:
   servers:
