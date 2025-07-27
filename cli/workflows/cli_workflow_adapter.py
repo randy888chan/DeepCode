@@ -78,15 +78,30 @@ class CLIWorkflowAdapter:
 
     async def cleanup_mcp_app(self):
         """
-        Clean up MCP application resources.
+        Clean up MCP application resources with timeout optimization.
         """
         if hasattr(self, "app_context"):
             try:
-                await self.app_context.__aexit__(None, None, None)
-                if self.cli_interface:
-                    self.cli_interface.print_status(
-                        "🧹 Resources cleaned up successfully", "info"
-                    )
+                # Add timeout to prevent hanging during cleanup
+                import asyncio
+                
+                async def cleanup_with_timeout():
+                    await self.app_context.__aexit__(None, None, None)
+                
+                # Set 30 second timeout for cleanup
+                try:
+                    await asyncio.wait_for(cleanup_with_timeout(), timeout=30.0)
+                    if self.cli_interface:
+                        self.cli_interface.print_status(
+                            "🧹 Resources cleaned up successfully", "info"
+                        )
+                except asyncio.TimeoutError:
+                    if self.cli_interface:
+                        self.cli_interface.print_status(
+                            "⚠️ Cleanup timed out after 30s - forcing completion", "warning"
+                        )
+                    # Force cleanup completion
+                    
             except Exception as e:
                 if self.cli_interface:
                     self.cli_interface.print_status(

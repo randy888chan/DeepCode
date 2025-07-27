@@ -1,0 +1,36 @@
+# 沙箱测试系统依赖包
+# 作者：AI Assistant
+# 创建时间：2024-01-01
+
+# 核心依赖
+openai>=1.0.0
+PyYAML>=6.0
+psutil>=5.9.0
+
+# 代码分析
+astor>=0.8.1
+
+# 文件处理
+pathlib2>=2.3.7
+
+# 日志和监控
+colorlog>=6.7.0
+
+# 环境变量管理
+python-dotenv>=1.0.0
+
+# 测试和验证
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# 开发工具
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# 可选依赖（用于Docker隔离）
+# docker>=6.0.0
+
+# 可选依赖（用于更高级的代码分析）
+# radon>=5.1.0
+# mccabe>=0.7.0 

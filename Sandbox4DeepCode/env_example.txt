@@ -1,0 +1,11 @@
+# 环境变量配置示例
+# 复制此文件为 .env 并填入你的实际配置
+
+# OpenAI API 配置
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=https://your_proxy_url.com/v1
+
+# 可选：其他配置
+LOG_LEVEL=INFO
+SANDBOX_TIMEOUT=300
+SANDBOX_MEMORY_LIMIT=2GB 

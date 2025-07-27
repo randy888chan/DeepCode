@@ -955,12 +955,13 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
         st.error("❌ **Processing encountered errors**")
 
     # Create tabs to organize different phase results
-    tab1, tab2, tab3, tab4 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "📊 Analysis Phase",
             "📥 Download Phase",
             "🔧 Implementation Phase",
             "📁 Generated Files",
+            "🧪 Sandbox Testing",
         ]
     )
 
@@ -1101,6 +1102,10 @@ def results_display_component(result: Dict[str, Any], task_counter: int):
                     "status": result.get("status", "unknown"),
                 }
             )
+
+    with tab5:
+        st.markdown("#### 🧪 Sandbox Testing System")
+        sandbox_testing_component(result, task_counter)
 
     # Action buttons
     st.markdown("---")
@@ -1428,6 +1433,474 @@ def footer_component():
     """,
         unsafe_allow_html=True,
     )
+
+
+def sandbox_testing_component(result: Dict[str, Any], task_counter: int):
+    """
+    Sandbox Testing UI Component
+    
+    Features:
+    - Detect generated code directory
+    - Provide sandbox testing options
+    - Display sandbox test results
+    
+    Args:
+        result: Processing result containing code generation information
+        task_counter: Task counter
+    """
+    # st.markdown("#### 🧪 Sandbox Testing System")
+    st.markdown("Test generated code in a secure sandbox environment, analyze code quality and execution behavior")
+    
+    # Try to extract code directory from results
+    repo_result = result.get("repo_result", "")
+    code_directory = None
+    
+    # Search for code directory path patterns
+    import re
+    import os
+    
+    # Common code directory patterns
+    patterns = [
+        r"Code generated in[:\s]+([^\s\n]+)",
+        r"generated in[:\s]+([^\s\n]+)",
+        r"saved to[:\s]+([^\s\n]+)",
+        r"output directory[:\s]+([^\s\n]+)",
+        r"Repository path[:\s]+([^\s\n]+)"
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, repo_result, re.IGNORECASE)
+        if match:
+            potential_path = match.group(1).strip()
+            if os.path.exists(potential_path):
+                code_directory = potential_path
+                break
+    
+    # If not found, try common output directories
+    if not code_directory:
+        common_paths = [
+            "output",
+            "generated_code",
+            "deepcode_output",
+            "./output"
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                # Find the latest code directory
+                try:
+                    subdirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+                    if subdirs:
+                        # Sort by time, select the latest
+                        latest_dir = max(subdirs, key=lambda d: os.path.getctime(os.path.join(path, d)))
+                        code_directory = os.path.join(path, latest_dir)
+                        break
+                except Exception:
+                    continue
+    
+    if code_directory:
+        st.success(f"✅ Detected generated code directory: `{code_directory}`")
+        
+        # Display directory information
+        with st.expander("📁 Code Directory Information", expanded=False):
+            try:
+                import glob
+                python_files = glob.glob(os.path.join(code_directory, "**/*.py"), recursive=True)
+                requirement_files = glob.glob(os.path.join(code_directory, "**/requirements.txt"), recursive=True)
+                
+                st.info(f"📄 Python files count: {len(python_files)}")
+                st.info(f"📦 Requirements file: {'✅ Found' if requirement_files else '❌ Not found'}")
+                
+                if python_files:
+                    st.markdown("**Python files list:**")
+                    for py_file in python_files[:10]:  # Show first 10 files
+                        relative_path = os.path.relpath(py_file, code_directory)
+                        st.markdown(f"- `{relative_path}`")
+                    if len(python_files) > 10:
+                        st.markdown(f"... and {len(python_files) - 10} more files")
+                        
+            except Exception as e:
+                st.warning(f"Unable to analyze directory content: {str(e)}")
+        
+        # Sandbox testing options
+        st.markdown("### 🚀 Start Sandbox Testing")
+        
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Help documents option
+            help_docs = st.file_uploader(
+                "📖 Upload Help Documents (Optional)",
+                type=['txt', 'md', 'pdf'],
+                accept_multiple_files=True,
+                help="Upload relevant documentation to help sandbox system better understand code functionality",
+                key=f"sandbox_help_docs_{task_counter}"
+            )
+            
+            # Test configuration options
+            with st.expander("⚙️ Advanced Configuration"):
+                test_timeout = st.slider("Test timeout (seconds)", 30, 300, 120)
+                enable_detailed_log = st.checkbox("Enable detailed logging", value=True)
+                
+        with col2:
+            # Start test button
+            if st.button(
+                "🧪 Start Sandbox Test", 
+                type="primary", 
+                use_container_width=True,
+                key=f"start_sandbox_test_{task_counter}"
+            ):
+                st.session_state[f'run_sandbox_test_{task_counter}'] = {
+                    'code_directory': code_directory,
+                    'help_docs': help_docs,
+                    'timeout': test_timeout,
+                    'detailed_log': enable_detailed_log
+                }
+                st.rerun()
+        
+        # Check if sandbox test needs to be run
+        if st.session_state.get(f'run_sandbox_test_{task_counter}'):
+            sandbox_config = st.session_state[f'run_sandbox_test_{task_counter}']
+            
+            # Show test progress
+            st.markdown("### 📊 Sandbox Testing in Progress...")
+            
+            with st.spinner("🔄 Executing sandbox test..."):
+                sandbox_result = run_sandbox_test(
+                    sandbox_config['code_directory'],
+                    sandbox_config.get('help_docs', []),
+                    sandbox_config.get('timeout', 120),
+                    sandbox_config.get('detailed_log', True)
+                )
+            
+            # Display test results
+            display_sandbox_results(sandbox_result, task_counter)
+            
+            # Clear test state
+            del st.session_state[f'run_sandbox_test_{task_counter}']
+            
+    else:
+        st.warning("⚠️ No generated code directory detected")
+        st.info("Please ensure code generation completed successfully, or manually specify code directory")
+        
+        # Manual directory specification option
+        with st.expander("🔧 Manually Specify Code Directory"):
+            manual_path = st.text_input(
+                "Code directory path",
+                placeholder="/path/to/generated/code",
+                key=f"manual_code_path_{task_counter}"
+            )
+            
+            if manual_path and st.button("✅ Confirm Path", key=f"confirm_path_{task_counter}"):
+                if os.path.exists(manual_path):
+                    st.success(f"✅ Path confirmed: {manual_path}")
+                    # Re-run component display
+                    result['repo_result'] = f"Code generated in: {manual_path}"
+                    st.rerun()
+                else:
+                    st.error("❌ Path does not exist, please check and retry")
+
+
+def run_sandbox_test(code_directory: str, help_docs: list = None, timeout: int = 120, detailed_log: bool = True) -> Dict[str, Any]:
+    """
+    Run sandbox test (using standalone interface)
+    
+    Args:
+        code_directory: Code directory path
+        help_docs: Help documents list
+        timeout: Timeout in seconds
+        detailed_log: Whether to enable detailed logging
+        
+    Returns:
+        Sandbox test results
+    """
+    try:
+        import sys
+        import os
+        from pathlib import Path
+        
+        # Get sandbox directory path
+        current_dir = Path(__file__).parent
+        project_root = current_dir.parent
+        sandbox_dir = project_root / "Sandbox4DeepCode"
+        
+        # Add sandbox directory to path to import standalone interface
+        if str(sandbox_dir) not in sys.path:
+            sys.path.insert(0, str(sandbox_dir))
+        
+        # Import standalone sandbox interface
+        from sandbox_interface import run_sandbox_test_standalone
+        
+        # Process help documents
+        help_file_paths = []
+        if help_docs:
+            import tempfile
+            for doc in help_docs:
+                try:
+                    # Save uploaded document to temporary file
+                    file_ext = doc.name.split('.')[-1] if '.' in doc.name else 'txt'
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_ext}") as tmp_file:
+                        tmp_file.write(doc.getvalue())
+                        help_file_paths.append(tmp_file.name)
+                except Exception as doc_error:
+                    # If processing a document fails, log but don't interrupt the entire process
+                    print(f"Failed to process help document {doc.name}: {str(doc_error)}")
+        
+        # Call standalone sandbox test interface
+        result = run_sandbox_test_standalone(
+            code_directory=code_directory,
+            help_docs_paths=help_file_paths,
+            timeout=timeout,
+            detailed_log=detailed_log
+        )
+        
+        # Clean up temporary files
+        for temp_file in help_file_paths:
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+        
+        return result
+        
+    except Exception as e:
+        import traceback
+        return {
+            'status': 'error',
+            'error_type': 'ui_integration_error',
+            'error_message': f'UI integration error: {str(e)}',
+            'traceback': traceback.format_exc(),
+            'suggestion': 'Please check if standalone sandbox interface is correctly configured'
+        }
+
+
+def display_sandbox_results(sandbox_result: Dict[str, Any], task_counter: int):
+    """
+    Display sandbox test results
+    
+    Args:
+        sandbox_result: Sandbox test results
+        task_counter: Task counter
+    """
+    if sandbox_result['status'] == 'success':
+        st.success("🎉 Sandbox test completed!")
+        
+        # Display test summary
+        if 'summary' in sandbox_result:
+            st.markdown("### 📋 Test Summary")
+            st.code(sandbox_result['summary'])
+        
+        # Create result display tabs
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "📊 Structure Analysis", 
+            "🔧 Code Rewrite", 
+            "⚡ Execution Results", 
+            "📝 Review Report"
+        ])
+        
+        with tab1:
+            st.markdown("#### 📊 Project Structure Analysis Results")
+            structure_analysis = sandbox_result.get('structure_analysis', {})
+            if structure_analysis:
+                with st.expander("Structure analysis details", expanded=True):
+                    st.json(structure_analysis)
+            else:
+                st.info("No structure analysis results")
+        
+        with tab2:
+            st.markdown("#### 🔧 Code Rewrite Results")
+            code_rewrite = sandbox_result.get('code_rewrite', {})
+            if code_rewrite:
+                st.success(f"✅ Files processed: {code_rewrite.get('total_files', 0)}")
+                st.success(f"✅ Log points added: {code_rewrite.get('log_points_added', 0)}")
+                
+                test_repo_path = code_rewrite.get('test_repo_path')
+                if test_repo_path:
+                    st.info(f"📁 Test version saved to: `{test_repo_path}`")
+                
+                with st.expander("Rewrite details", expanded=False):
+                    st.json(code_rewrite)
+            else:
+                st.info("No code rewrite results")
+        
+        with tab3:
+            st.markdown("#### ⚡ Sandbox Execution Results")
+            execution_result = sandbox_result.get('sandbox_execution', {})
+            if execution_result:
+                exec_data = execution_result.get('execution_result', {})
+                return_code = exec_data.get('return_code', -1)
+                
+                if return_code == 0:
+                    st.success("✅ Code execution successful")
+                else:
+                    st.error(f"❌ Code execution failed (return code: {return_code})")
+                
+                # Display output
+                stdout = exec_data.get('stdout', [])
+                stderr = exec_data.get('stderr', [])
+                
+                if stdout:
+                    with st.expander("📤 Standard Output", expanded=False):
+                        for i, line in enumerate(stdout[:50], 1):  # Limit display lines
+                            st.text(f"{i:3d}: {line}")
+                        if len(stdout) > 50:
+                            st.info(f"... and {len(stdout) - 50} more lines of output")
+                
+                if stderr:
+                    with st.expander("⚠️ Error Output", expanded=True):
+                        for i, line in enumerate(stderr[:20], 1):
+                            st.text(f"{i:3d}: {line}")
+                        if len(stderr) > 20:
+                            st.info(f"... and {len(stderr) - 20} more lines of error output")
+            else:
+                st.info("No execution results")
+        
+        with tab4:
+            st.markdown("#### 📝 Code Review Report")
+            review_analysis = sandbox_result.get('review_analysis', {})
+            if review_analysis:
+                # Display scores
+                quality_score = review_analysis.get('code_quality_analysis', {}).get('quality_score', 0)
+                performance_rating = review_analysis.get('performance_analysis', {}).get('performance_rating', 'Unknown')
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Code Quality Score", f"{quality_score:.1f}/10")
+                with col2:
+                    st.metric("Performance Rating", performance_rating)
+                
+                # Display detailed review content
+                if 'comprehensive_review' in review_analysis:
+                    st.markdown("#### 📄 Detailed Review Report")
+                    st.markdown(review_analysis['comprehensive_review'])
+                
+                with st.expander("Complete review data", expanded=False):
+                    st.json(review_analysis)
+            else:
+                st.info("No review report")
+        
+        # Display sandbox execution logs
+        if 'debug_logs' in sandbox_result:
+            with st.expander("📋 Sandbox Execution Logs", expanded=False):
+                for log_entry in sandbox_result['debug_logs']:
+                    st.write(f"**{log_entry.get('source', 'Unknown')}:**")
+                    if log_entry.get('content'):
+                        st.text_area(
+                            f"Log content - {log_entry.get('source', 'Unknown')}", 
+                            log_entry['content'], 
+                            height=200
+                        )
+                    else:
+                        st.info("No log content captured")
+        
+        # Export results option
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📊 Export Test Report", use_container_width=True):
+                export_data = {
+                    "timestamp": datetime.now().isoformat(),
+                    "sandbox_test_results": sandbox_result,
+                    "test_summary": sandbox_result.get('summary', ''),
+                    "status": sandbox_result.get('status', 'unknown')
+                }
+                st.download_button(
+                    label="📄 Download Sandbox Test Report",
+                    data=json.dumps(export_data, indent=2, ensure_ascii=False),
+                    file_name=f"sandbox_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json",
+                    use_container_width=True,
+                )
+        
+        with col2:
+            test_repo_path = sandbox_result.get('code_rewrite', {}).get('test_repo_path')
+            if test_repo_path:
+                st.info(f"Test version code: `{test_repo_path}`")
+    
+    else:
+        st.error("❌ Sandbox test failed")
+        error_type = sandbox_result.get('error_type', 'unknown_error')
+        error_msg = sandbox_result.get('error_message', 'Unknown error')
+        suggestion = sandbox_result.get('suggestion', '')
+        
+        st.error(f"Error type: {error_type}")
+        st.error(f"Error message: {error_msg}")
+        
+        if suggestion:
+            st.info(f"💡 Suggestion: {suggestion}")
+        
+        # Provide different help information based on error type
+        if error_type == 'sandbox_not_found':
+            st.warning("🔧 Sandbox system not found")
+            st.markdown("""
+            **Solutions:**
+            1. Confirm that `Sandbox4DeepCode` folder exists in project root directory
+            2. Check if sandbox system is correctly downloaded and configured
+            3. Verify folder permission settings
+            """)
+        elif error_type == 'import_error':
+            st.warning("📦 Dependency issues")
+            st.markdown("""
+            **Solutions:**
+            1. Check sandbox system's requirements.txt
+            2. Confirm all necessary Python packages are installed
+            3. Verify Python environment configuration
+            """)
+        elif error_type == 'initialization_error':
+            st.warning("⚙️ Initialization issues")
+            st.markdown("""
+            **Solutions:**
+            1. Check if configuration files are correct
+            2. Verify environment variable settings
+            3. Confirm API keys and other configurations are valid
+            """)
+        elif error_type == 'execution_error':
+            st.warning("🚫 Execution issues")
+            st.markdown("""
+            **Solutions:**
+            1. Check if code directory exists and is valid
+            2. Verify file permissions
+            3. Confirm code structure is complete
+            """)
+        
+        if 'traceback' in sandbox_result:
+            with st.expander("🔍 Detailed Error Information"):
+                st.code(sandbox_result['traceback'])
+        
+        # Display more detailed debug information
+        if 'full_traceback' in sandbox_result:
+            with st.expander("🔍 Complete Error Traceback"):
+                st.code(sandbox_result['full_traceback'])
+        
+        if 'sys_path_info' in sandbox_result:
+            with st.expander("🛠️ System Path Debug Information"):
+                st.write("**Python path first 10 items:**")
+                for i, path in enumerate(sandbox_result['sys_path_info']):
+                    st.text(f"{i}: {path}")
+                
+                st.write("**Sandbox directory check:**")
+                st.text(f"Current directory: {sandbox_result.get('current_dir', 'Unknown')}")
+                st.text(f"Sandbox directory exists: {sandbox_result.get('sandbox_exists', 'Unknown')}")
+                st.text(f"main.py exists: {sandbox_result.get('main_py_exists', 'Unknown')}")
+                st.text(f"utils directory exists: {sandbox_result.get('utils_dir_exists', 'Unknown')}")
+                st.text(f"file_utils.py exists: {sandbox_result.get('file_utils_exists', 'Unknown')}")
+                
+                if 'added_paths' in sandbox_result:
+                    st.write("**Paths added to sys.path:**")
+                    for path in sandbox_result['added_paths']:
+                        st.text(f"- {path}")
+        
+        if 'debug_info' in sandbox_result:
+            with st.expander("🔬 Detailed Debug Information"):
+                st.json(sandbox_result['debug_info'])
+        
+        # Provide retry option
+        st.markdown("---")
+        if st.button("🔄 Retry", type="secondary", use_container_width=True):
+            # Clear error state, allow user to retry
+            if f'run_sandbox_test_{task_counter}' in st.session_state:
+                del st.session_state[f'run_sandbox_test_{task_counter}']
+            st.rerun()
 
 
 def format_file_size(size_bytes: int) -> str:
