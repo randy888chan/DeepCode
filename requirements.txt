@@ -8,6 +8,6 @@ mcp-server-git
 nest_asyncio
 pathlib2
 PyPDF2>=2.0.0
+RAGAnything
 reportlab>=3.5.0
 streamlit
-RAGAnything

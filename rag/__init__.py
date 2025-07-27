@@ -14,4 +14,4 @@ from .rag_manager import RAGManager
 from .config import RAGConfig
 from .query_generator import QueryGenerator
 
-__all__ = ["RAGManager", "RAGConfig", "QueryGenerator"] 
+__all__ = ["RAGManager", "RAGConfig", "QueryGenerator"]
