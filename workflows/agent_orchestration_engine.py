@@ -1377,10 +1377,6 @@ async def execute_multi_agent_research_pipeline(
             dir_info, logger, progress_callback, enable_indexing
         )
 
-        # Cleanup RAG resources if used
-        if rag_manager:
-            await rag_manager.cleanup()
-
         # Final Status Report
         if enable_indexing:
             pipeline_summary = (

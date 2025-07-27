@@ -299,10 +299,3 @@ class RAGManager:
             bool: True if RAG can be used
         """
         return self.rag_enabled and self.is_initialized
-
-    async def cleanup(self):
-        """Clean up RAG resources"""
-        if self.rag_instance:
-            self.rag_instance = None
-            self.is_initialized = False
-            print("🧹 RAG resources cleaned up")
