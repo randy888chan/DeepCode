@@ -53,7 +53,6 @@ from prompts.code_prompts import (
 
 from prompts.query_prompts import(
     RESOURCE_IDENTIFICATION_PROMPT,
-    RESOURCE_TYPE_JUDGMENT_PROMPT,
     QUERY_TYPE_IDENTIFICATION_PROMPT,
     QUERY_AUGMENTATION_PROMPT,
     LOOP_QUERY_AUGMENTATION_PROMPT,
@@ -1224,7 +1223,7 @@ async def resource_identification_agent(
     agent = Agent(
         name="ResourceIdentificationAgent",
         instruction=RESOURCE_IDENTIFICATION_PROMPT,
-        server_names=["brave"],
+        server_names=["brave", "filesystem"],
     )
 
     async with agent:
@@ -1257,7 +1256,7 @@ async def resource_identification_agent(
 
         try:
             raw_result = await identifier.generate_str(
-                message=user_input, request_params=params
+                message=RESOURCE_IDENTIFICATION_PROMPT.format(user_input=user_input), request_params=params
             )
 
             print("✅ LLM request completed")
@@ -1280,7 +1279,7 @@ async def resource_identification_agent(
 
         # Clean LLM output to ensure only pure JSON is returned
         try:
-            clean_result = extract_clean_json(raw_result)
+            clean_result = json.loads(extract_clean_json(raw_result))
             print(f"Raw LLM output: {raw_result}")
             print(f"Cleaned JSON output: {clean_result}")
 
@@ -1292,100 +1291,7 @@ async def resource_identification_agent(
                     agent="ResearchAnalyzerAgent",
                 )
 
-            if not clean_result or clean_result.strip() == "":
-                print("❌ CRITICAL: clean_result is empty after JSON extraction!")
-                print(f"Original raw_result was: {raw_result}")
-                raise ValueError("JSON extraction resulted in empty output")
-
-            return clean_result
-
-        except Exception as e:
-            print(f"❌ JSON extraction failed: {e}")
-            print(f"Raw result was: {raw_result}")
-            raise
-
-async def resource_type_judgment_agent(
-    resources: list,
-    logger,
-    progress_callback: Optional[Callable] = None,
-):
-    """
-    Annotate resource types and obtain descriptions for each resource.
-    """
-
-    agent = Agent(
-        name="ResourceTypeJudgmentAgent",
-        instruction=RESOURCE_TYPE_JUDGMENT_PROMPT,
-        server_names=["brave"],
-    )
-
-    async with agent:
-        print("analyzer: Connected to server, calling list_tools...")
-        try:
-            tools = await agent.list_tools()
-            print(
-                "Tools available:",
-                tools.model_dump() if hasattr(tools, "model_dump") else str(tools),
-            )
-        except Exception as e:
-            print(f"Failed to list tools: {e}")
-
-        try:
-            judge = await agent.attach_llm(get_preferred_llm_class())
-            print("✅ LLM attached successfully")
-        except Exception as e:
-            print(f"❌ Failed to attach LLM: {e}")
-            raise
-
-        # Set higher token output for research analysis
-        params = RequestParams(
-            max_tokens=6144,
-            temperature=0.3,
-        )
-
-        print(
-            f"🔄 Making LLM request with params: max_tokens={params.max_tokens}, temperature={params.temperature}"
-        )
-
-        try:
-            formatted_message = f"""Resources to analyze: {resources}"""
-            raw_result = await judge.generate_str(
-                message=formatted_message, request_params=params
-            )
-
-            print("✅ LLM request completed")
-            print(f"Raw result type: {type(raw_result)}")
-            print(f"Raw result length: {len(raw_result) if raw_result else 0}")
-
-            if not raw_result:
-                print("❌ CRITICAL: raw_result is empty or None!")
-                print("This could indicate:")
-                print("1. LLM API call failed silently")
-                print("2. API rate limiting or quota exceeded")
-                print("3. Network connectivity issues")
-                print("4. MCP server communication problems")
-                raise ValueError("LLM returned empty result")
-
-        except Exception as e:
-            print(f"❌ LLM generation failed: {e}")
-            print(f"Exception type: {type(e)}")
-            raise
-
-        # Clean LLM output to ensure only pure JSON is returned
-        try:
-            clean_result = extract_clean_json(raw_result)
-            print(f"Raw LLM output: {raw_result}")
-            print(f"Cleaned JSON output: {clean_result}")
-
-            # Log to SimpleLLMLogger
-            if hasattr(logger, "log_response"):
-                logger.log_response(
-                    clean_result,
-                    model="ResearchAnalyzer",
-                    agent="ResearchAnalyzerAgent",
-                )
-
-            if not clean_result or clean_result.strip() == "":
+            if not isinstance(clean_result, dict) or not clean_result:
                 print("❌ CRITICAL: clean_result is empty after JSON extraction!")
                 print(f"Original raw_result was: {raw_result}")
                 raise ValueError("JSON extraction resulted in empty output")
@@ -1430,9 +1336,11 @@ async def query_type_identification_agent(
         )
 
         try:
-            formatted_message = f"""<USER INPUT>: {agent_input['user_input']}\n<HAS RESOURCE>: {agent_input['has_resource']}"""
-            if agent_input['has_resource']:
-                formatted_message += f"\n<RESOURCES PROVIDED>: {agent_input['typed_resources']}"
+            formatted_message = QUERY_TYPE_IDENTIFICATION_PROMPT.format(
+                user_input=agent_input['user_input'],
+                resources=agent_input['resources'],
+                has_resource=agent_input['has_resource'],
+                )
 
             raw_result = await classifier.generate_str(
                 message=formatted_message, request_params=params
@@ -1516,7 +1424,7 @@ async def query_augmentation_agent(
 
         try:
             raw_result = await agnet_for_augmentation.generate_str(
-                message=user_input, request_params=params
+                message=QUERY_AUGMENTATION_PROMPT.format(user_input=user_input), request_params=params
             )
 
             print("✅ LLM request completed")
@@ -1539,7 +1447,7 @@ async def query_augmentation_agent(
 
         # Clean LLM output to ensure only pure JSON is returned
         try:
-            clean_result = extract_clean_json(raw_result)
+            clean_result = json.loads(extract_clean_json(raw_result))
             print(f"Raw LLM output: {raw_result}")
             print(f"Cleaned JSON output: {clean_result}")
 
@@ -1551,7 +1459,7 @@ async def query_augmentation_agent(
                     agent="ResearchAnalyzerAgent",
                 )
 
-            if not clean_result or clean_result.strip() == "":
+            if not isinstance(clean_result, dict) or not clean_result:
                 print("❌ CRITICAL: clean_result is empty after JSON extraction!")
                 print(f"Original raw_result was: {raw_result}")
                 raise ValueError("JSON extraction resulted in empty output")
@@ -1569,24 +1477,24 @@ async def query_augmentation_agent(
         )
 
         async with agent:
+            augmented_query['confirmed_items'] = []
             llm = await agent.attach_llm(get_preferred_llm_class())
             flag = True
             while flag:
-                brief_query = augmented_query['brief_query']
+                goal = augmented_query['goal']
+                confirmed_items = [str(i+1) + '.' + item for i, item in enumerate(augmented_query['confirmed_items'])]
                 items_to_confirm = [str(i+1) + '.' + item for i, item in enumerate(augmented_query['items'])]
 
                 instruction = (
                     f"[Original Query]: {user_input}\n"
-                    "=" * 50 + "\n"
-                    f"[Overall Task]: {brief_query}\n"
-                    "=" * 50 + "\n"
+                    f"[Goal]: {goal}\n"
+                    f"[Confirmed Items]: \n" + "\n".join(confirmed_items) + "\n"
                     "[Items to Confirm]: \n" + "\n".join(items_to_confirm) + "\n"
-                    "=" * 50 + "\n"
-                    "Confirm each item with 't' or input your own instruction,, or type 'finish' to end the loop.\nPress 'Enter' to continue.\nEach confirmation is expected to be seperated using a '|'\n"
-                    "[User Response]: "
-                )
+                ) + ("=" * 50) + "\nConfirm each item with 't' or input your own instruction, or type 'finish' to end the loop.\nPress 'Enter' to continue.\nEach confirmation is expected to be seperated using a '|'\n" \
+                  + "[User Response]: "
                 user_response = input(instruction)
                 if user_response.strip().lower() == 'finish':
+                    print("Ending the loop.")
                     flag = False
                 else:
                     # Process user response to confirm items
@@ -1596,24 +1504,31 @@ async def query_augmentation_agent(
                         continue
                     else:
                         confirms = user_response.strip().lower().split('|')
-                        if len(confirms) != len(items_to_confirm):
-                            print("Please confirm all items or type 'finish' to end the loop.")
-                            continue
-                        else:
-                            confirms = '\n'.join([item + ': yes' if confirm.strip().lower() == 't' else item + f': no, the user says that {confirm.strip()}' for item, confirm in zip(items_to_confirm, confirms)])
-                            raw_result = await llm.generate_str(
-                                message=f"[Original query]: {user_input}\n[Overall task]: {brief_query}\n[Details]: {confirms}\n",
-                                request_params=params
-                            )
-                            clean_result = extract_clean_json(raw_result)
-                            augmented_query = clean_result
+                        if len(confirms) > len(items_to_confirm):
+                            confirms = confirms[:len(items_to_confirm)]
+                        elif len(confirms) < len(items_to_confirm):
+                            # If fewer confirms than items, pad with 'no'
+                            confirms += ['t'] * (len(items_to_confirm) - len(confirms))
+
+                        confirms = '\n'.join([item + ': yes' if confirm.strip().lower() == 't' else item + f': no, the user says that {confirm.strip()}' for item, confirm in zip(items_to_confirm, confirms)])
+                        print(f"Got new confirms, starting augmentation with confirms.")
+                        raw_result = await llm.generate_str(
+                            message=LOOP_QUERY_AUGMENTATION_PROMPT.format(
+                                user_input=user_input,
+                                goal=goal,
+                                details=confirms,
+                            ),
+                            request_params=params
+                        )
+                        clean_result = json.loads(extract_clean_json(raw_result))
+                        augmented_query = clean_result
 
             return (
                 f"[Original query]: {user_input}\n"
                 "=" * 50 + "\n"
-                f"[Overall task]: {augmented_query['brief_query']}\n"
+                f"[Goal]: {augmented_query['goal']}\n"
                 "=" * 50 + "\n"
-                "[Details]: \n" + "\n".join(augmented_query['items']) + "\n"
+                "[Details]: \n" + "\n".join(augmented_query['items'] + augmented_query['confirmed_items']) + "\n"
                     )
                     
 
@@ -1637,57 +1552,42 @@ async def input_parser_pipeline(
         parsed_user_input = await resource_identification_agent(
             user_input, logger, progress_callback
         )
-        if parsed_user_input.get("resource", None) is None:
+        if parsed_user_input.get("resources", None) is None:
             print("No valid resource found in user input.")
             has_resource = False
         else:
             has_resource = True
 
-        # Phase 2: [Optional] Judging Resource Type
-        if has_resource:
-            typed_resources = await resource_type_judgment_agent(
-                parsed_user_input["resource"], logger, progress_callback
-            )
-            if len(typed_resources) == 0:
-                print("No valid resources identified in user input when parsing.")
-                has_resource = False
-            elif len(typed_resources) == 1:
-                print(f"Single resource identified: {typed_resources[0]}")
-            else:
-                print(f"Multiple resources identified: {typed_resources}. Use the first one by default.")
-        else:
-            typed_resources = []
-
-        # Phase 3: Identify Query Type
+        # Phase 2: Identify Query Type
         agent_input = {
             "user_input": user_input,
-            "typed_resources": typed_resources,
+            "resources": parsed_user_input,
             "has_resource": has_resource,
         }
         pipeline = await query_type_identification_agent(
             agent_input, logger, progress_callback
         )
 
-        # Phase 4: [Optional] User Query Augmentation
-        if pipeline == "paper_reproduction":
+        # Phase 3: [Optional] User Query Augmentation
+        if "paper_reproduction" in pipeline:
             print("Choosing paper reproduction pipeline, skipping query augmentation.")
-        elif pipeline == "chat_based_coding":
+        elif "chat_based_coding" in pipeline:
             print("Choosing chat-based coding pipeline, start query augmentation.")
             user_input = await query_augmentation_agent(
                 user_input, logger, progress_callback
             )
 
-        # Phase 5: Determine Pipeline Based on User Input
-        if pipeline == "paper_reproduction":
-            print(f"📚 Doing paper reproduction according to {user_input}!")
+        # Phase 4: Determine Pipeline Based on User Input
+        if "paper_reproduction" in pipeline:
+            print(f"📚 Doing paper reproduction according to \n\n{parsed_user_input['resources'][0]['path']}\n\n!")
             await execute_multi_agent_research_pipeline(
-                input_source=user_input,
+                input_source=parsed_user_input['resources'][0]['path'],
                 logger=logger,
                 progress_callback=progress_callback,
                 enable_indexing=enable_indexing,
             )
-        elif pipeline == "chat_based_coding":
-            print(f"💬 Doing chat-based coding!")
+        elif "chat_based_coding" in pipeline:
+            print(f"💬 Doing chat-based coding!\n\nuser_input={user_input}")
             await execute_chat_based_planning_pipeline(
                 user_input=user_input,
                 logger=logger,
