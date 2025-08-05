@@ -1483,7 +1483,8 @@ async def query_augmentation_agent(
             while flag:
                 goal = augmented_query['goal']
                 confirmed_items = [str(i+1) + '.' + item for i, item in enumerate(augmented_query['confirmed_items'])]
-                items_to_confirm = [str(i+1) + '.' + item for i, item in enumerate(augmented_query['items'])]
+                items_to_confirm = [str(i+1+len(confirmed_items)) + '.' + item for i, item in enumerate(augmented_query['items'])]
+                print(f"confirmed_items={confirmed_items}")
 
                 instruction = (
                     f"[Original Query]: {user_input}\n"
@@ -1498,37 +1499,30 @@ async def query_augmentation_agent(
                     flag = False
                 else:
                     # Process user response to confirm items
-                    confirmed_items = [item.strip() for item in user_response.split('|')]
-                    if not confirmed_items:
-                        print("No items confirmed, please try again.")
-                        continue
-                    else:
-                        confirms = user_response.strip().lower().split('|')
-                        if len(confirms) > len(items_to_confirm):
-                            confirms = confirms[:len(items_to_confirm)]
-                        elif len(confirms) < len(items_to_confirm):
-                            # If fewer confirms than items, pad with 'no'
-                            confirms += ['t'] * (len(items_to_confirm) - len(confirms))
+                    confirms = user_response.strip().lower().split('|')
+                    if len(confirms) > len(items_to_confirm):
+                        confirms = confirms[:len(items_to_confirm)]
+                    elif len(confirms) < len(items_to_confirm):
+                        # If fewer confirms than items, pad with 'no'
+                        confirms += ['t'] * (len(items_to_confirm) - len(confirms))
 
-                        confirms = '\n'.join([item + ': yes' if confirm.strip().lower() == 't' else item + f': no, the user says that {confirm.strip()}' for item, confirm in zip(items_to_confirm, confirms)])
-                        print(f"Got new confirms, starting augmentation with confirms.")
-                        raw_result = await llm.generate_str(
-                            message=LOOP_QUERY_AUGMENTATION_PROMPT.format(
-                                user_input=user_input,
-                                goal=goal,
-                                details=confirms,
-                            ),
-                            request_params=params
-                        )
-                        clean_result = json.loads(extract_clean_json(raw_result))
-                        augmented_query = clean_result
+                    confirms = '\n'.join([item + ': yes' for item in confirmed_items] + [item + ': yes' if confirm.strip().lower() == 't' else item + f': no, the user says that {confirm.strip()}' for item, confirm in zip(items_to_confirm, confirms)])
+                    print(f"Got new confirms, starting augmentation with confirms.")
+                    raw_result = await llm.generate_str(
+                        message=LOOP_QUERY_AUGMENTATION_PROMPT.format(
+                            user_input=user_input,
+                            goal=goal,
+                            details=confirms,
+                        ),
+                        request_params=params
+                    )
+                    clean_result = json.loads(extract_clean_json(raw_result))
+                    augmented_query = clean_result
 
             return (
                 f"[Original query]: {user_input}\n"
-                "=" * 50 + "\n"
                 f"[Goal]: {augmented_query['goal']}\n"
-                "=" * 50 + "\n"
-                "[Details]: \n" + "\n".join(augmented_query['items'] + augmented_query['confirmed_items']) + "\n"
+                "[Details]: \n" + "\n".join([str(i+1) + '.' + item for i, item in enumerate(augmented_query['items'] + augmented_query['confirmed_items'])]) + "\n"
                     )
                     
 
