@@ -31,7 +31,7 @@ import json
 import os
 import re
 import yaml
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 # MCP Agent imports
 from mcp_agent.agents.agent import Agent
@@ -50,6 +50,15 @@ from prompts.code_prompts import (
     CODE_PLANNING_PROMPT,
     CHAT_AGENT_PLANNING_PROMPT,
 )
+
+from prompts.query_prompts import(
+    RESOURCE_IDENTIFICATION_PROMPT,
+    RESOURCE_TYPE_JUDGMENT_PROMPT,
+    QUERY_TYPE_IDENTIFICATION_PROMPT,
+    QUERY_AUGMENTATION_PROMPT,
+    LOOP_QUERY_AUGMENTATION_PROMPT,
+)
+
 from utils.file_processor import FileProcessor
 from workflows.code_implementation_workflow import CodeImplementationWorkflow
 from workflows.code_implementation_workflow_index import (
@@ -97,57 +106,6 @@ def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
         print(f"🤖 Error reading config file {config_path}: {e}")
         print("🤖 Falling back to OpenAIAugmentedLLM")
         return OpenAIAugmentedLLM
-
-
-def get_default_search_server(config_path: str = "mcp_agent.config.yaml"):
-    """
-    Get the default search server from configuration.
-
-    Args:
-        config_path: Path to the main configuration file
-
-    Returns:
-        str: The default search server name ("brave" or "bocha-mcp")
-    """
-    try:
-        if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-
-            default_server = config.get("default_search_server", "brave")
-            print(f"🔍 Using search server: {default_server}")
-            return default_server
-        else:
-            print(f"⚠️ Config file {config_path} not found, using default: brave")
-            return "brave"
-    except Exception as e:
-        print(f"⚠️ Error reading config file {config_path}: {e}")
-        print("🔍 Falling back to default search server: brave")
-        return "brave"
-
-
-def get_search_server_names(
-    additional_servers: Optional[List[str]] = None,
-) -> List[str]:
-    """
-    Get server names list with the configured default search server.
-
-    Args:
-        additional_servers: Optional list of additional servers to include
-
-    Returns:
-        List[str]: List of server names including the default search server
-    """
-    default_search = get_default_search_server()
-    server_names = [default_search]
-
-    if additional_servers:
-        # Add additional servers, avoiding duplicates
-        for server in additional_servers:
-            if server not in server_names:
-                server_names.append(server)
-
-    return server_names
 
 
 def extract_clean_json(llm_output: str) -> str:
@@ -244,7 +202,7 @@ async def run_research_analyzer(prompt_text: str, logger) -> str:
         analyzer_agent = Agent(
             name="ResearchAnalyzerAgent",
             instruction=PAPER_INPUT_ANALYZER_PROMPT,
-            server_names=get_search_server_names(),
+            server_names=["brave"],
         )
 
         async with analyzer_agent:
@@ -392,12 +350,12 @@ async def run_code_analyzer(paper_dir: str, logger) -> str:
     algorithm_analysis_agent = Agent(
         name="AlgorithmAnalysisAgent",
         instruction=PAPER_ALGORITHM_ANALYSIS_PROMPT,
-        server_names=get_search_server_names(additional_servers=["filesystem"]),
+        server_names=["filesystem", "brave"],
     )
     code_planner_agent = Agent(
         name="CodePlannerAgent",
         instruction=CODE_PLANNING_PROMPT,
-        server_names=get_search_server_names(),
+        server_names=["brave"],
     )
 
     code_aggregator_agent = ParallelLLM(
@@ -406,9 +364,9 @@ async def run_code_analyzer(paper_dir: str, logger) -> str:
         llm_factory=get_preferred_llm_class(),
     )
 
-    # Set appropriate token output limit for Claude models (max 8192)
+    # Set higher token output limit
     enhanced_params = RequestParams(
-        max_tokens=8192,  # Adjusted to Claude 3.5 Sonnet's actual limit
+        max_tokens=26384,
         temperature=0.3,
     )
 
@@ -982,7 +940,9 @@ async def run_chat_planning_agent(user_input: str, logger) -> str:
         chat_planning_agent = Agent(
             name="ChatPlanningAgent",
             instruction=CHAT_AGENT_PLANNING_PROMPT,
-            server_names=get_search_server_names(),  # Dynamic search server configuration
+            server_names=[
+                "brave"
+            ],  # Add tools if needed for web search or other capabilities
         )
 
         async with chat_planning_agent:
@@ -1253,6 +1213,497 @@ async def paper_code_preparation(
         input_source, logger, progress_callback
     )
 
+async def resource_identification_agent(
+    user_input: str,
+    logger,
+    progress_callback: Optional[Callable] = None,
+) -> dict:
+    """
+    Identify resources (files and URLs) from `user_input` (str).
+    """
+    agent = Agent(
+        name="ResourceIdentificationAgent",
+        instruction=RESOURCE_IDENTIFICATION_PROMPT,
+        server_names=["brave"],
+    )
+
+    async with agent:
+        print("analyzer: Connected to server, calling list_tools...")
+        try:
+            tools = await agent.list_tools()
+            print(
+                "Tools available:",
+                tools.model_dump() if hasattr(tools, "model_dump") else str(tools),
+            )
+        except Exception as e:
+            print(f"Failed to list tools: {e}")
+
+        try:
+            identifier = await agent.attach_llm(get_preferred_llm_class())
+            print("✅ LLM attached successfully")
+        except Exception as e:
+            print(f"❌ Failed to attach LLM: {e}")
+            raise
+
+        # Set higher token output for research analysis
+        params = RequestParams(
+            max_tokens=6144,
+            temperature=0.3,
+        )
+
+        print(
+            f"🔄 Making LLM request with params: max_tokens={params.max_tokens}, temperature={params.temperature}"
+        )
+
+        try:
+            raw_result = await identifier.generate_str(
+                message=user_input, request_params=params
+            )
+
+            print("✅ LLM request completed")
+            print(f"Raw result type: {type(raw_result)}")
+            print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+
+            if not raw_result:
+                print("❌ CRITICAL: raw_result is empty or None!")
+                print("This could indicate:")
+                print("1. LLM API call failed silently")
+                print("2. API rate limiting or quota exceeded")
+                print("3. Network connectivity issues")
+                print("4. MCP server communication problems")
+                raise ValueError("LLM returned empty result")
+
+        except Exception as e:
+            print(f"❌ LLM generation failed: {e}")
+            print(f"Exception type: {type(e)}")
+            raise
+
+        # Clean LLM output to ensure only pure JSON is returned
+        try:
+            clean_result = extract_clean_json(raw_result)
+            print(f"Raw LLM output: {raw_result}")
+            print(f"Cleaned JSON output: {clean_result}")
+
+            # Log to SimpleLLMLogger
+            if hasattr(logger, "log_response"):
+                logger.log_response(
+                    clean_result,
+                    model="ResearchAnalyzer",
+                    agent="ResearchAnalyzerAgent",
+                )
+
+            if not clean_result or clean_result.strip() == "":
+                print("❌ CRITICAL: clean_result is empty after JSON extraction!")
+                print(f"Original raw_result was: {raw_result}")
+                raise ValueError("JSON extraction resulted in empty output")
+
+            return clean_result
+
+        except Exception as e:
+            print(f"❌ JSON extraction failed: {e}")
+            print(f"Raw result was: {raw_result}")
+            raise
+
+async def resource_type_judgment_agent(
+    resources: list,
+    logger,
+    progress_callback: Optional[Callable] = None,
+):
+    """
+    Annotate resource types and obtain descriptions for each resource.
+    """
+
+    agent = Agent(
+        name="ResourceTypeJudgmentAgent",
+        instruction=RESOURCE_TYPE_JUDGMENT_PROMPT,
+        server_names=["brave"],
+    )
+
+    async with agent:
+        print("analyzer: Connected to server, calling list_tools...")
+        try:
+            tools = await agent.list_tools()
+            print(
+                "Tools available:",
+                tools.model_dump() if hasattr(tools, "model_dump") else str(tools),
+            )
+        except Exception as e:
+            print(f"Failed to list tools: {e}")
+
+        try:
+            judge = await agent.attach_llm(get_preferred_llm_class())
+            print("✅ LLM attached successfully")
+        except Exception as e:
+            print(f"❌ Failed to attach LLM: {e}")
+            raise
+
+        # Set higher token output for research analysis
+        params = RequestParams(
+            max_tokens=6144,
+            temperature=0.3,
+        )
+
+        print(
+            f"🔄 Making LLM request with params: max_tokens={params.max_tokens}, temperature={params.temperature}"
+        )
+
+        try:
+            formatted_message = f"""Resources to analyze: {resources}"""
+            raw_result = await judge.generate_str(
+                message=formatted_message, request_params=params
+            )
+
+            print("✅ LLM request completed")
+            print(f"Raw result type: {type(raw_result)}")
+            print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+
+            if not raw_result:
+                print("❌ CRITICAL: raw_result is empty or None!")
+                print("This could indicate:")
+                print("1. LLM API call failed silently")
+                print("2. API rate limiting or quota exceeded")
+                print("3. Network connectivity issues")
+                print("4. MCP server communication problems")
+                raise ValueError("LLM returned empty result")
+
+        except Exception as e:
+            print(f"❌ LLM generation failed: {e}")
+            print(f"Exception type: {type(e)}")
+            raise
+
+        # Clean LLM output to ensure only pure JSON is returned
+        try:
+            clean_result = extract_clean_json(raw_result)
+            print(f"Raw LLM output: {raw_result}")
+            print(f"Cleaned JSON output: {clean_result}")
+
+            # Log to SimpleLLMLogger
+            if hasattr(logger, "log_response"):
+                logger.log_response(
+                    clean_result,
+                    model="ResearchAnalyzer",
+                    agent="ResearchAnalyzerAgent",
+                )
+
+            if not clean_result or clean_result.strip() == "":
+                print("❌ CRITICAL: clean_result is empty after JSON extraction!")
+                print(f"Original raw_result was: {raw_result}")
+                raise ValueError("JSON extraction resulted in empty output")
+
+            return clean_result
+
+        except Exception as e:
+            print(f"❌ JSON extraction failed: {e}")
+            print(f"Raw result was: {raw_result}")
+            raise
+
+async def query_type_identification_agent(
+    agent_input: dict,
+    logger,
+    progress_callback: Optional[Callable] = None,
+):
+    """
+    Identify the type of query based on user input and resources.
+    """
+
+    agent = Agent(
+        name="QueryTypeIdentificationAgent",
+        instruction=QUERY_TYPE_IDENTIFICATION_PROMPT,
+    )
+
+    async with agent:
+        try:
+            classifier = await agent.attach_llm(get_preferred_llm_class())
+            print("✅ LLM attached successfully")
+        except Exception as e:
+            print(f"❌ Failed to attach LLM: {e}")
+            raise
+
+        # Set higher token output for research analysis
+        params = RequestParams(
+            max_tokens=6144,
+            temperature=0.3,
+        )
+
+        print(
+            f"🔄 Making LLM request with params: max_tokens={params.max_tokens}, temperature={params.temperature}"
+        )
+
+        try:
+            formatted_message = f"""<USER INPUT>: {agent_input['user_input']}\n<HAS RESOURCE>: {agent_input['has_resource']}"""
+            if agent_input['has_resource']:
+                formatted_message += f"\n<RESOURCES PROVIDED>: {agent_input['typed_resources']}"
+
+            raw_result = await classifier.generate_str(
+                message=formatted_message, request_params=params
+            )
+
+            print("✅ LLM request completed")
+            print(f"Raw result type: {type(raw_result)}")
+            print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+
+            if not raw_result:
+                print("❌ CRITICAL: raw_result is empty or None!")
+                print("This could indicate:")
+                print("1. LLM API call failed silently")
+                print("2. API rate limiting or quota exceeded")
+                print("3. Network connectivity issues")
+                print("4. MCP server communication problems")
+                raise ValueError("LLM returned empty result")
+
+        except Exception as e:
+            print(f"❌ LLM generation failed: {e}")
+            print(f"Exception type: {type(e)}")
+            raise
+
+        # Clean LLM output to ensure only pure JSON is returned
+        try:
+            clean_result = extract_clean_json(raw_result)
+            print(f"Raw LLM output: {raw_result}")
+            print(f"Cleaned JSON output: {clean_result}")
+
+            # Log to SimpleLLMLogger
+            if hasattr(logger, "log_response"):
+                logger.log_response(
+                    clean_result,
+                    model="ResearchAnalyzer",
+                    agent="ResearchAnalyzerAgent",
+                )
+
+            if not clean_result or clean_result.strip() == "":
+                print("❌ CRITICAL: clean_result is empty after JSON extraction!")
+                print(f"Original raw_result was: {raw_result}")
+                raise ValueError("JSON extraction resulted in empty output")
+
+            return clean_result
+
+        except Exception as e:
+            print(f"❌ JSON extraction failed: {e}")
+            print(f"Raw result was: {raw_result}")
+            raise
+
+async def query_augmentation_agent(
+    user_input: str,
+    logger,
+    progress_callback: Optional[Callable] = None,
+):
+    """
+    Augment user query with via interactions with user
+    """
+
+    agent = Agent(
+        name="QueryAugmentationAgent",
+        instruction=QUERY_AUGMENTATION_PROMPT,
+    )
+
+    async with agent:
+        try:
+            agnet_for_augmentation = await agent.attach_llm(get_preferred_llm_class())
+            print("✅ LLM attached successfully")
+        except Exception as e:
+            print(f"❌ Failed to attach LLM: {e}")
+            raise
+
+        # Set higher token output for research analysis
+        params = RequestParams(
+            max_tokens=6144,
+            temperature=0.3,
+        )
+
+        print(
+            f"🔄 Making LLM request with params: max_tokens={params.max_tokens}, temperature={params.temperature}"
+        )
+
+        try:
+            raw_result = await agnet_for_augmentation.generate_str(
+                message=user_input, request_params=params
+            )
+
+            print("✅ LLM request completed")
+            print(f"Raw result type: {type(raw_result)}")
+            print(f"Raw result length: {len(raw_result) if raw_result else 0}")
+
+            if not raw_result:
+                print("❌ CRITICAL: raw_result is empty or None!")
+                print("This could indicate:")
+                print("1. LLM API call failed silently")
+                print("2. API rate limiting or quota exceeded")
+                print("3. Network connectivity issues")
+                print("4. MCP server communication problems")
+                raise ValueError("LLM returned empty result")
+
+        except Exception as e:
+            print(f"❌ LLM generation failed: {e}")
+            print(f"Exception type: {type(e)}")
+            raise
+
+        # Clean LLM output to ensure only pure JSON is returned
+        try:
+            clean_result = extract_clean_json(raw_result)
+            print(f"Raw LLM output: {raw_result}")
+            print(f"Cleaned JSON output: {clean_result}")
+
+            # Log to SimpleLLMLogger
+            if hasattr(logger, "log_response"):
+                logger.log_response(
+                    clean_result,
+                    model="ResearchAnalyzer",
+                    agent="ResearchAnalyzerAgent",
+                )
+
+            if not clean_result or clean_result.strip() == "":
+                print("❌ CRITICAL: clean_result is empty after JSON extraction!")
+                print(f"Original raw_result was: {raw_result}")
+                raise ValueError("JSON extraction resulted in empty output")
+
+            augmented_query =  clean_result
+
+        except Exception as e:
+            print(f"❌ JSON extraction failed: {e}")
+            print(f"Raw result was: {raw_result}")
+            raise
+
+        agent = Agent(
+            name="LoopAugmentationAgent",
+            instruction=LOOP_QUERY_AUGMENTATION_PROMPT,
+        )
+
+        async with agent:
+            llm = await agent.attach_llm(get_preferred_llm_class())
+            flag = True
+            while flag:
+                brief_query = augmented_query['brief_query']
+                items_to_confirm = [str(i+1) + '.' + item for i, item in enumerate(augmented_query['items'])]
+
+                instruction = (
+                    f"[Original Query]: {user_input}\n"
+                    "=" * 50 + "\n"
+                    f"[Overall Task]: {brief_query}\n"
+                    "=" * 50 + "\n"
+                    "[Items to Confirm]: \n" + "\n".join(items_to_confirm) + "\n"
+                    "=" * 50 + "\n"
+                    "Confirm each item with 't' or input your own instruction,, or type 'finish' to end the loop.\nPress 'Enter' to continue.\nEach confirmation is expected to be seperated using a '|'\n"
+                    "[User Response]: "
+                )
+                user_response = input(instruction)
+                if user_response.strip().lower() == 'finish':
+                    flag = False
+                else:
+                    # Process user response to confirm items
+                    confirmed_items = [item.strip() for item in user_response.split('|')]
+                    if not confirmed_items:
+                        print("No items confirmed, please try again.")
+                        continue
+                    else:
+                        confirms = user_response.strip().lower().split('|')
+                        if len(confirms) != len(items_to_confirm):
+                            print("Please confirm all items or type 'finish' to end the loop.")
+                            continue
+                        else:
+                            confirms = '\n'.join([item + ': yes' if confirm.strip().lower() == 't' else item + f': no, the user says that {confirm.strip()}' for item, confirm in zip(items_to_confirm, confirms)])
+                            raw_result = await llm.generate_str(
+                                message=f"[Original query]: {user_input}\n[Overall task]: {brief_query}\n[Details]: {confirms}\n",
+                                request_params=params
+                            )
+                            clean_result = extract_clean_json(raw_result)
+                            augmented_query = clean_result
+
+            return (
+                f"[Original query]: {user_input}\n"
+                "=" * 50 + "\n"
+                f"[Overall task]: {augmented_query['brief_query']}\n"
+                "=" * 50 + "\n"
+                "[Details]: \n" + "\n".join(augmented_query['items']) + "\n"
+                    )
+                    
+
+async def input_parser_pipeline(
+        user_input: str,
+        logger,
+        progress_callback: Optional[Callable] = None,
+        enable_indexing: bool = True,
+) -> dict:
+    """
+    Parse user input to extract relevant coding requirements and resources.
+    This agent analyzes the user's input to identify 
+    - Query: str,
+    - Available URLs,
+    - Available files.
+    """
+
+    try:
+        print("🔍 Parsing user input for pipeline chooing...")
+        # Phase 0: Identify File and URL
+        parsed_user_input = await resource_identification_agent(
+            user_input, logger, progress_callback
+        )
+        if parsed_user_input.get("resource", None) is None:
+            print("No valid resource found in user input.")
+            has_resource = False
+        else:
+            has_resource = True
+
+        # Phase 2: [Optional] Judging Resource Type
+        if has_resource:
+            typed_resources = await resource_type_judgment_agent(
+                parsed_user_input["resource"], logger, progress_callback
+            )
+            if len(typed_resources) == 0:
+                print("No valid resources identified in user input when parsing.")
+                has_resource = False
+            elif len(typed_resources) == 1:
+                print(f"Single resource identified: {typed_resources[0]}")
+            else:
+                print(f"Multiple resources identified: {typed_resources}. Use the first one by default.")
+        else:
+            typed_resources = []
+
+        # Phase 3: Identify Query Type
+        agent_input = {
+            "user_input": user_input,
+            "typed_resources": typed_resources,
+            "has_resource": has_resource,
+        }
+        pipeline = await query_type_identification_agent(
+            agent_input, logger, progress_callback
+        )
+
+        # Phase 4: [Optional] User Query Augmentation
+        if pipeline == "paper_reproduction":
+            print("Choosing paper reproduction pipeline, skipping query augmentation.")
+        elif pipeline == "chat_based_coding":
+            print("Choosing chat-based coding pipeline, start query augmentation.")
+            user_input = await query_augmentation_agent(
+                user_input, logger, progress_callback
+            )
+
+        # Phase 5: Determine Pipeline Based on User Input
+        if pipeline == "paper_reproduction":
+            print(f"📚 Doing paper reproduction according to {user_input}!")
+            await execute_multi_agent_research_pipeline(
+                input_source=user_input,
+                logger=logger,
+                progress_callback=progress_callback,
+                enable_indexing=enable_indexing,
+            )
+        elif pipeline == "chat_based_coding":
+            print(f"💬 Doing chat-based coding!")
+            await execute_chat_based_planning_pipeline(
+                user_input=user_input,
+                logger=logger,
+                progress_callback=progress_callback,
+                enable_indexing=enable_indexing,
+            )
+        else:
+            print("❌ No valid pipeline selected based on user input.")
+            raise NotImplementedError("Invalid pipeline selection based on user input")
+
+    except Exception as e:
+        print(f"Error in input_parser_agent: {e}")
+        raise e
+
+
+    
 
 async def execute_chat_based_planning_pipeline(
     user_input: str,
@@ -1284,7 +1735,6 @@ async def execute_chat_based_planning_pipeline(
     try:
         print("🚀 Initializing chat-based planning and implementation pipeline")
         print("💬 Chat mode: Direct user requirements to code implementation")
-
         # Phase 0: Workspace Setup
         if progress_callback:
             progress_callback(5, "🔄 Setting up workspace for file processing...")

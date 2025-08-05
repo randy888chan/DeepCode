@@ -22,6 +22,7 @@ from mcp_agent.app import MCPApp
 from workflows.agent_orchestration_engine import (
     execute_multi_agent_research_pipeline,
     execute_chat_based_planning_pipeline,
+    input_parser_pipeline,
 )
 
 
@@ -121,7 +122,7 @@ async def process_input_async(
             # Choose pipeline based on input type
             if input_type == "chat":
                 # Use chat-based planning pipeline for user requirements
-                repo_result = await execute_chat_based_planning_pipeline(
+                repo_result = await input_parser_pipeline(
                     input_source,  # User's coding requirements
                     logger,
                     progress_callback,
