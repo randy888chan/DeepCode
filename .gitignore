@@ -68,3 +68,5 @@ memory-bank/
 # configuration files
 mcp_agent.config.yaml
 mcp_agent.secrets.yaml
+
+deepcode_lab/
