@@ -528,10 +528,10 @@ class CLIInterface:
         self,
         current_stage: int = 0,
         enable_indexing: bool = True,
-        chat_mode: bool = False,
+        mode: str = "paper_reproduction", # possible values: "input_parser", "paper_reproduction", "chat_based_coding".
     ):
         """Display processing pipeline stages with current progress"""
-        if chat_mode:
+        if mode == "chat_based_coding":
             # Chat mode - simplified workflow for user requirements
             stages = [
                 ("🚀", "Initialize", "Setting up chat engine"),
@@ -541,7 +541,7 @@ class CLIInterface:
                 ("⚙️", "Implement", "Generating code"),
             ]
             pipeline_mode = "CHAT PLANNING"
-        elif enable_indexing:
+        elif enable_indexing and mode == "paper_reproduction":
             # Full pipeline with all stages
             stages = [
                 ("🚀", "Initialize", "Setting up AI engine"),
@@ -554,7 +554,7 @@ class CLIInterface:
                 ("⚙️", "Implement", "Implementing code"),
             ]
             pipeline_mode = "COMPREHENSIVE"
-        else:
+        elif not enable_indexing and mode == "paper_reproduction":
             # Fast mode - skip indexing related stages
             stages = [
                 ("🚀", "Initialize", "Setting up AI engine"),
@@ -564,6 +564,16 @@ class CLIInterface:
                 ("⚙️", "Implement", "Implementing code"),
             ]
             pipeline_mode = "OPTIMIZED"
+        elif mode == "input_parser":
+            # Input parser mode - simplified workflow for input parsing
+            stages = [
+                ("🚀", "Initialize", "Setting up input parser"),
+                ("📥", "Identification", "Identifying the resources in user input"),
+                ("📊", "Identification", "Identifying the query type"),
+                ("📋", "Augmentation", "Augmenting the user input"),
+                ("⚙️", "Implement", "Executing the selected pipeline"),
+            ]
+            pipeline_mode = "INPUT PARSER"
 
         print(
             f"\n{Colors.BOLD}{Colors.CYAN}📋 {pipeline_mode} PIPELINE STATUS{Colors.ENDC}"

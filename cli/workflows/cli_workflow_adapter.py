@@ -93,7 +93,7 @@ class CLIWorkflowAdapter:
                         f"⚠️ Cleanup warning: {str(e)}", "warning"
                     )
 
-    def create_cli_progress_callback(self) -> Callable:
+    def create_cli_progress_callback(self, mode: str) -> Callable:
         """
         Create CLI-optimized progress callback function.
 
@@ -101,30 +101,97 @@ class CLIWorkflowAdapter:
             Callable: Progress callback function
         """
 
-        def progress_callback(progress: int, message: str):
+        def paper_reproduction_progress_callback(progress: int, message: str):
             if self.cli_interface:
                 # Map progress to CLI stages
                 if progress <= 10:
-                    self.cli_interface.display_processing_stages(1)
+                    self.cli_interface.display_processing_stages(1, mode="paper_reproduction")
                 elif progress <= 25:
-                    self.cli_interface.display_processing_stages(2)
+                    self.cli_interface.display_processing_stages(2, mode="paper_reproduction")
                 elif progress <= 40:
-                    self.cli_interface.display_processing_stages(3)
+                    self.cli_interface.display_processing_stages(3, mode="paper_reproduction")
                 elif progress <= 50:
-                    self.cli_interface.display_processing_stages(4)
+                    self.cli_interface.display_processing_stages(4, mode="paper_reproduction")
                 elif progress <= 60:
-                    self.cli_interface.display_processing_stages(5)
+                    self.cli_interface.display_processing_stages(5, mode="paper_reproduction")
                 elif progress <= 70:
-                    self.cli_interface.display_processing_stages(6)
+                    self.cli_interface.display_processing_stages(6, mode="paper_reproduction")
                 elif progress <= 85:
-                    self.cli_interface.display_processing_stages(7)
+                    self.cli_interface.display_processing_stages(7, mode="paper_reproduction")
                 else:
-                    self.cli_interface.display_processing_stages(8)
+                    self.cli_interface.display_processing_stages(8, mode="paper_reproduction")
 
                 # Display status message
                 self.cli_interface.print_status(message, "processing")
 
-        return progress_callback
+        def input_parser_progress_callback(progress: int, message: str):
+            if self.cli_interface:
+                # Map progress to CLI stages for chat mode
+                if progress <= 5:
+                    self.cli_interface.display_processing_stages(
+                        0, mode="input_parser"
+                    )  # Initialize
+                elif progress <= 30:
+                    self.cli_interface.display_processing_stages(
+                        1, mode="input_parser"
+                    )  # Planning
+                elif progress <= 50:
+                    self.cli_interface.display_processing_stages(
+                        2, mode="input_parser"
+                    )  # Setup
+                elif progress <= 70:
+                    self.cli_interface.display_processing_stages(
+                        3, mode="input_parser"
+                    )  # Save Plan
+                else:
+                    self.cli_interface.display_processing_stages(
+                        4, mode="input_parser"
+                    )  # Implement
+
+                # Display status message
+                self.cli_interface.print_status(message, "processing")
+
+        def chat_based_coding_progress_callback(progress: int, message: str):
+            if self.cli_interface:
+                # Map progress to CLI stages for chat mode
+                if progress <= 5:
+                    self.cli_interface.display_processing_stages(
+                        0, mode="chat_based_coding"
+                    )  # Initialize
+                elif progress <= 30:
+                    self.cli_interface.display_processing_stages(
+                        1, mode="chat_based_coding"
+                    )  # Planning
+                elif progress <= 50:
+                    self.cli_interface.display_processing_stages(
+                        2, mode="chat_based_coding"
+                    )  # Setup
+                elif progress <= 70:
+                    self.cli_interface.display_processing_stages(
+                        3, mode="chat_based_coding"
+                    )  # Save Plan
+                else:
+                    self.cli_interface.display_processing_stages(
+                        4, mode="chat_based_coding"
+                    )  # Implement
+
+                # Display status message
+                self.cli_interface.print_status(message, "processing")
+
+            # Display pipeline start
+            if self.cli_interface:
+                self.cli_interface.print_status(
+                    "🚀 Starting chat-based planning pipeline...", "processing"
+                )
+
+        if mode == "paper_reproduction":
+            return paper_reproduction_progress_callback
+        elif mode == "input_parser":
+            return input_parser_progress_callback
+        elif mode == "chat_based_coding":
+            return chat_based_coding_progress_callback
+        else:
+            raise ValueError(f"Unknown progress mode: {mode}")
 
     async def execute_full_pipeline(
         self, input_source: str, enable_indexing: bool = True
@@ -146,7 +213,7 @@ class CLIWorkflowAdapter:
             )
 
             # Create CLI progress callback
-            progress_callback = self.create_cli_progress_callback()
+            progress_callback = self.create_cli_progress_callback(mode="paper_reproduction")
 
             # Display pipeline start
             if self.cli_interface:
@@ -203,55 +270,33 @@ class CLIWorkflowAdapter:
             # Import the chat-based pipeline
             from workflows.agent_orchestration_engine import (
                 execute_chat_based_planning_pipeline,
+                input_parser_pipeline,
             )
 
             # Create CLI progress callback for chat mode
-            def chat_progress_callback(progress: int, message: str):
-                if self.cli_interface:
-                    # Map progress to CLI stages for chat mode
-                    if progress <= 5:
-                        self.cli_interface.display_processing_stages(
-                            0, chat_mode=True
-                        )  # Initialize
-                    elif progress <= 30:
-                        self.cli_interface.display_processing_stages(
-                            1, chat_mode=True
-                        )  # Planning
-                    elif progress <= 50:
-                        self.cli_interface.display_processing_stages(
-                            2, chat_mode=True
-                        )  # Setup
-                    elif progress <= 70:
-                        self.cli_interface.display_processing_stages(
-                            3, chat_mode=True
-                        )  # Save Plan
-                    else:
-                        self.cli_interface.display_processing_stages(
-                            4, chat_mode=True
-                        )  # Implement
-
-                    # Display status message
-                    self.cli_interface.print_status(message, "processing")
-
-            # Display pipeline start
-            if self.cli_interface:
-                self.cli_interface.print_status(
-                    "🚀 Starting chat-based planning pipeline...", "processing"
-                )
-                self.cli_interface.display_processing_stages(0, chat_mode=True)
-
-            # Execute the chat pipeline with indexing enabled for enhanced code understanding
-            result = await execute_chat_based_planning_pipeline(
+            input_parser_progress_callback = self.create_cli_progress_callback(
+                mode="input_parser"
+            )
+            chat_based_coding_progress_callback = self.create_cli_progress_callback(
+                mode="chat_based_coding"
+            )
+            paper_reproduction_progress_callback = self.create_cli_progress_callback(
+                mode="paper_reproduction"
+            )
+            
+            result = await input_parser_pipeline(
                 user_input=user_input,
                 logger=self.logger,
-                progress_callback=chat_progress_callback,
+                progress_callback=input_parser_progress_callback,
+                progress_callback_for_paper_reproduction=paper_reproduction_progress_callback,
+                progress_callback_for_chat_based_coding=chat_based_coding_progress_callback,
                 enable_indexing=True,  # Enable indexing for better code implementation
             )
 
             # Display completion
             if self.cli_interface:
                 self.cli_interface.display_processing_stages(
-                    4, chat_mode=True
+                    4, mode="code_based_coding"
                 )  # Final stage for chat mode
                 self.cli_interface.print_status(
                     "🎉 Chat-based planning pipeline completed successfully!",

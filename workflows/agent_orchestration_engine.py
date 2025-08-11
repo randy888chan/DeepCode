@@ -1053,6 +1053,7 @@ async def execute_multi_agent_research_pipeline(
             progress_callback(5, "🔄 Setting up workspace for file processing...")
 
         print("🚀 Initializing intelligent multi-agent research orchestration system")
+        print(f"Input source: {input_source}")
 
         # Setup local workspace directory
         workspace_dir = os.path.join(os.getcwd(), "deepcode_lab")
@@ -1574,6 +1575,8 @@ async def input_parser_pipeline(
     user_input: str,
     logger,
     progress_callback: Optional[Callable] = None,
+    progress_callback_for_paper_reproduction: Optional[Callable] = None,
+    progress_callback_for_chat_based_coding: Optional[Callable] = None,
     enable_indexing: bool = True,
 ) -> dict:
     """
@@ -1599,7 +1602,7 @@ async def input_parser_pipeline(
         
         # Phase 1: Identify Files and URLs
         if progress_callback:
-            progress_callback(10, "🔍 Identifying resources in user input...")
+            progress_callback(30, "🔄 Identifying resources in user input...")
             
         parsed_resource_data = await resource_identification_agent(
             user_input, logger, progress_callback
@@ -1613,7 +1616,7 @@ async def input_parser_pipeline(
 
         # Phase 2: Identify Query Type
         if progress_callback:
-            progress_callback(30, "🎯 Classifying query type for pipeline selection...")
+            progress_callback(50, "🎯 Classifying query type for pipeline selection...")
             
         pipeline_input_data = {
             "user_input": user_input,
@@ -1632,7 +1635,7 @@ async def input_parser_pipeline(
         elif "chat_based_coding" in selected_pipeline_type:
             print("Selected chat-based coding pipeline, starting query augmentation.")
             if progress_callback:
-                progress_callback(50, "💬 Augmenting user query through interactive clarification...")
+                progress_callback(70, "💬 Augmenting user query through interactive clarification...")
             processed_user_input = await query_augmentation_agent(
                 user_input, logger, progress_callback
             )
@@ -1640,26 +1643,26 @@ async def input_parser_pipeline(
         # Phase 4: Execute Selected Pipeline
         if "paper_reproduction" in selected_pipeline_type:
             if progress_callback:
-                progress_callback(70, "📚 Executing paper reproduction pipeline...")
+                progress_callback(90, "📚 Executing paper reproduction pipeline...")
             print(f"📚 Executing paper reproduction pipeline for: \n\n{parsed_resource_data['resources'][0]['path']}\n\n")
             
             pipeline_result = await execute_multi_agent_research_pipeline(
                 input_source=parsed_resource_data['resources'][0]['path'],
                 logger=logger,
-                progress_callback=progress_callback,
+                progress_callback=progress_callback_for_paper_reproduction,
                 enable_indexing=enable_indexing,
             )
             return {"pipeline_type": "paper_reproduction", "result": pipeline_result}
             
         elif "chat_based_coding" in selected_pipeline_type:
             if progress_callback:
-                progress_callback(70, "💬 Executing chat-based coding pipeline...")
+                progress_callback(90, "💬 Executing chat-based coding pipeline...")
             print(f"💬 Executing chat-based coding pipeline!\n\nProcessed user input: {processed_user_input}")
             
             pipeline_result = await execute_chat_based_planning_pipeline(
                 user_input=processed_user_input,
                 logger=logger,
-                progress_callback=progress_callback,
+                progress_callback=progress_callback_for_chat_based_coding,
                 enable_indexing=enable_indexing,
             )
             return {"pipeline_type": "chat_based_coding", "result": pipeline_result}
