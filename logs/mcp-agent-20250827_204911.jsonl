@@ -1,3 +1,0 @@
-{"level":"INFO","timestamp":"2025-08-27T20:49:23.127494","namespace":"mcp_agent.mcp.mcp_aggregator.RequirementAnalysisAgent","message":"Last aggregator closing, shutting down all persistent connections..."}
-{"level":"INFO","timestamp":"2025-08-27T20:49:23.127653","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
-{"level":"INFO","timestamp":"2025-08-27T20:49:23.128242","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}

@@ -1,4 +1,0 @@
-pygame>=2.0.0
-pyinstaller>=4.0
-pillow>=8.0.0
-pydub>=0.25.0

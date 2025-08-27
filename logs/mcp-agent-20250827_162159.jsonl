@@ -1,6 +1,0 @@
-{"level":"INFO","timestamp":"2025-08-27T16:22:24.424819","namespace":"mcp_agent.mcp.mcp_aggregator.RequirementAnalysisAgent","message":"Last aggregator closing, shutting down all persistent connections..."}
-{"level":"INFO","timestamp":"2025-08-27T16:22:24.424880","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
-{"level":"INFO","timestamp":"2025-08-27T16:22:24.425593","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
-{"level":"INFO","timestamp":"2025-08-27T16:24:03.827339","namespace":"mcp_agent.mcp.mcp_aggregator.RequirementAnalysisAgent","message":"Last aggregator closing, shutting down all persistent connections..."}
-{"level":"INFO","timestamp":"2025-08-27T16:24:03.827411","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}
-{"level":"INFO","timestamp":"2025-08-27T16:24:03.827910","namespace":"mcp_agent.mcp.mcp_connection_manager","message":"Disconnecting all persistent server connections..."}

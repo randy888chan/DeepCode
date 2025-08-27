@@ -41,7 +41,7 @@ mcp:
       args: ["-y", "@modelcontextprotocol/server-brave-search"]
       env:
         # You can also place your BRAVE_API_KEY in the fastagent.secrets.yaml file.
-        BRAVE_API_KEY: "BSAXGsK93v5PKJsAXOJv5-i6eqFxjFI"
+        BRAVE_API_KEY: ""
     filesystem:
       # On windows update the command and arguments to use `node` and the absolute path to the server.
       # Use `npm i -g @modelcontextprotocol/server-filesystem` to install the server globally.
