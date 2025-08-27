@@ -18,6 +18,7 @@ from .handlers import (
     initialize_session_state,
     handle_start_processing_button,
     handle_error_display,
+    handle_guided_mode_processing,
 )
 from .styles import get_main_styles
 
@@ -62,6 +63,9 @@ def render_main_content():
 
 def render_input_interface():
     """Render input interface"""
+    # 处理引导模式的异步操作
+    handle_guided_mode_processing()
+    
     # Get input source and type
     input_source, input_type = input_method_selector(st.session_state.task_counter)
 
@@ -75,7 +79,7 @@ def render_input_interface():
         st.warning("⚠️ Do not refresh the page or close the browser during processing.")
 
     elif not input_source:
-        st.info("👆 Please upload a file or enter a URL to start processing.")
+        st.info("👆 Please upload a file, enter a URL, or describe your coding requirements to start processing.")
 
 
 def render_sidebar():

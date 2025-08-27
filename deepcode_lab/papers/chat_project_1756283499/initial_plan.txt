@@ -1,0 +1,85 @@
+```yaml
+project_plan:
+  title: "Modern Snake Game - 现代贪吃蛇游戏"
+  description: "Desktop Snake game with modern UI, high score tracking, and smooth gameplay using Pygame"
+  project_type: "game"
+
+  # CUSTOM FILE TREE STRUCTURE
+  file_structure: |
+    snake_game/
+    ├── main.py                 # Entry point and main game loop
+    ├── game/                   # Core game logic
+    │   ├── __init__.py
+    │   ├── snake.py           # Snake class and movement logic
+    │   ├── food.py            # Food generation and management
+    │   ├── collision.py       # Collision detection system
+    │   └── score_manager.py   # Score calculation and management
+    ├── ui/                     # User interface components
+    │   ├── __init__.py
+    │   ├── main_menu.py       # Main menu screen
+    │   ├── game_screen.py     # Game playing interface
+    │   ├── game_over.py       # Game over screen
+    │   └── ui_components.py   # Reusable UI elements
+    ├── engine/                 # Game engine core
+    │   ├── __init__.py
+    │   ├── game_engine.py     # Main game loop and state management
+    │   ├── event_handler.py   # Input and event processing
+    │   └── renderer.py        # Graphics rendering system
+    ├── data/                   # Data management
+    │   ├── __init__.py
+    │   ├── database.py        # SQLite database operations
+    │   └── config.py          # Game configuration settings
+    ├── assets/                 # Game assets
+    │   ├── sounds/            # Sound effects (optional)
+    │   └── fonts/             # Custom fonts
+    ├── utils/                  # Utility functions
+    │   ├── __init__.py
+    │   └── constants.py       # Game constants and colors
+    ├── requirements.txt        # Python dependencies
+    ├── config.json            # Game settings file
+    ├── setup.py               # Installation and packaging
+    └── README.md              # Documentation
+
+  # CORE IMPLEMENTATION PLAN
+  implementation_steps:
+    1. "Setup Pygame framework and basic window with game engine architecture"
+    2. "Implement Snake class with movement, growth, and self-collision detection"
+    3. "Create Food system with random generation and collision with snake"
+    4. "Build score management system with SQLite database for high scores"
+    5. "Develop UI screens (main menu, game screen, game over) with modern design"
+    6. "Add game states, pause functionality, and smooth transitions"
+    7. "Implement speed progression, visual effects, and polish features"
+    8. "Testing, optimization, and PyInstaller packaging for distribution"
+
+  # DEPENDENCIES & SETUP
+  dependencies:
+    required_packages:
+      - "pygame>=2.1.0"
+      - "sqlite3"  # Built into Python
+    optional_packages:
+      - "PyInstaller>=5.0": "For creating standalone executable"
+      - "cx_Freeze>=6.0": "Alternative packaging tool"
+    setup_commands:
+      - "python -m venv snake_env"
+      - "source snake_env/bin/activate  # On Windows: snake_env\\Scripts\\activate"
+      - "pip install -r requirements.txt"
+      - "python main.py"
+
+  # KEY TECHNICAL DETAILS
+  tech_stack:
+    language: "Python 3.8+"
+    frameworks: ["Pygame"]
+    key_libraries: ["sqlite3", "json", "os", "random", "time"]
+
+  main_features:
+    - "Smooth snake movement with arrow key controls"
+    - "Progressive speed increase based on score"
+    - "Modern UI with dark theme and gradient effects"
+    - "High score persistence with SQLite database"
+    - "Pause/resume functionality with space bar"
+    - "Game states: Menu → Playing → Game Over → Menu"
+    - "Real-time score and timer display"
+    - "Collision detection for walls and self-collision"
+    - "Food spawning system avoiding snake body"
+    - "Responsive design with scalable game grid"
+```
