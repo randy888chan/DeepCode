@@ -119,12 +119,7 @@ Requirement Summary Principles:
 
 User Requirements: {user_input}
 
-Please analyze user requirements and generate 5-6 targeted questions covering the following key dimensions:
-1. Core functionality refinement
-2. Technical architecture selection
-3. User interaction experience
-4. Performance and scalability
-5. Deployment and operations
+Please analyze user requirements and generate 1-3 most critical targeted questions focusing on the most important aspects for this specific project
 
 Return format (pure JSON array, no other text):
 [
@@ -211,14 +206,14 @@ Requirements: Questions should be specific and practical, avoiding general discu
                     except Exception:
                         pass
                 
-                # Last fallback: generate smart default questions based on user input
-                self.logger.warning("JSON parsing completely failed, generating smart default questions")
-                return self._generate_smart_default_questions(user_input)
+                # If JSON parsing fails, raise an error
+                self.logger.error("JSON parsing completely failed")
+                raise ValueError("Failed to parse AI generated questions")
 
         except Exception as e:
             self.logger.error(f"Failed to generate guiding questions: {e}")
-            # Generate smart default questions based on user input
-            return self._generate_smart_default_questions(user_input)
+            # Re-raise the exception instead of falling back to default questions
+            raise
 
     async def summarize_detailed_requirements(self, 
                                             initial_input: str, 
@@ -246,45 +241,38 @@ Requirements: Questions should be specific and practical, avoiding general discu
             if not answers_text:
                 answers_text = "User chose to skip questions, generating based on initial requirements"
             
-            prompt = f"""Based on user requirements and responses, generate detailed project requirement document.
+            prompt = f"""Based on user requirements and responses, generate a concise project requirement document.
 
 Initial Requirements: {initial_input}
 
 Additional Information:
 {answers_text}
 
-Please generate complete requirement document including:
+Please generate a focused requirement document including:
 
 ## Project Overview
-Project goals and core value
+Brief description of project's core goals and value proposition
 
-## Functional Requirements  
-Detailed feature list and characteristics
+## Functional Requirements
+Detailed list of required features and functional modules:
+- Core functionalities
+- User interactions and workflows
+- Data processing requirements
+- Integration needs
 
 ## Technical Architecture
-- Recommended technology stack
+Recommended technical design including:
+- Technology stack and frameworks
 - System architecture design
-- Data storage solution
+- Database and data storage solutions
+- API design considerations
+- Security requirements
 
 ## Performance & Scalability
-- Performance metric requirements
-- Scalability considerations
+- Expected user scale and performance requirements
+- Scalability considerations and constraints
 
-## User Experience
-- Interface design requirements
-- Interaction workflow
-
-## Deployment & Operations
-- Deployment solution
-- Monitoring and logging
-- Security considerations
-
-## Implementation Plan
-- Development phases
-- Priority ranking
-- Risk points
-
-Requirements: Specific and executable, convenient for development implementation."""
+Requirements: Focus on what needs to be built and how to build it technically. Be concise but comprehensive - avoid unnecessary implementation details."""
 
             from mcp_agent.workflows.llm.augmented_llm import RequestParams
             
@@ -314,124 +302,102 @@ Requirements: Specific and executable, convenient for development implementation
 Based on user requirements: {initial_input}
 
 ## Functional Requirements
-{initial_input}
+Core functionality needed: {initial_input}
 
-## Technical Requirements
+## Technical Architecture
 - Select appropriate technology stack based on project requirements
 - Adopt modular architecture design
-- Consider scalability and maintainability
+- Consider database and data storage solutions
+- Implement necessary security measures
 
-## Implementation Suggestions
-- Develop in phases, prioritize core functionality implementation
-- Focus on code quality and documentation completeness
-- Thorough testing to ensure system stability
+## Performance & Scalability
+- Design for expected user scale
+- Consider scalability and performance requirements
 
 Note: Due to technical issues, this is a simplified requirement document. Manual supplementation of detailed information is recommended."""
 
-    def _generate_smart_default_questions(self, user_input: str) -> List[Dict[str, str]]:
-        """Generate smart default questions based on user input"""
-        # Analyze keywords in user input to generate targeted questions
-        user_lower = user_input.lower()
+    async def modify_requirements(self, 
+                                current_requirements: str, 
+                                modification_feedback: str) -> str:
+        """
+        Modify existing requirement document based on user feedback
         
-        questions = []
-        
-        # Generate related questions based on user input content type
-        if any(keyword in user_lower for keyword in ['web', 'website', 'application', 'app', 'site']):
-            questions.extend([
-                {
-                    "category": "Functional Requirements",
-                    "question": "Besides core functionality, what auxiliary features are needed? Such as user management, data export, notification system, etc.",
-                    "importance": "High",
-                    "hint": "Consider the complete user workflow"
-                },
-                {
-                    "category": "User Interface",
-                    "question": "Any special requirements for the user interface? Need mobile support? Any specific design style preferences?",
-                    "importance": "Medium",
-                    "hint": "Consider target user groups and usage scenarios"
-                }
-            ])
-        
-        if any(keyword in user_lower for keyword in ['data', 'analysis', 'machine learning', 'ml', 'analytics']):
-            questions.extend([
-                {
-                    "category": "Data Management",
-                    "question": "What are the data sources? What scale of data needs to be processed? Any real-time data requirements?",
-                    "importance": "High",
-                    "hint": "Affects architecture design and technology selection"
-                },
-                {
-                    "category": "Performance Requirements",
-                    "question": "What are the processing speed requirements? Need concurrent processing support?",
-                    "importance": "Medium",
-                    "hint": "Affects algorithm selection and system architecture"
-                }
-            ])
-        
-        # General questions
-        questions.extend([
-            {
-                "category": "Technology Selection",
-                "question": "Any preferences or constraints on technology stack? What technologies is the team more familiar with?",
-                "importance": "High",
-                "hint": "Consider team technical capabilities and project maintenance"
-            },
-            {
-                "category": "Deployment Environment",
-                "question": "What environment is planned for deployment? Cloud servers, local servers, or containerized deployment?",
-                "importance": "Medium",
-                "hint": "Affects deployment strategy and operations plan"
-            }
-        ])
-        
-        # Ensure at least 5 questions
-        if len(questions) < 5:
-            questions.append({
-                "category": "Project Scale",
-                "question": "What is the expected user scale? What are the system scalability requirements?",
-                "importance": "Medium",
-                "hint": "Affects architecture design and technology selection"
-            })
-        
-        return questions[:6]  # Return at most 6 questions
+        Args:
+            current_requirements: Current requirement document content
+            modification_feedback: User's modification requests and feedback
+            
+        Returns:
+            str: Modified requirement document
+        """
+        try:
+            self.logger.info("Starting to modify requirements based on user feedback")
+            
+            # Build modification prompt
+            prompt = f"""Based on the current requirement document and user's modification requests, generate an updated requirement document.
 
-    def _get_default_questions(self) -> List[Dict[str, str]]:
-        """Get default guiding question list"""
-        return [
-            {
-                "category": "Functional Requirements",
-                "question": "Besides core functionality, what auxiliary features are needed? Such as user management, data export, notification system, etc.",
-                "importance": "High",
-                "hint": "Consider the complete user workflow"
-            },
-            {
-                "category": "Technology Selection",
-                "question": "Any preferences or constraints on technology stack? Such as must use specific programming languages or frameworks",
-                "importance": "High",
-                "hint": "Consider team technical capabilities and project maintenance"
-            },
-            {
-                "category": "User Interface",
-                "question": "Any special requirements for user interface? Such as responsive design, specific interaction methods, etc.",
-                "importance": "Medium",
-                "hint": "Consider target user groups and usage scenarios"
-            },
-            {
-                "category": "Performance Requirements",
-                "question": "What are the expected user scale and performance requirements? How many concurrent users need to be supported?",
-                "importance": "Medium",
-                "hint": "Affects architecture design and technology selection"
-            },
-            {
-                "category": "Data Management",
-                "question": "What types of data need to be stored? What are the data security requirements?",
-                "importance": "High",
-                "hint": "Involves database selection and security design"
-            },
-            {
-                "category": "Deployment Environment",
-                "question": "What environment is planned for deployment? Cloud servers, local servers, or containerized deployment?",
-                "importance": "Medium",
-                "hint": "Affects deployment strategy and operations plan"
-            }
-        ]
+Current Requirements Document:
+{current_requirements}
+
+User's Modification Requests:
+{modification_feedback}
+
+Please generate an updated requirement document that incorporates the user's requested changes while maintaining the same structure and format:
+
+## Project Overview
+Brief description of project's core goals and value proposition
+
+## Functional Requirements
+Detailed list of required features and functional modules:
+- Core functionalities
+- User interactions and workflows
+- Data processing requirements
+- Integration needs
+
+## Technical Architecture
+Recommended technical design including:
+- Technology stack and frameworks
+- System architecture design
+- Database and data storage solutions
+- API design considerations
+- Security requirements
+
+## Performance & Scalability
+- Expected user scale and performance requirements
+- Scalability considerations and constraints
+
+Requirements: 
+1. Carefully incorporate all user requested changes
+2. Maintain consistency and coherence in the document
+3. Ensure the modified requirements are technically feasible
+4. Keep the same professional structure and format"""
+
+            from mcp_agent.workflows.llm.augmented_llm import RequestParams
+            
+            params = RequestParams(
+                max_tokens=4000,
+                temperature=0.3
+            )
+
+            self.logger.info(f"Calling LLM to modify requirements, feedback length: {len(modification_feedback)}")
+            
+            result = await self.llm.generate_str(
+                message=prompt,
+                request_params=params
+            )
+
+            if not result or not result.strip():
+                self.logger.error("LLM returned empty modified requirements")
+                raise ValueError("LLM returned empty modified requirements")
+
+            self.logger.info(f"✅ Requirements modification completed, length: {len(result)}")
+            return result.strip()
+
+        except Exception as e:
+            self.logger.error(f"Requirements modification failed: {e}")
+            # Return current requirements with a note about the modification attempt
+            return f"""{current_requirements}
+
+---
+**Note:** Automatic modification failed due to technical issues. The original requirements are shown above. Please manually incorporate the following requested changes:
+
+{modification_feedback}"""

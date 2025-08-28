@@ -632,6 +632,66 @@ async def handle_requirement_analysis_workflow(
         }
 
 
+async def handle_requirement_modification_workflow(
+    current_requirements: str,
+    modification_feedback: str
+) -> Dict[str, Any]:
+    """
+    Handle requirement modification workflow
+    
+    Args:
+        current_requirements: Current requirement document content
+        modification_feedback: User's modification requests and feedback
+        
+    Returns:
+        Processing result dictionary
+    """
+    try:
+        # Import required modules
+        from workflows.agents.requirement_analysis_agent import RequirementAnalysisAgent
+        from utils.llm_utils import get_preferred_llm_class
+        
+        # Create progress callback function
+        def update_progress(progress: int, message: str):
+            # Display progress in Streamlit
+            st.session_state.current_progress = progress
+            st.session_state.current_message = message
+        
+        update_progress(10, "🔧 Initializing requirement modification agent...")
+        
+        # Initialize RequirementAnalysisAgent
+        agent = RequirementAnalysisAgent()
+        
+        # Initialize agent (LLM is initialized internally)
+        await agent.initialize()
+        
+        update_progress(50, "✏️ Modifying requirements based on your feedback...")
+        
+        # Modify requirements
+        result = await agent.modify_requirements(
+            current_requirements=current_requirements,
+            modification_feedback=modification_feedback
+        )
+        
+        # Cleanup
+        await agent.cleanup()
+        
+        update_progress(100, "✅ Requirements modification completed!")
+        
+        return {
+            "status": "success",
+            "result": result,
+            "message": "Requirements modification completed successfully"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": f"Requirements modification workflow execution failed: {str(e)}"
+        }
+
+
 def handle_guided_mode_processing():
     """Handle asynchronous processing for guided mode"""
     # Check if questions need to be generated
@@ -687,6 +747,37 @@ def handle_guided_mode_processing():
                     
             except Exception as e:
                 st.error(f"Requirement summary generation exception: {str(e)}")
+    
+    # Check if requirements need to be edited
+    if st.session_state.get("requirements_editing", False):
+        st.session_state.requirements_editing = False
+        st.info("🔧 Starting requirement modification process...")
+        
+        # Asynchronously modify requirements based on user feedback
+        current_requirements = st.session_state.get("detailed_requirements", "")
+        edit_feedback = st.session_state.get("edit_feedback", "")
+        
+        if current_requirements and edit_feedback:
+            try:
+                # Use asynchronous processing to modify requirements
+                result = run_async_task_simple(
+                    handle_requirement_modification_workflow(
+                        current_requirements=current_requirements,
+                        modification_feedback=edit_feedback
+                    )
+                )
+                
+                if result["status"] == "success":
+                    st.session_state.detailed_requirements = result["result"]
+                    st.session_state.requirement_analysis_step = "summary"
+                    st.session_state.edit_feedback = ""
+                    st.success("✅ Requirements updated successfully!")
+                    st.rerun()
+                else:
+                    st.error(f"Requirements modification failed: {result.get('error', 'Unknown error')}")
+                    
+            except Exception as e:
+                st.error(f"Requirements modification exception: {str(e)}")
 
 
 def handle_start_processing_button(input_source: str, input_type: str):
@@ -787,6 +878,10 @@ def initialize_session_state():
         st.session_state.requirements_generating = False
     if "requirements_confirmed" not in st.session_state:
         st.session_state.requirements_confirmed = False
+    if "edit_feedback" not in st.session_state:
+        st.session_state.edit_feedback = ""
+    if "requirements_editing" not in st.session_state:
+        st.session_state.requirements_editing = False
 
 
 def cleanup_resources():

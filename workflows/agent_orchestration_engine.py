@@ -1683,3 +1683,122 @@ async def execute_requirement_analysis_workflow(
             "error": error_msg,
             "message": "Requirement analysis workflow execution failed"
         }
+
+
+async def run_requirement_analysis_agent(
+    user_input: str,
+    analysis_mode: str,
+    user_answers: Dict[str, str] = None,
+    logger=None
+) -> str:
+    """
+    Run requirement analysis agent
+    
+    Args:
+        user_input: User input text
+        analysis_mode: Analysis mode ("generate_questions" or "summarize_requirements")
+        user_answers: User answer dictionary
+        logger: Logger instance
+        
+    Returns:
+        str: Analysis result (JSON string for questions, markdown for summary)
+    """
+    try:
+        # Import required modules
+        import json
+        from workflows.agents.requirement_analysis_agent import RequirementAnalysisAgent
+        from utils.llm_utils import get_preferred_llm_class
+        
+        if logger:
+            logger.info(f"Starting requirement analysis agent, mode: {analysis_mode}")
+        
+        # Initialize RequirementAnalysisAgent
+        agent = RequirementAnalysisAgent()
+        
+        # Initialize agent (LLM is initialized internally)
+        await agent.initialize()
+        
+        # Execute based on analysis mode
+        if analysis_mode == "generate_questions":
+            # Generate guiding questions
+            questions = await agent.generate_guiding_questions(user_input)
+            result = json.dumps(questions, ensure_ascii=False, indent=2)
+        elif analysis_mode == "summarize_requirements":
+            # Generate detailed requirements
+            result = await agent.summarize_detailed_requirements(user_input, user_answers or {})
+        else:
+            raise ValueError(f"Unknown analysis mode: {analysis_mode}")
+        
+        # Cleanup
+        await agent.cleanup()
+        
+        if logger:
+            logger.info(f"Requirement analysis agent completed, result length: {len(result)}")
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"Requirement analysis agent execution failed: {str(e)}"
+        if logger:
+            logger.error(error_msg)
+        raise Exception(error_msg)
+
+
+async def execute_requirement_analysis_workflow(
+    user_input: str,
+    analysis_mode: str,
+    user_answers: Dict[str, str] = None,
+    logger=None,
+    progress_callback=None
+) -> Dict[str, Any]:
+    """
+    Execute requirement analysis workflow
+    
+    Args:
+        user_input: User input text
+        analysis_mode: Analysis mode ("generate_questions" or "summarize_requirements")
+        user_answers: User answer dictionary
+        logger: Logger instance
+        progress_callback: Progress callback function
+        
+    Returns:
+        dict: Workflow execution result
+    """
+    try:
+        if progress_callback:
+            if analysis_mode == "generate_questions":
+                progress_callback(10, "🤔 Analyzing user requirements, generating guiding questions...")
+            else:
+                progress_callback(10, "📝 Integrating user answers, generating detailed requirement document...")
+        
+        # Call requirement analysis Agent
+        result = await run_requirement_analysis_agent(
+            user_input=user_input,
+            analysis_mode=analysis_mode,
+            user_answers=user_answers,
+            logger=logger
+        )
+        
+        if progress_callback:
+            progress_callback(100, "✅ Requirement analysis completed!")
+            
+        return {
+            "status": "success",
+            "mode": analysis_mode,
+            "result": result,
+            "message": f"Requirement analysis ({analysis_mode}) executed successfully"
+        }
+        
+    except Exception as e:
+        error_msg = f"Requirement analysis workflow execution failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        
+        if progress_callback:
+            progress_callback(0, f"❌ {error_msg}")
+            
+        return {
+            "status": "error",
+            "mode": analysis_mode,
+            "error": error_msg,
+            "message": "Requirement analysis workflow execution failed"
+        }

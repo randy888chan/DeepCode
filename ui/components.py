@@ -922,11 +922,9 @@ def requirement_summary_component(summary: str, task_counter: int) -> bool:
     
     with col2:
         if st.button("✏️ Edit Requirements", type="secondary", use_container_width=True, key=f"edit_{task_counter}"):
-            # Reset state for user to re-edit
-            st.session_state.requirement_analysis_step = "input"
-            st.session_state.generated_questions = []
-            st.session_state.user_answers = {}
-            st.session_state.detailed_requirements = ""
+            # Enter editing mode
+            st.session_state.requirement_analysis_step = "editing"
+            st.session_state.edit_feedback = ""
             st.rerun()
     
     with col3:
@@ -937,6 +935,86 @@ def requirement_summary_component(summary: str, task_counter: int) -> bool:
             st.session_state.generated_questions = []
             st.session_state.user_answers = {}
             st.session_state.detailed_requirements = ""
+            st.rerun()
+    
+    return False
+
+
+def requirement_editing_component(current_requirements: str, task_counter: int) -> bool:
+    """
+    Interactive requirement editing component
+    
+    Args:
+        current_requirements: Current requirement document content
+        task_counter: Task counter
+        
+    Returns:
+        Whether editing is completed
+    """
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-left: 4px solid #e17055;">
+        <h4 style="color: #2d3748; margin: 0 0 10px 0; font-size: 1.1rem;">
+            ✏️ Edit Requirements Document
+        </h4>
+        <p style="color: #4a5568; margin: 0; font-size: 0.9rem;">
+            Review the current requirements and tell us how you'd like to modify them.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Display current requirements
+    st.markdown("### 📋 Current Requirements")
+    with st.expander("📖 View Current Requirements Document", expanded=True):
+        st.markdown(current_requirements)
+    
+    # Ask for modification feedback
+    st.markdown("### 💭 How would you like to modify the requirements?")
+    st.markdown("Please describe your changes, additions, or corrections:")
+    
+    edit_feedback = st.text_area(
+        "Your modification request:",
+        value=st.session_state.edit_feedback,
+        placeholder="For example:\n- Add user authentication feature\n- Change database from MySQL to PostgreSQL",
+        height=120,
+        key=f"edit_feedback_{task_counter}"
+    )
+    
+    # Update session state
+    st.session_state.edit_feedback = edit_feedback
+    
+    # Action buttons
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🔄 Apply Changes", type="primary", use_container_width=True, key=f"apply_edit_{task_counter}"):
+            if edit_feedback.strip():
+                # Start requirement modification process
+                st.session_state.requirements_editing = True
+                st.info("🔄 Processing your modification request...")
+                return True
+            else:
+                st.warning("Please provide your modification request first.")
+    
+    with col2:
+        if st.button("↩️ Back to Summary", type="secondary", use_container_width=True, key=f"back_summary_{task_counter}"):
+            # Go back to summary view
+            st.session_state.requirement_analysis_step = "summary"
+            st.session_state.edit_feedback = ""
+            st.rerun()
+    
+    with col3:
+        if st.button("🔄 Start Over", use_container_width=True, key=f"restart_edit_{task_counter}"):
+            # Complete reset
+            st.session_state.requirement_analysis_mode = "direct"
+            st.session_state.requirement_analysis_step = "input"
+            st.session_state.generated_questions = []
+            st.session_state.user_answers = {}
+            st.session_state.detailed_requirements = ""
+            st.session_state.edit_feedback = ""
             st.rerun()
     
     return False
@@ -955,18 +1033,7 @@ def chat_input_component(task_counter: int) -> Optional[str]:
     # Select input mode
     selected_mode = requirement_analysis_mode_selector(task_counter)
     
-    # Update session state
-    if "requirement_analysis_mode" not in st.session_state:
-        st.session_state.requirement_analysis_mode = "direct"
-    if "requirement_analysis_step" not in st.session_state:
-        st.session_state.requirement_analysis_step = "input"
-    if "generated_questions" not in st.session_state:
-        st.session_state.generated_questions = []
-    if "user_answers" not in st.session_state:
-        st.session_state.user_answers = {}
-    if "detailed_requirements" not in st.session_state:
-        st.session_state.detailed_requirements = ""
-    
+    # Update requirement analysis mode
     st.session_state.requirement_analysis_mode = selected_mode
     
     if selected_mode == "direct":
@@ -1100,6 +1167,8 @@ def _guided_analysis_component(task_counter: int) -> Optional[str]:
         return _guided_questions_step(task_counter)
     elif current_step == "summary":
         return _guided_summary_step(task_counter)
+    elif current_step == "editing":
+        return _guided_editing_step(task_counter)
     else:
         # Reset to initial state
         st.session_state.requirement_analysis_step = "input"
@@ -1196,6 +1265,30 @@ def _guided_summary_step(task_counter: int) -> Optional[str]:
     if confirmed:
         # Return detailed requirements as final input
         return summary
+    
+    return None
+
+
+def _guided_editing_step(task_counter: int) -> Optional[str]:
+    """Requirement editing step for guided mode"""
+    st.markdown("### ✏️ Step 4: Edit your requirements")
+    
+    # Get current requirements
+    current_requirements = st.session_state.get("detailed_requirements", "")
+    if not current_requirements:
+        st.error("No requirements found to edit. Please start over.")
+        st.session_state.requirement_analysis_step = "input"
+        st.rerun()
+        return None
+    
+    # Show editing component
+    editing_requested = requirement_editing_component(current_requirements, task_counter)
+    
+    if editing_requested:
+        # User has provided editing feedback, trigger requirement modification
+        st.session_state.requirements_editing = True
+        st.rerun()
+        return None
     
     return None
 

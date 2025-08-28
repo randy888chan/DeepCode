@@ -10,7 +10,7 @@ Contains prompt templates for requirement analysis Agent, supporting question ge
 
 REQUIREMENT_QUESTION_GENERATION_PROMPT = """You are a professional requirement analysis expert, skilled at helping users refine project requirements through precise questions.
 
-Please generate 5-8 guiding questions based on user's initial requirement description to help users provide more detailed information.
+Please generate 1-3 precise guiding questions based on user's initial requirement description to help users provide more detailed information.
 
 User Initial Requirements:
 {user_input}
@@ -40,42 +40,32 @@ User Initial Requirements:
 User Supplementary Responses:
 {answers_text}
 
-Please generate a structured requirement document containing the following sections:
+Please generate a concise requirement document focusing on the following core sections:
 
 ## Project Overview
-Brief description of project's core goals and value
+Brief description of project's core goals and value proposition
 
 ## Functional Requirements
-Detailed list of all functional modules and feature requirements
+Detailed list of required features and functional modules:
+- Core functionalities
+- User interactions and workflows
+- Data processing requirements
+- Integration needs
 
-## Technical Requirements
-- Recommended technology stack and frameworks
-- Architecture design suggestions
-- Data storage solutions
+## Technical Architecture
+Recommended technical design including:
+- Technology stack and frameworks
+- System architecture design
+- Database and data storage solutions
+- API design considerations
+- Security requirements
 
-## Performance Requirements
-- Expected user volume and concurrency requirements
-- Response time requirements
-- Scalability considerations
-
-## User Interface Requirements
-- UI/UX design requirements
-- Interaction method descriptions
-- Responsive design requirements
-
-## Deployment and Operations Requirements
-- Deployment environment requirements
-- Monitoring and logging requirements
-- Security considerations
-
-## Implementation Suggestions
-- Development phase division
-- Priority ranking
-- Potential technical risks
+## Performance & Scalability
+- Expected user scale and performance requirements
+- Scalability considerations and constraints
 
 Requirements:
-1. Requirement document should be detailed and executable, easy for developers to understand and implement
-2. Supplement technical details based on user responses, but maintain user's original intent unchanged
-3. Provide reasonable technical architecture suggestions and best practices
-4. Consider project feasibility and complexity
-5. Provide clear functional module division and implementation priorities"""
+1. Focus on what needs to be built and how to build it technically
+2. Be concise but comprehensive - avoid unnecessary implementation details
+3. Provide clear functional specifications and technical architecture guidance
+4. Consider project feasibility and technical complexity"""

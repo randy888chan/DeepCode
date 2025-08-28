@@ -66,8 +66,16 @@ def render_input_interface():
     # 处理引导模式的异步操作
     handle_guided_mode_processing()
     
-    # Get input source and type
-    input_source, input_type = input_method_selector(st.session_state.task_counter)
+    # Check if user is in guided analysis workflow
+    if (st.session_state.get("requirement_analysis_mode") == "guided" and 
+        st.session_state.get("requirement_analysis_step") in ["questions", "summary", "editing"]):
+        # User is in guided analysis workflow, show chat input directly
+        from .components import chat_input_component
+        input_source = chat_input_component(st.session_state.task_counter)
+        input_type = "chat" if input_source else None
+    else:
+        # Normal flow: show input method selector
+        input_source, input_type = input_method_selector(st.session_state.task_counter)
 
     # Processing button
     if input_source and not st.session_state.processing:
