@@ -1295,16 +1295,17 @@ Please analyze the environment requirements carefully and provide the most appro
                 }
             )
             
-            # Step 2: 克隆DeepCode仓库到/root/deepcode
+            # Step 2: 克隆DeepCode仓库的docker分支到/root/deepcode
             deepcode_repo_url = "https://github.com/HKUDS/DeepCode.git"
+            deepcode_branch = "docker"
             deepcode_target_dir = "/root/deepcode"
             
-            self.logger.info(f"📂 Cloning DeepCode repository to {deepcode_target_dir}...")
+            self.logger.info(f"📂 Cloning DeepCode repository (docker branch) to {deepcode_target_dir}...")
             clone_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": f"git clone {deepcode_repo_url} {deepcode_target_dir}",
+                    "command": f"git clone -b {deepcode_branch} {deepcode_repo_url} {deepcode_target_dir}",
                     "working_dir": "/root",
                     "timeout": 300
                 }
