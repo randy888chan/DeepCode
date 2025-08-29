@@ -2382,9 +2382,9 @@ async def main():
     workflow = CodeEvaluationWorkflow(max_files_per_batch=3)
     
     # Example usage
-    repo_path = "deepcode_lab/papers/40/generate_code"
-    docs_path = "deepcode_lab/papers/40/initial_plan.txt"
-    memory_path = "deepcode_lab/papers/40/implement_code_summary.md"
+    repo_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/generate_code"
+    docs_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/initial_plan.txt"
+    memory_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/implement_code_summary.md"
     
     results = await workflow.run_evaluation(repo_path, docs_path, memory_path)
     print(json.dumps(results, indent=2))

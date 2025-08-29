@@ -288,7 +288,7 @@ Requirements:
         target_directory,
     ):
         """Pure code implementation loop with memory optimization and phase consistency"""
-        max_iterations = 100
+        max_iterations = 500
         iteration = 0
         start_time = time.time()
         max_time = 2400  # 40 minutes
@@ -419,9 +419,9 @@ Requirements:
                 keyword in response_content.lower()
                 for keyword in [
                     "all files implemented",
-                    "implementation complete",
                     "all phases completed",
                     "reproduction plan fully implemented",
+                    "all code of repo implementation complete",
                 ]
             ):
                 self.logger.info("Code implementation declared complete")
