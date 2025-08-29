@@ -208,16 +208,17 @@ class IntelligentCodeExecutionWorkflow:
             
             # Phase 3: Setup environment
             await self._setup_container_environment()
+
+            # Phase 4: Run code evaluation workflow in container
+            await self._run_code_evaluation_in_container()
             
-            # Phase 4: Install dependencies
+            # Phase 5: Install dependencies
             await self._install_repository_dependencies()
             
-            # Phase 5: Intelligent code execution loop
-            await self._intelligent_execution_loop()
             
             # Generate final report
-            results = await self._generate_execution_report()
-            
+            # results = await self._generate_execution_report()
+            results = {}
             self.logger.info("✅ Intelligent code execution workflow completed")
             return results
 
@@ -1840,6 +1841,487 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             self.logger.error(f"❌ Failed to setup evaluation workspace: {e}")
             raise
 
+    async def _run_code_evaluation_in_container(self):
+        """Run code evaluation workflow inside the Docker container"""
+        try:
+            self.execution_state.phase = ExecutionPhase.SETTING_UP_ENV  # Using existing phase
+            self.logger.info("🔬 Phase 4: Running Code Evaluation Workflow in Container")
+            
+            if not self.execution_state.container_id:
+                raise Exception("No container available for code evaluation")
+            
+            container_id = self.execution_state.container_id
+            
+            # Convert local repo path to container path
+            container_paths = self._convert_local_to_container_paths(self.execution_state.repo_path)
+            
+            self.logger.info(f"📂 Container paths:")
+            self.logger.info(f"   Repository: {container_paths['repo_path']}")
+            self.logger.info(f"   Documentation: {container_paths['docs_path']}")
+            self.logger.info(f"   Memory: {container_paths['memory_path']}")
+            
+            # Step 1: Verify deepcode environment is available
+            self.logger.info("🔍 Step 1: Verifying deepcode conda environment...")
+            await self._verify_deepcode_environment(container_id)
+            
+            # Step 2: Create enhanced command with conda environment activation
+            cmd = f"bash -c 'source ~/.bashrc && conda activate deepcode && cd /root/deepcode && python workflows/code_evaluation_workflow.py \"{container_paths['repo_path']}\" \"{container_paths['docs_path']}\" \"{container_paths['memory_path']}\" 3'"
+            
+            self.logger.info(f"🚀 Step 2: Executing code evaluation workflow in container with deepcode environment...")
+            self.logger.info(f"📋 Command: {cmd}")
+            
+            # Step 3: Execute with real-time streaming output to local terminal
+            evaluation_result = await self._execute_with_realtime_streaming(container_id, cmd)
+            
+            # Parse and log the evaluation results
+            if hasattr(evaluation_result, 'content') and evaluation_result.content:
+                content_text = evaluation_result.content[0].text
+                result_data = json.loads(content_text)
+                
+                execution = result_data.get("execution", {})
+                exit_code = execution.get("exit_code", -1)
+                stdout = execution.get("stdout", "")
+                stderr = execution.get("stderr", "")
+                
+                if exit_code == 0:
+                    self.logger.info("✅ Code evaluation workflow completed successfully in container")
+                    if stdout:
+                        self.logger.info("📊 Evaluation Results Summary:")
+                        # Log first few lines of stdout for summary
+                        stdout_lines = stdout.split('\n')[:10]
+                        for line in stdout_lines:
+                            if line.strip():
+                                self.logger.info(f"   {line}")
+                    
+                    # Try to extract evaluation results from stdout
+                    try:
+                        # Look for JSON results in stdout
+                        import re
+                        json_match = re.search(r'\{.*\}', stdout, re.DOTALL)
+                        if json_match:
+                            eval_results = json.loads(json_match.group())
+                            self.logger.info("📈 Evaluation Metrics:")
+                            
+                            # Extract key metrics
+                            overall = eval_results.get("overall_assessment", {})
+                            if overall:
+                                self.logger.info(f"   Implementation Completeness: {overall.get('implementation_completeness', 'N/A')}")
+                                self.logger.info(f"   Code Quality: {overall.get('code_quality', 'N/A')}")
+                                self.logger.info(f"   Project Health: {overall.get('project_health', 'N/A')}")
+                                
+                            multi_file = eval_results.get("multi_file_implementation", {})
+                            if multi_file:
+                                self.logger.info(f"   Tasks Completed: {multi_file.get('tasks_completed', 0)}/{multi_file.get('total_tasks', 0)}")
+                                self.logger.info(f"   Completion Rate: {multi_file.get('completion_rate', 0):.1f}%")
+                                self.logger.info(f"   Files Implemented: {multi_file.get('files_implemented_count', 0)}")
+                            
+                    except Exception as parse_e:
+                        self.logger.warning(f"⚠️ Could not parse evaluation results: {parse_e}")
+                        
+                else:
+                    self.logger.error(f"❌ Code evaluation workflow failed with exit code: {exit_code}")
+                    if stderr:
+                        self.logger.error(f"   Error: {stderr[:500]}...")
+                    if stdout:
+                        self.logger.info(f"   Output: {stdout[:500]}...")
+                    
+                    # Don't raise exception to allow workflow to continue
+                    self.execution_state.add_error(f"Code evaluation workflow failed: exit_code={exit_code}")
+            else:
+                self.logger.warning("⚠️ No result content from code evaluation workflow execution")
+                
+            self.logger.info("✅ Code evaluation phase completed")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to run code evaluation in container: {e}")
+            self.execution_state.add_error(f"Code evaluation in container failed: {e}")
+            # Don't raise to allow workflow to continue
+            
+    def _convert_local_to_container_paths(self, local_repo_path: str) -> dict:
+        """
+        Convert local repository path to corresponding container paths
+        
+        Args:
+            local_repo_path: Local path like "/Users/.../deepcode_lab/papers/1/generate_code"
+            
+        Returns:
+            Dictionary with container paths for repo, docs, and memory
+        """
+        try:
+            # Find the deepcode_lab part in the path
+            if "deepcode_lab" not in local_repo_path:
+                raise Exception(f"Path does not contain deepcode_lab: {local_repo_path}")
+            
+            # Extract the part after deepcode_lab
+            parts = local_repo_path.split("deepcode_lab")
+            if len(parts) < 2:
+                raise Exception(f"Invalid deepcode_lab path structure: {local_repo_path}")
+                
+            # Get the relative path after deepcode_lab
+            relative_path = parts[1].lstrip('/')  # Remove leading slash
+            
+            # Construct container paths
+            container_base = "/root/deepcode/deepcode_lab"
+            container_repo_path = f"{container_base}/{relative_path}"
+            
+            # Determine docs and memory paths based on the repo path structure
+            # Assume structure: deepcode_lab/papers/1/generate_code
+            path_segments = relative_path.split('/')
+            if len(path_segments) >= 3:  # papers/1/generate_code
+                # Go up one level to get papers/1/
+                paper_dir = '/'.join(path_segments[:-1])  # papers/1
+                container_docs_path = f"{container_base}/{paper_dir}/initial_plan.txt"
+                container_memory_path = f"{container_base}/{paper_dir}/implement_code_summary.md"
+            else:
+                # Fallback paths
+                container_docs_path = f"{container_base}/initial_plan.txt"
+                container_memory_path = f"{container_base}/implement_code_summary.md"
+            
+            return {
+                "repo_path": container_repo_path,
+                "docs_path": container_docs_path,
+                "memory_path": container_memory_path
+            }
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to convert paths: {e}")
+            # Return fallback paths
+            return {
+                "repo_path": "/root/deepcode/deepcode_lab",
+                "docs_path": "/root/deepcode/deepcode_lab/initial_plan.txt", 
+                "memory_path": "/root/deepcode/deepcode_lab/implement_code_summary.md"
+            }
+
+    async def _verify_deepcode_environment(self, container_id: str):
+        """Verify that deepcode conda environment is available and configured"""
+        try:
+            self.logger.info("🔍 Checking deepcode conda environment availability...")
+            
+            # Check if conda is available
+            conda_check = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": "which conda",
+                    "working_dir": "/root",
+                    "timeout": 30
+                }
+            )
+            
+            # Parse conda check result
+            if hasattr(conda_check, 'content') and conda_check.content:
+                conda_result = json.loads(conda_check.content[0].text)
+                if conda_result.get("execution", {}).get("exit_code") != 0:
+                    raise Exception("Conda is not available in container")
+                self.logger.info("✅ Conda is available")
+            
+            # Check if deepcode environment exists using a more robust method
+            env_check = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": "conda env list",
+                    "working_dir": "/root",
+                    "timeout": 30
+                }
+            )
+            
+            # Parse environment check result
+            if hasattr(env_check, 'content') and env_check.content:
+                env_result = json.loads(env_check.content[0].text)
+                if env_result.get("execution", {}).get("exit_code") == 0:
+                    stdout = env_result.get("execution", {}).get("stdout", "")
+                    if "deepcode" in stdout:
+                        self.logger.info("✅ Deepcode conda environment exists")
+                    else:
+                        raise Exception("Deepcode conda environment not found in conda env list")
+                else:
+                    raise Exception("Failed to list conda environments")
+            
+            # Test environment activation and basic imports
+            test_cmd = "bash -c 'source ~/.bashrc && conda activate deepcode && python -c \"import sys; print(sys.executable); import mcp_agent; print(\\\"mcp_agent available\\\")\"'"
+            test_result = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": test_cmd,
+                    "working_dir": "/root",
+                    "timeout": 60
+                }
+            )
+            
+            # Parse test result
+            if hasattr(test_result, 'content') and test_result.content:
+                test_data = json.loads(test_result.content[0].text)
+                test_execution = test_data.get("execution", {})
+                if test_execution.get("exit_code") == 0:
+                    stdout = test_execution.get("stdout", "")
+                    self.logger.info(f"✅ Deepcode environment test successful:")
+                    for line in stdout.split('\n'):
+                        if line.strip():
+                            self.logger.info(f"   {line}")
+                else:
+                    stderr = test_execution.get("stderr", "")
+                    self.logger.warning(f"⚠️ Deepcode environment test had issues: {stderr}")
+                    # Don't fail here, just warn - the environment might still work
+            
+            self.logger.info("✅ Deepcode environment verification completed successfully")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Deepcode environment verification failed: {e}")
+            # Let's try to continue anyway - sometimes verification fails but execution works
+            self.logger.warning(f"⚠️ Continuing despite verification failure - will attempt execution")
+            # Don't raise exception to allow workflow to continue
+
+    async def _execute_with_realtime_streaming(self, container_id: str, command: str):
+        """Execute command with real-time streaming output to local terminal"""
+        import asyncio
+        import subprocess
+        import sys
+        
+        try:
+            self.logger.info("🔍 Starting real-time streaming execution...")
+            
+            start_time = time.time()
+            self.logger.info(f"⏰ Execution started at: {time.strftime('%H:%M:%S')}")
+            self.logger.info(f"📋 Full command: {command}")
+            self.logger.info("=" * 80)
+            self.logger.info("🚀 DOCKER CONTAINER OUTPUT (REAL-TIME):")
+            self.logger.info("=" * 80)
+            
+            # Construct docker exec command
+            docker_cmd = [
+                "docker", "exec", "-i", container_id,
+                "bash", "-c", command
+            ]
+            
+            # Start subprocess with streaming
+            process = await asyncio.create_subprocess_exec(
+                *docker_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd="/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init"
+            )
+            
+            stdout_buffer = []
+            stderr_buffer = []
+            
+            # Real-time output streaming
+            async def stream_output():
+                while True:
+                    line = await process.stdout.readline()
+                    if not line:
+                        break
+                    
+                    line_str = line.decode('utf-8', errors='replace').rstrip()
+                    stdout_buffer.append(line_str)
+                    
+                    # Print to local terminal with timestamp
+                    timestamp = time.strftime('%H:%M:%S')
+                    print(f"[{timestamp}] {line_str}", flush=True)
+                    
+                    # Also log important lines
+                    if any(keyword in line_str.lower() for keyword in ['error', 'failed', 'success', 'completed', 'phase']):
+                        self.logger.info(f"📡 {line_str}")
+            
+            # Start streaming task
+            stream_task = asyncio.create_task(stream_output())
+            
+            # Wait for process completion
+            exit_code = await process.wait()
+            
+            # Ensure all output is captured
+            await stream_task
+            
+            execution_time = time.time() - start_time
+            
+            self.logger.info("=" * 80)
+            self.logger.info(f"⏰ Execution completed in: {execution_time:.2f} seconds")
+            self.logger.info(f"📊 Exit Code: {exit_code}")
+            self.logger.info(f"📊 Total Output Lines: {len(stdout_buffer)}")
+            
+            # Create result object compatible with existing code
+            mock_result = type('MockResult', (), {
+                'content': [type('Content', (), {
+                    'text': json.dumps({
+                        "execution": {
+                            "exit_code": exit_code,
+                            "stdout": '\n'.join(stdout_buffer),
+                            "stderr": '\n'.join(stderr_buffer)
+                        }
+                    })
+                })()]
+            })()
+            
+            if exit_code != 0:
+                self.logger.error(f"❌ Command failed with exit code: {exit_code}")
+                # Analyze last few lines for errors
+                if len(stdout_buffer) > 0:
+                    self.logger.error("🔍 Last few output lines:")
+                    for line in stdout_buffer[-5:]:
+                        if line.strip():
+                            self.logger.error(f"   {line}")
+            else:
+                self.logger.info("✅ Command completed successfully!")
+            
+            return mock_result
+            
+        except Exception as e:
+            self.logger.error(f"❌ Real-time streaming execution failed: {e}")
+            # Fallback to original method
+            return await self._execute_with_monitoring_fallback(container_id, command)
+
+    async def _execute_with_monitoring_fallback(self, container_id: str, command: str):
+        """Execute command with enhanced monitoring and real-time error tracking (fallback method)"""
+        try:
+            self.logger.info("🔍 Starting enhanced execution monitoring...")
+            
+            # Start execution with detailed logging
+            start_time = time.time()
+            self.logger.info(f"⏰ Execution started at: {time.strftime('%H:%M:%S')}")
+            self.logger.info(f"📋 Full command: {command}")
+            
+            # Execute the command
+            result = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": command,
+                    "working_dir": "/root/deepcode",
+                    "timeout": 1800  # 30 minutes timeout
+                }
+            )
+            
+            execution_time = time.time() - start_time
+            self.logger.info(f"⏰ Execution completed in: {execution_time:.2f} seconds")
+            
+            # Enhanced result parsing and monitoring
+            if hasattr(result, 'content') and result.content:
+                content_text = result.content[0].text
+                result_data = json.loads(content_text)
+                
+                execution = result_data.get("execution", {})
+                exit_code = execution.get("exit_code", -1)
+                stdout = execution.get("stdout", "")
+                stderr = execution.get("stderr", "")
+                
+                # Log execution summary
+                self.logger.info(f"📊 Execution Summary:")
+                self.logger.info(f"   Exit Code: {exit_code}")
+                self.logger.info(f"   Duration: {execution_time:.2f}s")
+                self.logger.info(f"   Stdout Length: {len(stdout)} chars")
+                self.logger.info(f"   Stderr Length: {len(stderr)} chars")
+                
+                # Enhanced error analysis
+                if exit_code != 0:
+                    self.logger.error(f"❌ Command failed with exit code: {exit_code}")
+                    
+                    # Analyze stderr for common issues
+                    if stderr:
+                        self.logger.error("🔍 Error Analysis:")
+                        self._analyze_execution_errors(stderr)
+                        
+                        # Log full stderr if it's not too long
+                        if len(stderr) < 2000:
+                            self.logger.error(f"📋 Full stderr:")
+                            for line in stderr.split('\n'):
+                                if line.strip():
+                                    self.logger.error(f"   {line}")
+                        else:
+                            # Log first and last parts of stderr
+                            stderr_lines = stderr.split('\n')
+                            self.logger.error(f"📋 Stderr (first 10 lines):")
+                            for line in stderr_lines[:10]:
+                                if line.strip():
+                                    self.logger.error(f"   {line}")
+                            self.logger.error(f"   ... ({len(stderr_lines)} total lines) ...")
+                            self.logger.error(f"📋 Stderr (last 10 lines):")
+                            for line in stderr_lines[-10:]:
+                                if line.strip():
+                                    self.logger.error(f"   {line}")
+                    
+                    # Analyze stdout for additional context
+                    if stdout:
+                        self.logger.info("📋 Stdout for context:")
+                        stdout_lines = stdout.split('\n')
+                        # Show last 20 lines of stdout for context
+                        for line in stdout_lines[-20:]:
+                            if line.strip():
+                                self.logger.info(f"   {line}")
+                
+                else:
+                    self.logger.info("✅ Command executed successfully")
+                    
+                    # Log progress indicators from stdout
+                    if stdout:
+                        progress_lines = self._extract_progress_indicators(stdout)
+                        if progress_lines:
+                            self.logger.info("📈 Progress Indicators:")
+                            for line in progress_lines:
+                                self.logger.info(f"   {line}")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"❌ Enhanced execution monitoring failed: {e}")
+            raise
+
+    def _analyze_execution_errors(self, stderr: str):
+        """Analyze stderr for common error patterns and provide helpful insights"""
+        try:
+            error_patterns = {
+                "ModuleNotFoundError": "Missing Python module - check conda environment activation",
+                "ImportError": "Import issue - verify dependencies are installed",
+                "FileNotFoundError": "Missing file - check file paths and permissions",
+                "PermissionError": "Permission issue - check file/directory permissions",
+                "conda": "Conda environment issue - verify environment setup",
+                "mcp_agent": "MCP Agent issue - check MCP configuration",
+                "anthropic": "Anthropic API issue - check API keys and configuration",
+                "ConnectionError": "Network/connection issue - check connectivity",
+                "timeout": "Operation timed out - consider increasing timeout",
+                "JSON": "JSON parsing error - check data format",
+                "KeyError": "Missing configuration key - check config files",
+                "ValueError": "Invalid value - check input parameters"
+            }
+            
+            found_patterns = []
+            for pattern, description in error_patterns.items():
+                if pattern.lower() in stderr.lower():
+                    found_patterns.append(f"{pattern}: {description}")
+            
+            if found_patterns:
+                self.logger.error("🔍 Detected Error Patterns:")
+                for pattern in found_patterns:
+                    self.logger.error(f"   - {pattern}")
+            else:
+                self.logger.error("🔍 No recognized error patterns found")
+                
+        except Exception as e:
+            self.logger.warning(f"Error analysis failed: {e}")
+
+    def _extract_progress_indicators(self, stdout: str) -> list:
+        """Extract progress indicators and important messages from stdout"""
+        try:
+            progress_indicators = []
+            lines = stdout.split('\n')
+            
+            # Look for specific progress patterns
+            progress_patterns = [
+                "Phase", "✅", "❌", "🔍", "📊", "🚀", "Starting", "Completed", 
+                "Success", "Failed", "Error", "Warning", "Progress", "%"
+            ]
+            
+            for line in lines:
+                if any(pattern in line for pattern in progress_patterns):
+                    if line.strip() and len(line) < 200:  # Avoid very long lines
+                        progress_indicators.append(line.strip())
+            
+            # Limit to last 10 progress indicators
+            return progress_indicators[-10:] if progress_indicators else []
+            
+        except Exception:
+            return []
+
     def _find_project_root(self, repo_path: str) -> str:
         """
         Find the project root directory that contains deepcode_lab
@@ -2309,38 +2791,6 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             elif "━" in line and ("%" in line or "MB" in line or "KB" in line):
                 # This is a download progress bar
                 self.logger.info(f"   📊 {line}")
-
-    async def _intelligent_execution_loop(self):
-        """Intelligent execution loop - Core multi-round conversation fix logic"""
-        try:
-            self.execution_state.phase = ExecutionPhase.RUNNING_CODE
-            self.logger.info("🔄 Phase 5: Intelligent Code Execution Loop")
-            
-            if not self.execution_state.container_id:
-                raise Exception("No container available for code execution")
-            
-            if not self.execution_state.entry_points:
-                self.logger.warning("No entry points found, trying generic Python execution")
-                self.execution_state.entry_points = [{"file": ".", "command": "python .", "priority": 10}]
-            
-            # Try each entry point
-            for entry_point in self.execution_state.entry_points:
-                self.logger.info(f"🚀 Trying to execute: {entry_point['command']}")
-                
-                success = await self._execute_with_bug_fixing(entry_point)
-                if success:
-                    self.execution_state.final_success = True
-                    self.logger.info(f"✅ Successfully executed: {entry_point['command']}")
-                    break
-                else:
-                    self.logger.warning(f"❌ Failed to execute: {entry_point['command']}")
-            
-            if not self.execution_state.final_success:
-                self.logger.error("❌ All execution attempts failed")
-
-        except Exception as e:
-            self.execution_state.add_error(f"Execution loop failed: {e}")
-            raise
 
     async def _execute_with_bug_fixing(self, entry_point: Dict[str, Any]) -> bool:
         """
