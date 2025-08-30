@@ -1,0 +1,227 @@
+# ===============================================================================
+# DeepCode Multi-Language Development Environment Dockerfile
+# ===============================================================================
+# This Dockerfile creates a comprehensive development environment supporting:
+# - Python, Node.js, Go, Rust, Java, C/C++
+# - Corresponding LSP (Language Server Protocol) servers
+# - DeepCode framework pre-configured
+# 
+# Based on the dynamic installation workflow in _create_docker_container()
+# ===============================================================================
+
+# STAGE 1: The Builder - Installs everything needed to build our tools
+# =================================================================
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+# Set common paths
+ENV GO_VERSION=1.22.5
+ENV GOPATH=/go
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV PATH="/usr/local/go/bin:${GOPATH}/bin:${CARGO_HOME}/bin:${PATH}"
+
+# 1. Install Base System Dependencies required for building everything
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    gcc \
+    g++ \
+    make \
+    unzip \
+    wget \
+    software-properties-common \
+    # For Java
+    openjdk-17-jdk \
+    checkstyle \
+    # For C/C++
+    clang \
+    clang-tools \
+    clang-tidy \
+    cppcheck \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Python + Tools + LSP using UV
+RUN curl -Lfs https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+RUN uv python install 3.11
+# Install user-requested tools AND the LSP server
+RUN uv pip install black isort flake8 pylint mypy 'python-lsp-server[all]'
+
+# 3. Install Node.js + Tools + LSP
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+RUN apt-get install -y nodejs
+# Install user-requested tools AND the LSP server
+RUN npm install -g prettier eslint typescript typescript-language-server
+
+# 4. Install Go + Tools + LSP
+RUN wget "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O go.tar.gz && \
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
+# Create GOPATH directories
+RUN mkdir -p ${GOPATH}/bin ${GOPATH}/src ${GOPATH}/pkg
+# Install user-requested tools AND the LSP server (gopls)
+RUN go install golang.org/x/tools/cmd/goimports@latest
+RUN go install golang.org/x/tools/gopls@latest
+
+# 5. Install Rust + Tools + LSP
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
+# Install user-requested tools AND the LSP server (rust-analyzer)
+RUN rustup component add rustfmt clippy rust-analyzer
+
+# 6. Install Java Tools + LSP
+# Download google-java-format
+RUN mkdir -p /usr/local/share/java && \
+    wget https://github.com/google/google-java-format/releases/download/google-java-format-1.15.0/google-java-format-1.15.0-all-deps.jar -P /usr/local/share/java/
+# Download and setup Eclipse JDT Language Server (the standard Java LSP)
+RUN mkdir -p /opt/jdtls && \
+    wget https://download.eclipse.org/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202407251717.tar.gz -O jdtls.tar.gz && \
+    tar -C /opt/jdtls -xzf jdtls.tar.gz && \
+    rm jdtls.tar.gz
+
+# 7. Install Conda for DeepCode environment management
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
+    bash miniconda.sh -b -p /opt/conda && \
+    rm miniconda.sh
+ENV PATH="/opt/conda/bin:${PATH}"
+RUN conda init bash
+
+# =================================================================
+# STAGE 2: The Final Image - Lean and mean with DeepCode
+# =================================================================
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV GO_VERSION=1.22.5
+ENV GOPATH=/go
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV PATH="/opt/conda/bin:/usr/local/go/bin:${GOPATH}/bin:${CARGO_HOME}/bin:/root/.local/bin:${PATH}"
+
+# 1. Install only RUNTIME dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    # Runtimes
+    nodejs \
+    openjdk-17-jre \
+    # C/C++ runtime libs and tools
+    clang \
+    clang-tools \
+    clang-tidy \
+    cppcheck \
+    gcc \
+    g++ \
+    make \
+    build-essential \
+    # Java runtime tools
+    checkstyle \
+    # Other utilities
+    wget \
+    unzip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Copy all built tools and environments from the builder stage
+# Conda
+COPY --from=builder /opt/conda /opt/conda
+
+# Python tools (UV and packages)
+COPY --from=builder /root/.local /root/.local
+
+# Node.js tools
+COPY --from=builder /usr/lib/node_modules/ /usr/lib/node_modules/
+COPY --from=builder /usr/bin/prettier /usr/bin/
+COPY --from=builder /usr/bin/eslint /usr/bin/
+COPY --from=builder /usr/bin/tsc /usr/bin/
+COPY --from=builder /usr/bin/typescript-language-server /usr/bin/
+
+# Go installation and tools
+COPY --from=builder /usr/local/go /usr/local/go
+COPY --from=builder /go /go
+
+# Rust tools
+COPY --from=builder /usr/local/rustup /usr/local/rustup
+COPY --from=builder /usr/local/cargo /usr/local/cargo
+
+# Java tools
+COPY --from=builder /usr/local/share/java/*.jar /usr/local/share/java/
+COPY --from=builder /opt/jdtls /opt/jdtls
+
+# 3. Setup DeepCode Environment
+WORKDIR /root
+
+# Initialize conda for bash
+RUN conda init bash
+
+# Create DeepCode conda environment
+RUN conda create -n deepcode python=3.12 -y
+
+# Clone DeepCode repository (docker branch)
+RUN git clone -b docker https://github.com/HKUDS/DeepCode.git /root/deepcode
+
+WORKDIR /root/deepcode
+
+# Install DeepCode dependencies in the conda environment
+RUN bash -c "source ~/.bashrc && conda activate deepcode && pip install --upgrade pip && pip install deepcode-hku"
+
+# 4. Environment setup and verification
+# Create environment activation script
+RUN echo '#!/bin/bash' > /root/activate_deepcode.sh && \
+    echo 'source ~/.bashrc' >> /root/activate_deepcode.sh && \
+    echo 'conda activate deepcode' >> /root/activate_deepcode.sh && \
+    echo 'export GOPATH=/go' >> /root/activate_deepcode.sh && \
+    echo 'export PATH=/usr/local/go/bin:/go/bin:$PATH' >> /root/activate_deepcode.sh && \
+    echo 'export PATH=/usr/local/cargo/bin:$PATH' >> /root/activate_deepcode.sh && \
+    chmod +x /root/activate_deepcode.sh
+
+# Set up .bashrc with all environment variables
+RUN echo 'export GOPATH=/go' >> ~/.bashrc && \
+    echo 'export PATH=/usr/local/go/bin:/go/bin:$PATH' >> ~/.bashrc && \
+    echo 'export PATH=/usr/local/cargo/bin:$PATH' >> ~/.bashrc && \
+    echo 'source ~/.cargo/env' >> ~/.bashrc && \
+    echo 'conda activate deepcode' >> ~/.bashrc
+
+# 5. Verification and final setup
+# Verify all environments are working
+RUN bash -c "source ~/.bashrc && python3 --version"
+RUN bash -c "source ~/.bashrc && node --version"
+RUN bash -c "source ~/.bashrc && /usr/local/go/bin/go version"
+RUN bash -c "source ~/.bashrc && ~/.cargo/bin/rustc --version"
+RUN bash -c "source ~/.bashrc && java -version"
+RUN bash -c "source ~/.bashrc && gcc --version"
+
+# Create a verification script for runtime checks
+RUN echo '#!/bin/bash' > /root/verify_environment.sh && \
+    echo 'echo "=== Environment Verification ==="' >> /root/verify_environment.sh && \
+    echo 'source ~/.bashrc' >> /root/verify_environment.sh && \
+    echo 'conda activate deepcode' >> /root/verify_environment.sh && \
+    echo 'echo "Python: $(python3 --version 2>&1)"' >> /root/verify_environment.sh && \
+    echo 'echo "Node.js: $(node --version 2>&1)"' >> /root/verify_environment.sh && \
+    echo 'echo "Go: $(/usr/local/go/bin/go version 2>&1)"' >> /root/verify_environment.sh && \
+    echo 'echo "Rust: $(~/.cargo/bin/rustc --version 2>&1)"' >> /root/verify_environment.sh && \
+    echo 'echo "Java: $(java -version 2>&1 | head -1)"' >> /root/verify_environment.sh && \
+    echo 'echo "GCC: $(gcc --version 2>&1 | head -1)"' >> /root/verify_environment.sh && \
+    echo 'echo "LSP Servers:"' >> /root/verify_environment.sh && \
+    echo 'echo "  Python LSP: $(which pylsp 2>&1 || echo "Not found")"' >> /root/verify_environment.sh && \
+    echo 'echo "  TypeScript LSP: $(which typescript-language-server 2>&1 || echo "Not found")"' >> /root/verify_environment.sh && \
+    echo 'echo "  Go LSP: $(/go/bin/gopls version 2>&1 || echo "Not found")"' >> /root/verify_environment.sh && \
+    echo 'echo "  Rust LSP: $(~/.cargo/bin/rust-analyzer --version 2>&1 || echo "Not found")"' >> /root/verify_environment.sh && \
+    echo 'echo "=== Verification Complete ==="' >> /root/verify_environment.sh && \
+    chmod +x /root/verify_environment.sh
+
+# 6. Setup entry point
+# Default to DeepCode directory and conda environment
+WORKDIR /root/deepcode
+
+# Entry point that ensures the environment is activated
+ENTRYPOINT ["/bin/bash", "-c", "source /root/activate_deepcode.sh && exec \"$@\"", "--"]
+CMD ["/bin/bash"]
+
+# Metadata
+LABEL maintainer="DeepCode Team"
+LABEL description="Multi-language development environment for DeepCode with LSP support"
+LABEL version="1.0"
+LABEL languages="Python,Node.js,Go,Rust,Java,C,C++"
+LABEL lsp_servers="pylsp,typescript-language-server,gopls,rust-analyzer,eclipse-jdt-ls"

@@ -195,7 +195,7 @@ def select_base_image(language: str, version: str = None) -> str:
     return list(lang_images.values())[0]
 
 
-def prepare_workspace_commands(repo_path: str, workspace_path: str = "/workspace") -> List[str]:
+def prepare_workspace_commands(repo_path: str, workspace_path: str = "/root") -> List[str]:
     """Prepare commands to setup workspace in container"""
     commands = [
         f"mkdir -p {workspace_path}",
@@ -702,7 +702,7 @@ async def create_evaluation_container(
             "mem_limit": memory_limit,
             "cpu_count": int(float(cpu_limit)),
             "network_mode": network_mode,
-            "working_dir": "/workspace",
+            "working_dir": "/root",
             "environment": {
                 "DEBIAN_FRONTEND": "noninteractive",
                 "PYTHONUNBUFFERED": "1",
@@ -728,7 +728,7 @@ async def create_evaluation_container(
             image=base_image,
             status="running",
             created_at=time.strftime('%Y-%m-%d %H:%M:%S'),
-            workspace_path="/workspace",
+            workspace_path="/root",
             environment=container_config["environment"]
         )
         
@@ -912,7 +912,7 @@ async def setup_container_workspace(
     container_id: str,
     repo_path: str,
     docs_path: str = None,
-    workspace_path: str = "/workspace"
+    workspace_path: str = "/root"
 ) -> str:
     """
     Setup workspace in container by mounting repository and documentation.

@@ -126,6 +126,9 @@ class IntelligentCodeExecutionWorkflow:
         self.execution_state: Optional[IntelligentExecutionState] = None
         self.api_config: Dict[str, Any] = {}
         self.default_models: Dict[str, str] = {}
+        
+        # 容器架构信息
+        self.container_architecture = None
 
     def _create_logger(self):
         """Create logger"""
@@ -1215,6 +1218,55 @@ Please analyze the environment requirements carefully and provide the most appro
         
         return enhanced_config
 
+    async def _detect_container_architecture(self, container_id):
+        """检测容器内的实际架构并存储"""
+        try:
+            self.logger.info("🔍 Detecting container architecture...")
+            
+            arch_result = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": "uname -m",
+                    "working_dir": "/root",
+                    "timeout": 30
+                }
+            )
+            
+            container_arch = "unknown"
+            if hasattr(arch_result, 'content') and arch_result.content:
+                content_text = arch_result.content[0].text
+                result_data = json.loads(content_text)
+                execution = result_data.get("execution", {})
+                container_arch = execution.get("stdout", "").strip()
+                
+            # 标准化架构名称并存储
+            self.container_architecture = {
+                "raw": container_arch,
+                "is_arm": container_arch == "aarch64",
+                "is_x86": container_arch == "x86_64",
+                "go_arch": "arm64" if container_arch == "aarch64" else "amd64",
+                "node_platform": "linux-arm64" if container_arch == "aarch64" else "linux-x64",
+                "rust_target": "aarch64-unknown-linux-gnu" if container_arch == "aarch64" else "x86_64-unknown-linux-gnu",
+                "docker_platform": "linux/arm64" if container_arch == "aarch64" else "linux/amd64"
+            }
+            
+            self.logger.info(f"🏗️ Container architecture detected: {container_arch}")
+            self.logger.info(f"📦 Architecture mapping: {self.container_architecture}")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Container architecture detection failed: {e}")
+            # 设置默认为x86_64
+            self.container_architecture = {
+                "raw": "x86_64",
+                "is_arm": False,
+                "is_x86": True,
+                "go_arch": "amd64",
+                "node_platform": "linux-x64",
+                "rust_target": "x86_64-unknown-linux-gnu",
+                "docker_platform": "linux/amd64"
+            }
+
     async def _preinstall_build_tools(self, container_id):
         """在容器创建后立即预装编译工具"""
         try:
@@ -1279,18 +1331,291 @@ Please analyze the environment requirements carefully and provide the most appro
             self.logger.error(f"❌ Build tools pre-installation failed: {e}")
             # 不抛出异常，继续执行
 
+    async def _install_multilang_development_environment(self, container_id):
+        """安装多语言开发环境，包括Python、Node.js、Go、Rust、Java、C/C++和对应的LSP服务器"""
+        try:
+            self.logger.info("🌐 Installing multi-language development environment...")
+            
+            # Phase 1: 安装系统级依赖和Java
+            await self._install_system_dependencies(container_id)
+            
+            # Phase 2: 安装Python环境和工具
+            await self._install_python_environment(container_id)
+            
+            # Phase 3: 安装Node.js环境和工具
+            await self._install_nodejs_environment(container_id)
+            
+            # Phase 4: 安装Go环境和工具
+            await self._install_go_environment(container_id)
+            
+            # Phase 5: 安装Rust环境和工具
+            await self._install_rust_environment(container_id)
+            
+            # Phase 6: 安装Java工具和LSP
+            await self._install_java_environment(container_id)
+            
+            # Phase 7: 验证所有环境
+            await self._verify_multilang_environments(container_id)
+            
+            self.logger.info("✅ Multi-language development environment installation completed")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Multi-language environment installation failed: {e}")
+            # 不抛出异常，继续执行，因为这是增强功能
+
+    async def _install_system_dependencies(self, container_id):
+        """安装系统级依赖"""
+        try:
+            self.logger.info("📦 Installing system dependencies...")
+            
+            system_commands = [
+                # 释放apt锁定并更新 (fuser命令在某些镜像中不存在，直接删除锁文件)
+                "rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock",
+                "apt-get update",
+                "apt-get install -y software-properties-common",
+                "apt-get install -y openjdk-17-jdk checkstyle",
+                "apt-get install -y clang clang-tools clang-tidy cppcheck", 
+                "apt-get install -y unzip wget git curl",
+                # 等待一下确保apt进程完全结束，然后清理 (加强健壮性)
+                "sleep 2 && rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock && apt-get clean && rm -rf /var/lib/apt/lists/*"
+            ]
+            
+            for cmd in system_commands:
+                await self._execute_container_command(container_id, cmd, "System dependencies")
+                
+        except Exception as e:
+            self.logger.error(f"❌ System dependencies installation failed: {e}")
+            raise
+
+    async def _install_python_environment(self, container_id):
+        """安装Python开发环境和LSP服务器"""
+        try:
+            self.logger.info("🐍 Installing Python development environment...")
+            
+            # 架构感知日志
+            if self.container_architecture:
+                self.logger.info(f"🏗️ Python environment for: {self.container_architecture['raw']} architecture")
+            else:
+                self.logger.warning("⚠️ Container architecture not detected, using default setup")
+            
+            # 安装UV包管理器（现代Python包管理器）
+            uv_commands = [
+                "curl -Lfs https://astral.sh/uv/install.sh | sh",
+                "source ~/.bashrc",
+                ". ~/.local/bin/env"  # 确保UV在PATH中
+            ]
+            
+            # 使用UV安装Python工具和LSP
+            python_commands = [
+                # 安装Python 3.11（如果需要特定版本）
+                "~/.local/bin/uv python install 3.11",
+                # 安装Python开发工具和LSP服务器
+                "~/.local/bin/uv pip install black isort flake8 pylint mypy 'python-lsp-server[all]'"
+            ]
+            
+            all_commands = uv_commands + python_commands
+            for cmd in all_commands:
+                await self._execute_container_command(container_id, cmd, "Python environment")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Python environment installation failed: {e}")
+            # 继续执行，因为容器已有Python
+
+    async def _install_nodejs_environment(self, container_id):
+        """安装Node.js开发环境和LSP服务器"""
+        try:
+            self.logger.info("📦 Installing Node.js development environment...")
+            
+            # 架构感知日志
+            if self.container_architecture:
+                self.logger.info(f"🏗️ Node.js will auto-detect platform: {self.container_architecture['node_platform']} (container: {self.container_architecture['raw']})")
+            else:
+                self.logger.warning("⚠️ Container architecture not detected, Node.js will auto-detect")
+            
+            nodejs_commands = [
+                # 安装Node.js LTS
+                "curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -",
+                "apt-get install -y nodejs",
+                # 安装Node.js开发工具和LSP服务器
+                "npm install -g prettier eslint typescript typescript-language-server",
+                # 验证安装
+                "node --version && npm --version"
+            ]
+            
+            for cmd in nodejs_commands:
+                await self._execute_container_command(container_id, cmd, "Node.js environment")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Node.js environment installation failed: {e}")
+
+    async def _install_go_environment(self, container_id):
+        """安装Go开发环境和LSP服务器"""
+        try:
+            self.logger.info("🚀 Installing Go development environment...")
+            
+            go_version = "1.22.5"
+            # 使用统一的容器架构信息
+            if not self.container_architecture:
+                self.logger.warning("⚠️ Container architecture not detected, using default amd64")
+                go_arch = "amd64"
+            else:
+                go_arch = self.container_architecture["go_arch"]
+                
+            self.logger.info(f"🏗️ Using Go architecture: {go_arch} (container: {self.container_architecture['raw'] if self.container_architecture else 'unknown'})")
+            
+            go_commands = [
+                # 下载并安装Go (支持多架构)
+                f"cd /root && wget https://go.dev/dl/go{go_version}.linux-{go_arch}.tar.gz -O go.tar.gz",
+                "rm -rf /usr/local/go && tar -C /usr/local -xzf /root/go.tar.gz",
+                "rm /root/go.tar.gz",
+                # 创建GOPATH目录
+                "mkdir -p /go/bin /go/src /go/pkg",
+                # 验证Go安装
+                "/usr/local/go/bin/go version",
+                # 设置Go环境并安装工具 (使用正确的环境变量)
+                "export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest",
+                "export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/gopls@latest",
+                # 设置永久环境变量
+                "echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc",
+                "echo 'export GOPATH=/go' >> ~/.bashrc",
+                "echo 'export PATH=$PATH:/go/bin' >> ~/.bashrc"
+            ]
+            
+            for cmd in go_commands:
+                await self._execute_container_command(container_id, cmd, "Go environment")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Go environment installation failed: {e}")
+
+    async def _install_rust_environment(self, container_id):
+        """安装Rust开发环境和LSP服务器"""
+        try:
+            self.logger.info("🦀 Installing Rust development environment...")
+            
+            # 使用统一的容器架构信息
+            if self.container_architecture:
+                rust_target = self.container_architecture["rust_target"]
+                self.logger.info(f"🏗️ Using Rust target: {rust_target} (container: {self.container_architecture['raw']})")
+            else:
+                rust_target = "x86_64-unknown-linux-gnu"
+                self.logger.warning("⚠️ Container architecture not detected, using default x86_64 target")
+            
+            rust_commands = [
+                # 安装Rust
+                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+                # 设置环境变量
+                "echo 'source ~/.cargo/env' >> ~/.bashrc",
+                # 显式加载Rust环境并验证
+                "bash -c 'source ~/.cargo/env && rustc --version'",
+                # 安装Rust组件和工具 (使用环境加载)
+                "bash -c 'source ~/.cargo/env && rustup component add rustfmt clippy rust-analyzer'"
+            ]
+            
+            for cmd in rust_commands:
+                await self._execute_container_command(container_id, cmd, "Rust environment")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Rust environment installation failed: {e}")
+
+    async def _install_java_environment(self, container_id):
+        """安装Java开发工具和LSP服务器"""
+        try:
+            self.logger.info("☕ Installing Java development environment...")
+            
+            # 架构感知日志  
+            if self.container_architecture:
+                self.logger.info(f"🏗️ Java environment for: {self.container_architecture['raw']} architecture")
+            else:
+                self.logger.warning("⚠️ Container architecture not detected, using default setup")
+            
+            java_commands = [
+                # 下载Google Java Format
+                "mkdir -p /usr/local/share/java",
+                "wget https://github.com/google/google-java-format/releases/download/v1.28.0/google-java-format-1.28.0-all-deps.jar -P /usr/local/share/java/",
+                # 下载并设置Eclipse JDT Language Server
+                "mkdir -p /opt/jdtls",
+                "wget https://download.eclipse.org/jdtls/milestones/1.49.0/jdt-language-server-1.49.0-202507311558.tar.gz -O jdtls.tar.gz",
+                "tar -C /opt/jdtls -xzf jdtls.tar.gz",
+                "rm jdtls.tar.gz"
+            ]
+            
+            for cmd in java_commands:
+                await self._execute_container_command(container_id, cmd, "Java environment")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Java environment installation failed: {e}")
+
+    async def _execute_container_command(self, container_id, command, context="Command"):
+        """执行容器命令的辅助方法"""
+        try:
+            self.logger.info(f"🔧 {context}: {command[:50]}...")
+            
+            result = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": command,
+                    "working_dir": "/root",
+                    "timeout": 600  # 10分钟超时
+                }
+            )
+            
+            # 检查执行结果
+            if hasattr(result, 'content') and result.content:
+                content_text = result.content[0].text
+                result_data = json.loads(content_text)
+                execution = result_data.get("execution", {})
+                
+                if execution.get("exit_code") == 0:
+                    self.logger.info(f"✅ {context}: Command executed successfully")
+                else:
+                    error_msg = execution.get("stderr", "")[:200]
+                    self.logger.warning(f"⚠️ {context}: Command failed (exit_code: {execution.get('exit_code')})")
+                    if error_msg:
+                        self.logger.warning(f"⚠️ Error: {error_msg}")
+                    
+        except Exception as e:
+            self.logger.error(f"❌ {context}: Command execution failed: {e}")
+            raise
+
+    async def _verify_multilang_environments(self, container_id):
+        """验证所有语言环境的安装"""
+        try:
+            self.logger.info("🧪 Verifying multi-language environments...")
+            
+            verification_commands = {
+                "Python": "python3 --version && pip --version",
+                "Node.js": "node --version && npm --version",
+                "Go": "bash -c 'export PATH=$PATH:/usr/local/go/bin && go version'",
+                "Rust": "bash -c 'source ~/.cargo/env && rustc --version'",
+                "Java": "java -version && javac -version",
+                "C/C++": "gcc --version && g++ --version",
+                "LSP Servers": "echo 'Python LSP:' && (which pylsp || echo 'pylsp not found'); echo 'TypeScript LSP:' && (which typescript-language-server || echo 'ts-ls not found'); echo 'Go LSP:' && (ls /go/bin/gopls || echo 'gopls not found'); echo 'Rust LSP:' && (bash -c 'source ~/.cargo/env && which rust-analyzer' || echo 'rust-analyzer not found'); echo 'Java LSP:' && (ls /opt/bin/jdtls || ls /opt/plugins || echo 'jdtls not found')"
+            }
+            
+            for env_name, cmd in verification_commands.items():
+                try:
+                    await self._execute_container_command(container_id, cmd, f"Verify {env_name}")
+                except:
+                    self.logger.warning(f"⚠️ {env_name} verification failed - may not be critical")
+            
+            self.logger.info("🎯 Environment verification completed")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Environment verification failed: {e}")
+
     async def _download_deepcode_repository(self, container_id):
         """在容器中下载DeepCode仓库"""
         try:
             self.logger.info("📥 Downloading DeepCode repository from GitHub...")
             
             # Step 1: 确保git已安装
-            self.logger.info("🔧 Installing git in container...")
+            self.logger.info("🔧 Ensuring git is available in container...")
             git_install_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "apt-get update && apt-get install -y git",
+                    "command": "which git > /dev/null 2>&1 || (rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock && apt-get update && apt-get install -y git)",
                     "working_dir": "/root",
                     "timeout": 180
                 }
@@ -1555,13 +1880,21 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
                 self.logger.error(f"Unexpected result type: {type(create_result)}")
                 raise Exception(f"Container creation failed: unexpected result type {type(create_result)}")
             
-            # Step 2.5: 容器创建成功后，立即预装gcc等编译工具
+            # Step 2.5: 容器创建成功后，立即检测容器架构
             if self.execution_state.container_id:
-                self.logger.info("🔧 Step 2.5: Pre-installing gcc and build tools...")
+                self.logger.info("🔍 Step 2.5: Detecting container architecture...")
+                await self._detect_container_architecture(self.execution_state.container_id)
+                
+                # Step 2.6: 预装gcc等编译工具
+                self.logger.info("🔧 Step 2.6: Pre-installing gcc and build tools...")
                 await self._preinstall_build_tools(self.execution_state.container_id)
                 
-                # Step 2.6: 下载DeepCode仓库并配置环境到容器中
-                self.logger.info("📥 Step 2.6: Downloading DeepCode repository and setting up environment...")
+                # Step 2.7: 安装多语言开发环境和LSP服务器
+                self.logger.info("🌐 Step 2.7: Installing multi-language development environment...")
+                await self._install_multilang_development_environment(self.execution_state.container_id)
+                
+                # Step 2.8: 下载DeepCode仓库并配置环境到容器中
+                self.logger.info("📥 Step 2.8: Downloading DeepCode repository and setting up environment...")
                 await self._download_deepcode_repository(self.execution_state.container_id)
             
         except Exception as e:
