@@ -212,11 +212,11 @@ class IntelligentCodeExecutionWorkflow:
             # Phase 3: Setup environment
             await self._setup_container_environment()
 
-            # Phase 4: Run code evaluation workflow in container
-            await self._run_code_evaluation_in_container()
-            
-            # Phase 5: Install dependencies
+            # Phase 4: Install dependencies (moved before code evaluation)
             await self._install_repository_dependencies()
+            
+            # Phase 5: Run code evaluation workflow in container
+            await self._run_code_evaluation_in_container()
             
             
             # Generate final report
@@ -1376,8 +1376,11 @@ Please analyze the environment requirements carefully and provide the most appro
                 "apt-get install -y openjdk-17-jdk checkstyle",
                 "apt-get install -y clang clang-tools clang-tidy cppcheck", 
                 "apt-get install -y unzip wget git curl",
-                # 等待一下确保apt进程完全结束，然后清理 (加强健壮性)
-                "sleep 2 && rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock && apt-get clean && rm -rf /var/lib/apt/lists/*"
+                # 分步清理，避免组合命令失败
+                "sleep 2",
+                "rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock",
+                "apt-get clean || true",  # 允许清理失败
+                "rm -rf /var/lib/apt/lists/* || true"  # 允许删除失败
             ]
             
             for cmd in system_commands:
@@ -1398,22 +1401,15 @@ Please analyze the environment requirements carefully and provide the most appro
             else:
                 self.logger.warning("⚠️ Container architecture not detected, using default setup")
             
-            # 安装UV包管理器（现代Python包管理器）
-            uv_commands = [
-                "curl -Lfs https://astral.sh/uv/install.sh | sh",
-                "source ~/.bashrc",
-                ". ~/.local/bin/env"  # 确保UV在PATH中
-            ]
-            
-            # 使用UV安装Python工具和LSP
+            # 由于容器已有Python和pip，直接使用pip安装Python工具和LSP服务器
             python_commands = [
-                # 安装Python 3.11（如果需要特定版本）
-                "~/.local/bin/uv python install 3.11",
-                # 安装Python开发工具和LSP服务器
-                "~/.local/bin/uv pip install black isort flake8 pylint mypy 'python-lsp-server[all]'"
+                # 验证Python环境
+                "python3 --version && pip --version",
+                # 直接使用pip安装Python开发工具和LSP服务器
+                "pip install 'python-lsp-server[all]' pylsp-mypy black isort flake8 pylint mypy"
             ]
             
-            all_commands = uv_commands + python_commands
+            all_commands = python_commands
             for cmd in all_commands:
                 await self._execute_container_command(container_id, cmd, "Python environment")
                 
@@ -1433,13 +1429,15 @@ Please analyze the environment requirements carefully and provide the most appro
                 self.logger.warning("⚠️ Container architecture not detected, Node.js will auto-detect")
             
             nodejs_commands = [
-                # 安装Node.js LTS
-                "curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -",
-                "apt-get install -y nodejs",
+                # 直接安装Node.js和npm - 避免NodeSource脚本问题
+                "apt-get update",
+                "apt-get install -y nodejs npm",
+                # 验证基础安装
+                "node --version && npm --version",
+                # 不强制更新npm - 避免版本兼容性问题
+                # "npm install -g npm@latest",  # 注释掉这行避免兼容性问题
                 # 安装Node.js开发工具和LSP服务器
-                "npm install -g prettier eslint typescript typescript-language-server",
-                # 验证安装
-                "node --version && npm --version"
+                "npm install -g prettier eslint typescript typescript-language-server"
             ]
             
             for cmd in nodejs_commands:
@@ -1464,17 +1462,27 @@ Please analyze the environment requirements carefully and provide the most appro
             self.logger.info(f"🏗️ Using Go architecture: {go_arch} (container: {self.container_architecture['raw'] if self.container_architecture else 'unknown'})")
             
             go_commands = [
-                # 下载并安装Go (支持多架构)
-                f"cd /root && wget https://go.dev/dl/go{go_version}.linux-{go_arch}.tar.gz -O go.tar.gz",
-                "rm -rf /usr/local/go && tar -C /usr/local -xzf /root/go.tar.gz",
-                "rm /root/go.tar.gz",
+                # 确保/root目录存在并清理可能的旧文件 - 分开执行避免shell解析问题
+                "mkdir -p /root",
+                "rm -f /root/go.tar.gz",
+                # 下载Go (支持多架构) - 增加健壮性检查
+                f"bash -c 'cd /root && wget -O go.tar.gz https://go.dev/dl/go{go_version}.linux-{go_arch}.tar.gz'",
+                # 验证下载 - 移除file命令，只检查文件大小
+                "bash -c 'cd /root && ls -la go.tar.gz && test -s go.tar.gz'",
+                # 清理旧安装并解压
+                "rm -rf /usr/local/go",
+                "bash -c 'cd /root && tar -C /usr/local -xzf go.tar.gz'",
+                # 验证解压结果
+                "ls -la /usr/local/go/bin/go",
+                # 清理下载文件
+                "rm -f /root/go.tar.gz",
                 # 创建GOPATH目录
                 "mkdir -p /go/bin /go/src /go/pkg",
                 # 验证Go安装
                 "/usr/local/go/bin/go version",
-                # 设置Go环境并安装工具 (使用正确的环境变量)
-                "export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest",
-                "export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/gopls@latest",
+                # 设置Go环境并安装工具 (使用bash -c正确处理环境变量)
+                "bash -c 'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest'",
+                "bash -c 'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/go && /usr/local/go/bin/go install golang.org/x/tools/gopls@latest'",
                 # 设置永久环境变量
                 "echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc",
                 "echo 'export GOPATH=/go' >> ~/.bashrc",
@@ -1501,10 +1509,14 @@ Please analyze the environment requirements carefully and provide the most appro
                 self.logger.warning("⚠️ Container architecture not detected, using default x86_64 target")
             
             rust_commands = [
-                # 安装Rust
-                "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+                # 安装Rust - 改进安装方法，增加更好的错误处理
+                "bash -c 'curl --proto \"=https\" --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh'",
+                "bash -c 'chmod +x rustup.sh && ./rustup.sh -y'",
+                "rm -f rustup.sh",
                 # 设置环境变量
                 "echo 'source ~/.cargo/env' >> ~/.bashrc",
+                # 创建cargo目录结构（如果不存在）
+                "mkdir -p ~/.cargo/bin",
                 # 显式加载Rust环境并验证
                 "bash -c 'source ~/.cargo/env && rustc --version'",
                 # 安装Rust组件和工具 (使用环境加载)
@@ -1568,12 +1580,22 @@ Please analyze the environment requirements carefully and provide the most appro
                 
                 if execution.get("exit_code") == 0:
                     self.logger.info(f"✅ {context}: Command executed successfully")
+                    return True
                 else:
                     error_msg = execution.get("stderr", "")[:200]
-                    self.logger.warning(f"⚠️ {context}: Command failed (exit_code: {execution.get('exit_code')})")
+                    stdout_msg = execution.get("stdout", "")[:200]
+                    self.logger.error(f"❌ {context}: Command failed (exit_code: {execution.get('exit_code')})")
                     if error_msg:
-                        self.logger.warning(f"⚠️ Error: {error_msg}")
+                        self.logger.error(f"❌ STDERR: {error_msg}")
+                    if stdout_msg:
+                        self.logger.error(f"📄 STDOUT: {stdout_msg}")
                     
+                    # 对于关键命令，抛出异常停止执行
+                    if not command.endswith("|| true"):  # 允许容错的命令不抛异常
+                        raise Exception(f"Critical command failed: {command} (exit_code: {execution.get('exit_code')})")
+                    else:
+                        self.logger.warning(f"⚠️ Non-critical command failed but continuing: {command}")
+                        return False
         except Exception as e:
             self.logger.error(f"❌ {context}: Command execution failed: {e}")
             raise
@@ -1689,41 +1711,53 @@ Please analyze the environment requirements carefully and provide the most appro
             # 不抛出异常，继续执行，因为这是可选功能
 
     async def _setup_deepcode_environment(self, container_id, deepcode_dir):
-        """在容器中为DeepCode设置虚拟环境并安装依赖"""
+        """在容器中为DeepCode设置uv虚拟环境并安装依赖"""
         try:
-            self.logger.info("🐍 Setting up DeepCode conda environment...")
+            self.logger.info("⚡ Setting up DeepCode uv environment...")
             
-            # Step 1: 初始化conda并创建环境
-            self.logger.info("🔧 Initializing conda for bash...")
-            conda_init_result = await self.execution_agent.call_tool(
+            # Step 1: 安装uv包管理器
+            self.logger.info("🔧 Installing uv package manager...")
+            install_uv_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "conda init bash",
+                    "command": "curl -LsSf https://astral.sh/uv/install.sh | sh",
                     "working_dir": "/root",
-                    "timeout": 60
+                    "timeout": 120
                 }
             )
             
-            # Step 2: 创建DeepCode conda环境
-            self.logger.info("📦 Creating conda environment 'deepcode' with Python 3.12...")
-            create_env_result = await self.execution_agent.call_tool(
+            # Step 2: 添加uv到PATH
+            self.logger.info("🔧 Adding uv to PATH...")
+            path_setup_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "conda create -n deepcode python=3.12 -y",
+                    "command": "echo 'export PATH=\"$HOME/.cargo/bin:$PATH\"' >> ~/.bashrc && source ~/.bashrc",
                     "working_dir": "/root",
-                    "timeout": 300
+                    "timeout": 30
                 }
             )
             
-            # Step 3: 激活环境并安装deepcode-hku包 (使用bash -c来确保conda可用)
-            self.logger.info("📋 Installing deepcode-hku package...")
-            install_deepcode_result = await self.execution_agent.call_tool(
+            # Step 3: 创建uv虚拟环境 (按README标准)
+            self.logger.info("📦 Creating uv virtual environment with Python 3.13...")
+            create_venv_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "bash -c 'source ~/.bashrc && conda activate deepcode && pip install --upgrade pip && pip install deepcode-hku'",
+                    "command": f"bash -c 'source ~/.bashrc && cd {deepcode_dir} && ~/.cargo/bin/uv venv --python=3.13'",
+                    "working_dir": "/root",
+                    "timeout": 120
+                }
+            )
+            
+            # Step 4: 激活虚拟环境并安装requirements.txt中的依赖
+            self.logger.info("📋 Activating virtual environment and installing dependencies...")
+            install_deps_result = await self.execution_agent.call_tool(
+                "execute_in_container",
+                {
+                    "container_id": container_id,
+                    "command": f"bash -c 'source ~/.bashrc && cd {deepcode_dir} && source .venv/bin/activate && ~/.cargo/bin/uv pip install deepcode-hku'",
                     "working_dir": "/root",
                     "timeout": 600  # 10分钟timeout，因为依赖安装可能耗时较长
                 }
@@ -1919,8 +1953,8 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             await self._update_deepcode_config_files()
             
             # Step 3.3: Setup workspace for the specific repository being evaluated
-            self.logger.info("📁 Step 3.3: Setting up workspace for current repository...")
-            await self._setup_evaluation_workspace()
+            # self.logger.info("📁 Step 3.3: Setting up workspace for current repository...")
+            # await self._setup_evaluation_workspace()
             
             self.logger.info("✅ Container environment setup completed")
 
@@ -2194,13 +2228,13 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             self.logger.info(f"   Memory: {container_paths['memory_path']}")
             
             # Step 1: Verify deepcode environment is available
-            self.logger.info("🔍 Step 1: Verifying deepcode conda environment...")
+            self.logger.info("🔍 Step 1: Verifying deepcode uv environment...")
             await self._verify_deepcode_environment(container_id)
             
-            # Step 2: Create enhanced command with conda environment activation
-            cmd = f"bash -c 'source ~/.bashrc && conda activate deepcode && cd /root/deepcode && python workflows/code_evaluation_workflow.py \"{container_paths['repo_path']}\" \"{container_paths['docs_path']}\" \"{container_paths['memory_path']}\" 3'"
+            # Step 2: Create enhanced command with uv environment activation
+            cmd = f"bash -c 'source ~/.bashrc && cd /root/deepcode && ~/.cargo/bin/uv run python workflows/code_evaluation_workflow.py \"{container_paths['repo_path']}\" \"{container_paths['docs_path']}\" \"{container_paths['memory_path']}\" 3'"
             
-            self.logger.info(f"🚀 Step 2: Executing code evaluation workflow in container with deepcode environment...")
+            self.logger.info(f"🚀 Step 2: Executing code evaluation workflow in container with uv environment...")
             self.logger.info(f"📋 Command: {cmd}")
             
             # Step 3: Execute with real-time streaming output to local terminal
@@ -2326,53 +2360,49 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             }
 
     async def _verify_deepcode_environment(self, container_id: str):
-        """Verify that deepcode conda environment is available and configured"""
+        """Verify that deepcode uv environment is available and configured"""
         try:
-            self.logger.info("🔍 Checking deepcode conda environment availability...")
+            self.logger.info("🔍 Checking deepcode uv environment availability...")
             
-            # Check if conda is available
-            conda_check = await self.execution_agent.call_tool(
+            # Check if uv is available
+            uv_check = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "which conda",
+                    "command": "bash -c 'source ~/.bashrc && which uv'",
                     "working_dir": "/root",
                     "timeout": 30
                 }
             )
             
-            # Parse conda check result
-            if hasattr(conda_check, 'content') and conda_check.content:
-                conda_result = json.loads(conda_check.content[0].text)
-                if conda_result.get("execution", {}).get("exit_code") != 0:
-                    raise Exception("Conda is not available in container")
-                self.logger.info("✅ Conda is available")
+            # Parse uv check result
+            if hasattr(uv_check, 'content') and uv_check.content:
+                uv_result = json.loads(uv_check.content[0].text)
+                if uv_result.get("execution", {}).get("exit_code") != 0:
+                    raise Exception("uv is not available in container")
+                self.logger.info("✅ uv is available")
             
-            # Check if deepcode environment exists using a more robust method
-            env_check = await self.execution_agent.call_tool(
+            # Check if deepcode uv virtual environment exists
+            venv_check = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
                     "container_id": container_id,
-                    "command": "conda env list",
+                    "command": "bash -c 'source ~/.bashrc && cd /root/deepcode && test -d .venv && echo \"venv exists\"'",
                     "working_dir": "/root",
                     "timeout": 30
                 }
             )
             
-            # Parse environment check result
-            if hasattr(env_check, 'content') and env_check.content:
-                env_result = json.loads(env_check.content[0].text)
-                if env_result.get("execution", {}).get("exit_code") == 0:
-                    stdout = env_result.get("execution", {}).get("stdout", "")
-                    if "deepcode" in stdout:
-                        self.logger.info("✅ Deepcode conda environment exists")
-                    else:
-                        raise Exception("Deepcode conda environment not found in conda env list")
+            # Parse venv check result
+            if hasattr(venv_check, 'content') and venv_check.content:
+                venv_result = json.loads(venv_check.content[0].text)
+                if venv_result.get("execution", {}).get("exit_code") == 0:
+                    self.logger.info("✅ Deepcode uv virtual environment exists")
                 else:
-                    raise Exception("Failed to list conda environments")
+                    raise Exception("Deepcode uv virtual environment not found")
             
-            # Test environment activation and basic imports
-            test_cmd = "bash -c 'source ~/.bashrc && conda activate deepcode && python -c \"import sys; print(sys.executable); import mcp_agent; print(\\\"mcp_agent available\\\")\"'"
+            # Test uv environment activation and basic imports (按README标准)
+            test_cmd = "bash -c 'source ~/.bashrc && cd /root/deepcode && ~/.cargo/bin/uv run python -c \"import sys; print(sys.executable); import mcp_agent; print(\\\"mcp_agent available\\\")\"'"
             test_result = await self.execution_agent.call_tool(
                 "execute_in_container",
                 {
@@ -2726,6 +2756,55 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
         self.logger.warning(f"⚠️ Using fallback project root: {current_path}")
         return current_path
 
+    def _get_docker_repo_path(self, local_repo_path: str) -> str:
+        """
+        Convert local repo path to corresponding Docker container path
+        
+        Args:
+            local_repo_path: Local repository path (e.g., /path/to/project/deepcode_lab/papers/1/generate_code)
+            
+        Returns:
+            Docker container path (e.g., /root/deepcode/deepcode_lab/papers/1/generate_code)
+        """
+        import os
+        
+        # Find the project root and extract the relative path from deepcode_lab
+        project_root = self._find_project_root(local_repo_path)
+        
+        # Convert to absolute path for proper processing
+        abs_local_path = os.path.abspath(local_repo_path)
+        
+        # Find the deepcode_lab part in the path
+        if "deepcode_lab" in abs_local_path:
+            # Split at deepcode_lab and get the part after it
+            deepcode_lab_index = abs_local_path.find("deepcode_lab")
+            relative_from_deepcode_lab = abs_local_path[deepcode_lab_index:]
+            
+            # Construct Docker path: /root/deepcode/deepcode_lab/...
+            docker_path = f"/root/deepcode/{relative_from_deepcode_lab}"
+            
+            self.logger.info(f"🔗 Path mapping: {local_repo_path} -> {docker_path}")
+            return docker_path
+        else:
+            # Fallback: if deepcode_lab not found, assume we're in papers/N/generate_code
+            # Extract paper ID from the path
+            path_parts = abs_local_path.split(os.sep)
+            
+            # Look for patterns like papers/1/generate_code or papers/2/generate_code
+            for i, part in enumerate(path_parts):
+                if part == "papers" and i + 2 < len(path_parts):
+                    paper_id = path_parts[i + 1]
+                    remaining_path = "/".join(path_parts[i:])
+                    docker_path = f"/root/deepcode/deepcode_lab/{remaining_path}"
+                    
+                    self.logger.info(f"🔗 Fallback path mapping: {local_repo_path} -> {docker_path}")
+                    return docker_path
+            
+            # Final fallback: use the last part of the path
+            docker_path = f"/root/deepcode/deepcode_lab/papers/unknown/generate_code"
+            self.logger.warning(f"⚠️ Could not determine paper ID, using fallback: {docker_path}")
+            return docker_path
+
     async def _install_repository_dependencies(self):
         """Install repository dependencies"""
         try:
@@ -2735,23 +2814,24 @@ echo '💡 Usage: python cli/main_cli.py (for CLI interface from source)'"""
             if not self.execution_state.container_id:
                 raise Exception("No container available for dependency installation")
             
-            # Force use requirements.txt - let Docker container search intelligently
-            requirements_file = "requirements.txt"  # Let container discover the actual path
+            # Get the Docker container path for the current repository
+            docker_repo_path = self._get_docker_repo_path(self.execution_state.repo_path)
             
             # Install dependencies
             self.logger.info("🔧 Starting dependency installation in Docker container...")
             self.logger.info(f"📦 Container ID: {self.execution_state.container_id[:12]}...")
-            self.logger.info("📋 Using new intelligent dependency discovery")
-            self.logger.info("📋 Tool will automatically find project directory and requirements.txt files")
+            self.logger.info("📋 Using intelligent dependency discovery with matched Docker path")
+            self.logger.info(f"📂 Local repo: {self.execution_state.repo_path}")
+            self.logger.info(f"🐳 Docker repo: {docker_repo_path}")
             
             # Prepare tool arguments for the new install_dependencies tool
             tool_args = {
                 "container_id": self.execution_state.container_id,
                 "language": "python",
-                "workspace_path": "/root/workbase"  # Base workspace path where repos are copied
+                "workspace_path": docker_repo_path  # Use the matched Docker path
             }
             
-            self.logger.info(f"📦 Installing dependencies from workspace: /root/workbase")
+            self.logger.info(f"📦 Installing dependencies from workspace: {docker_repo_path}")
             install_result = await self.execution_agent.call_tool(
                 "install_dependencies",
                 tool_args

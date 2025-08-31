@@ -215,31 +215,49 @@ class ConciseMemoryAgent:
             if ":" in line and not ("." in line and "/" in line):
                 continue
 
-            # Only process lines that look like file tree structure
-            if not any(
-                char in line for char in ["├", "└", "│", "-"]
-            ) and not line.startswith("    "):
+            original_line = line
+            stripped_line = line.strip()
+
+            # Detect root directory (directory name ending with / at minimal indentation)
+            if (stripped_line.endswith("/") and 
+                len(line) - len(line.lstrip()) <= 4 and  # Minimal indentation (0-4 spaces)
+                not any(char in line for char in ["├", "└", "│", "─"])):  # No tree characters
+                root_directory = stripped_line.rstrip("/")
+                path_stack = [root_directory]
                 continue
 
-            # Remove tree characters and get the clean name
+            # Only process lines that have tree structure
+            if not any(char in line for char in ["├", "└", "│", "─"]):
+                continue
+
+            # Parse tree structure depth by analyzing the line structure
+            # Count │ characters before the actual item, or use indentation as fallback
+            pipe_count = 0
+            marker_pos = -1
+            
+            for i, char in enumerate(line):
+                if char == "│":
+                    pipe_count += 1
+                elif char in ["├", "└"]:
+                    marker_pos = i
+                    break
+            
+            # Calculate depth: use pipe count if available, otherwise use indentation
+            if pipe_count > 0:
+                depth = pipe_count + 1  # +1 because the actual item is one level deeper
+            else:
+                # Use indentation to determine depth (every 4 spaces = 1 level)
+                indent_spaces = len(line) - len(line.lstrip())
+                depth = max(1, indent_spaces // 4)  # At least depth 1
+
+            # Clean the line to get the item name
             clean_line = line
-            for char in ["├──", "└──", "│", "─", "├", "└"]:
+            for char in ["├──", "└──", "├", "└", "│", "─"]:
                 clean_line = clean_line.replace(char, "")
             clean_line = clean_line.strip()
 
             if not clean_line or ":" in clean_line:
                 continue
-
-            # Calculate indentation level by counting spaces/tree chars
-            indent_level = 0
-            for char in line:
-                if char in [" ", "\t", "│", "├", "└", "─"]:
-                    indent_level += 1
-                else:
-                    break
-            indent_level = max(
-                0, (indent_level - 4) // 4
-            )  # Normalize to directory levels
 
             # Extract filename (remove comments)
             if "#" in clean_line:
@@ -251,12 +269,19 @@ class ConciseMemoryAgent:
             if not filename:
                 continue
 
-            # Update path stack based on indentation
-            if indent_level < len(path_stack):
-                path_stack = path_stack[:indent_level]
+            # Adjust path stack to current depth
+            while len(path_stack) < depth:
+                path_stack.append("")
+            path_stack = path_stack[:depth]
 
-            # If it's a directory (ends with / or no extension), add to path stack
-            if filename.endswith("/") or ("." not in filename and filename != ""):
+            # Determine if it's a directory or file
+            is_directory = (
+                filename.endswith("/") 
+                or ("." not in filename and filename not in ["README", "requirements.txt", "setup.py"])
+                or filename in ["core", "networks", "environments", "baselines", "evaluation", "experiments", "utils", "src", "lib", "app"]
+            )
+            
+            if is_directory:
                 directory_name = filename.rstrip("/")
                 if directory_name and ":" not in directory_name:
                     path_stack.append(directory_name)
