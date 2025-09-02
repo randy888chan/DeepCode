@@ -796,14 +796,34 @@ Requirements:
             )
 
             if self.mcp_agent:
-                history_result = await self.mcp_agent.call_tool(
-                    "get_operation_history", {"last_n": 30}
-                )
-                history_data = (
-                    json.loads(history_result)
-                    if isinstance(history_result, str)
-                    else history_result
-                )
+                try:
+                    history_result = await self.mcp_agent.call_tool(
+                        "get_operation_history", {"last_n": 30}
+                    )
+                    
+                    # Handle different return types from MCP call_tool
+                    if hasattr(history_result, 'content'):
+                        # CallToolResult object
+                        content = history_result.content
+                        if isinstance(content, list) and len(content) > 0:
+                            # Extract text content from the result
+                            text_content = content[0].get('text', '{}') if isinstance(content[0], dict) else str(content[0])
+                            history_data = json.loads(text_content)
+                        else:
+                            history_data = {"total_operations": 0, "history": []}
+                    elif isinstance(history_result, str):
+                        # String response
+                        history_data = json.loads(history_result)
+                    elif isinstance(history_result, dict):
+                        # Direct dict response
+                        history_data = history_result
+                    else:
+                        # Unknown format, use default
+                        history_data = {"total_operations": 0, "history": []}
+                        
+                except Exception as e:
+                    self.logger.warning(f"Failed to get operation history: {e}")
+                    history_data = {"total_operations": 0, "history": []}
             else:
                 history_data = {"total_operations": 0, "history": []}
 

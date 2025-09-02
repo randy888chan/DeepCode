@@ -1,0 +1,74 @@
+# 沙箱测试系统配置文件 - 三Agent架构 (模块化沙箱版本)
+
+# 日志配置
+logging:
+  level: INFO
+  file: sandbox_test.log
+
+# Agent配置 - 使用通义千问模型
+agents:
+  structure_analyzer:  # Agent1: 项目结构分析
+    model_name: qwen-turbo
+    max_tokens: 8192
+    temperature: 0.1
+    
+  code_rewriter:      # Agent2: 代码重写
+    model_name: qwen-turbo  
+    max_tokens: 8000
+    temperature: 0.1
+    
+  review_agent:       # Agent3: 审查分析
+    model_name: qwen-turbo
+    max_tokens: 6000
+    temperature: 0.2
+
+# 执行配置
+execution:
+  timeout: 300  # 执行超时时间（秒）
+  memory_limit: "2GB"  # 内存限制
+  cpu_limit: 2  # CPU核心数限制
+  enable_sandbox: true  # 是否启用沙箱隔离
+  concurrent_workers: 5  # 代码重写并发线程数 (推荐范围: 3-10)
+  dependency_timeout: 600  # 依赖安装超时时间（秒）
+
+# 清理管理配置
+cleanup:
+  auto_cleanup: true  # 是否自动清理
+  keep_on_failure: false  # 执行失败时是否保留文件用于调试
+  max_old_sessions_hours: 24  # 清理超过多长时间的旧会话数据
+
+# 资源监控配置
+monitoring:
+  enable_resource_monitoring: true  # 是否启用资源监控
+  monitoring_interval: 0.5  # 监控间隔（秒）
+  memory_warning_threshold: 0.8  # 内存使用警告阈值（相对于限制）
+  
+# 输出配置
+output:
+  max_stdout_lines: 10000  # 最大标准输出行数
+  max_stderr_lines: 5000   # 最大错误输出行数
+  max_log_entries: 1000    # 最大日志条目数
+
+# 虚拟环境配置
+virtual_env:
+  base_directory: "/tmp/sandbox_venvs"  # 虚拟环境基础目录（留空使用系统临时目录）
+  python_version: ""  # Python版本要求（留空使用当前版本）
+  upgrade_pip: true   # 是否升级pip
+
+# 文件系统配置
+filesystem:
+  temp_directory: ""  # 临时目录（留空使用系统临时目录）
+  max_file_size_mb: 100  # 单个文件最大大小限制
+  excluded_extensions: [".log", ".tmp", ".cache"]  # 排除的文件扩展名
+
+# 安全配置
+security:
+  disable_network: false  # 是否禁用网络访问（暂未实现）
+  restricted_imports: []  # 限制的导入模块列表
+  max_subprocess_count: 10  # 最大子进程数量
+  
+# 调试配置
+debug:
+  verbose_logging: false  # 是否启用详细日志
+  save_intermediate_files: false  # 是否保存中间文件
+  profile_execution: false  # 是否启用性能分析 
