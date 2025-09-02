@@ -934,7 +934,6 @@ async def list_evaluation_containers() -> str:
             "message": f"Container listing failed: {str(e)}"
         })
 
-
 # Run the server
 if __name__ == "__main__":
     try:

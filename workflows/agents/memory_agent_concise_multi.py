@@ -117,6 +117,7 @@ class ConciseMemoryAgent:
         logger.setLevel(logging.INFO)
         return logger
 
+
     async def create_multi_code_implementation_summary(
         self,
         client,

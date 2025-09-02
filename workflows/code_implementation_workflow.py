@@ -880,6 +880,7 @@ Requirements:
             return f"Failed to generate final report: {str(e)}"
 
 
+
 async def main():
     """Main function for running the workflow"""
     # Configure root logger carefully to avoid duplicates
