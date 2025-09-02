@@ -2377,75 +2377,19 @@ AttributeError: 'dict' object has no attribute 'transform' '''
 
 
 # Entry point for testing
-async def main(repo_path=None, docs_path=None, memory_path=None, max_files_per_batch=3):
-    """
-    Run the enhanced multi-file evaluation workflow
+async def main():
+    """Test the enhanced multi-file evaluation workflow"""
+    workflow = CodeEvaluationWorkflow(max_files_per_batch=3)
     
-    Args:
-        repo_path: Path to repository to evaluate
-        docs_path: Path to reproduction documentation  
-        memory_path: Path to memory file for code summaries
-        max_files_per_batch: Maximum files per batch for multi-file processing
-    """
-    workflow = CodeEvaluationWorkflow(max_files_per_batch=max_files_per_batch)
-    
-    # Use provided paths or default example paths
-    if repo_path is None:
-        repo_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/generate_code"
-    if docs_path is None:
-        docs_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/initial_plan.txt"
-    if memory_path is None:
-        memory_path = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode_eval_init/deepcode_lab/papers/1/implement_code_summary.md"
-    
-    print(f"🚀 Starting Code Evaluation Workflow")
-    print(f"📂 Repository: {repo_path}")
-    print(f"📄 Documentation: {docs_path}")
-    print(f"🧠 Memory Path: {memory_path}")
-    print(f"📦 Max files per batch: {max_files_per_batch}")
-    print("=" * 80)
+    # Example usage
+    repo_path = "deepcode_lab/papers/40/generate_code"
+    docs_path = "deepcode_lab/papers/40/initial_plan.txt"
+    memory_path = "deepcode_lab/papers/40/implement_code_summary.md"
     
     results = await workflow.run_evaluation(repo_path, docs_path, memory_path)
     print(json.dumps(results, indent=2))
-    return results
-
-
-def run_evaluation(repo_path, docs_path, memory_path, max_files_per_batch=3):
-    """
-    Synchronous wrapper for running evaluation workflow
-    
-    Args:
-        repo_path: Path to repository to evaluate
-        docs_path: Path to reproduction documentation
-        memory_path: Path to memory file for code summaries
-        max_files_per_batch: Maximum files per batch for multi-file processing
-        
-    Returns:
-        Evaluation results dictionary
-    """
-    import asyncio
-    return asyncio.run(main(repo_path, docs_path, memory_path, max_files_per_batch))
 
 
 if __name__ == "__main__":
-    import sys
     import asyncio
-    
-    # Parse command line arguments
-    if len(sys.argv) >= 4:
-        repo_path = sys.argv[1]
-        docs_path = sys.argv[2] 
-        memory_path = sys.argv[3]
-        max_files_per_batch = int(sys.argv[4]) if len(sys.argv) > 4 else 3
-        
-        print(f"📋 Using command line arguments:")
-        print(f"   Repository: {repo_path}")
-        print(f"   Documentation: {docs_path}")
-        print(f"   Memory: {memory_path}")
-        print(f"   Max files per batch: {max_files_per_batch}")
-        
-        asyncio.run(main(repo_path, docs_path, memory_path, max_files_per_batch))
-    else:
-        print("📋 Usage: python code_evaluation_workflow.py <repo_path> <docs_path> <memory_path> [max_files_per_batch]")
-        print("📋 Or run without arguments to use default example paths")
-        print()
-        asyncio.run(main())
+    asyncio.run(main())
