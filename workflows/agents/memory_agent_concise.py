@@ -215,13 +215,15 @@ class ConciseMemoryAgent:
             if ":" in line and not ("." in line and "/" in line):
                 continue
 
-            original_line = line
             stripped_line = line.strip()
 
             # Detect root directory (directory name ending with / at minimal indentation)
-            if (stripped_line.endswith("/") and 
-                len(line) - len(line.lstrip()) <= 4 and  # Minimal indentation (0-4 spaces)
-                not any(char in line for char in ["├", "└", "│", "─"])):  # No tree characters
+            if (
+                stripped_line.endswith("/")
+                and len(line) - len(line.lstrip())
+                <= 4  # Minimal indentation (0-4 spaces)
+                and not any(char in line for char in ["├", "└", "│", "─"])
+            ):  # No tree characters
                 root_directory = stripped_line.rstrip("/")
                 path_stack = [root_directory]
                 continue
@@ -233,15 +235,13 @@ class ConciseMemoryAgent:
             # Parse tree structure depth by analyzing the line structure
             # Count │ characters before the actual item, or use indentation as fallback
             pipe_count = 0
-            marker_pos = -1
-            
+
             for i, char in enumerate(line):
                 if char == "│":
                     pipe_count += 1
                 elif char in ["├", "└"]:
-                    marker_pos = i
                     break
-            
+
             # Calculate depth: use pipe count if available, otherwise use indentation
             if pipe_count > 0:
                 depth = pipe_count + 1  # +1 because the actual item is one level deeper
@@ -276,11 +276,26 @@ class ConciseMemoryAgent:
 
             # Determine if it's a directory or file
             is_directory = (
-                filename.endswith("/") 
-                or ("." not in filename and filename not in ["README", "requirements.txt", "setup.py"])
-                or filename in ["core", "networks", "environments", "baselines", "evaluation", "experiments", "utils", "src", "lib", "app"]
+                filename.endswith("/")
+                or (
+                    "." not in filename
+                    and filename not in ["README", "requirements.txt", "setup.py"]
+                )
+                or filename
+                in [
+                    "core",
+                    "networks",
+                    "environments",
+                    "baselines",
+                    "evaluation",
+                    "experiments",
+                    "utils",
+                    "src",
+                    "lib",
+                    "app",
+                ]
             )
-            
+
             if is_directory:
                 directory_name = filename.rstrip("/")
                 if directory_name and ":" not in directory_name:
@@ -613,13 +628,13 @@ class ConciseMemoryAgent:
 
         return prompt
 
-# TODO: The prompt is not good, need to be improved
-# **Implementation Progress**: List the code file completed in current round and core implementation ideas
-#   Format: {{file_path}}: {{core implementation ideas}}
+    # TODO: The prompt is not good, need to be improved
+    # **Implementation Progress**: List the code file completed in current round and core implementation ideas
+    #   Format: {{file_path}}: {{core implementation ideas}}
 
-# **Dependencies**: According to the File Structure and initial plan, list functions that may be called by other files
-#   Format: {{file_path}}: Function {{function_name}}: core ideas--{{ideas}}; Required parameters--{{params}}; Return parameters--{{returns}}
-#   Required packages: {{packages}}
+    # **Dependencies**: According to the File Structure and initial plan, list functions that may be called by other files
+    #   Format: {{file_path}}: Function {{function_name}}: core ideas--{{ideas}}; Required parameters--{{params}}; Return parameters--{{returns}}
+    #   Required packages: {{packages}}
 
     def _extract_summary_sections(self, llm_summary: str) -> Dict[str, str]:
         """
@@ -629,7 +644,7 @@ class ConciseMemoryAgent:
             llm_summary: Raw LLM-generated summary text
 
         Returns:
-            Dictionary with extracted sections: core_purpose, public_interface, internal_dependencies, 
+            Dictionary with extracted sections: core_purpose, public_interface, internal_dependencies,
             external_dependencies, implementation_notes, next_steps
         """
         sections = {
@@ -638,7 +653,7 @@ class ConciseMemoryAgent:
             "internal_dependencies": "",
             "external_dependencies": "",
             "implementation_notes": "",
-            "next_steps": ""
+            "next_steps": "",
         }
 
         try:
