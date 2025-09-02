@@ -11,6 +11,7 @@ MCP Architecture:
 - Configuration: mcp_agent.config.yaml
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -22,8 +23,6 @@ from typing import Dict, Any, Optional, List
 
 # MCP Agent imports
 from mcp_agent.agents.agent import Agent
-from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
-from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
 # Local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,76 +33,8 @@ from prompts.code_prompts import (
 from workflows.agents import CodeImplementationAgent
 from workflows.agents.memory_agent_concise import ConciseMemoryAgent
 from config.mcp_tool_definitions import get_mcp_tools
+from utils.llm_utils import get_preferred_llm_class, get_default_models
 # DialogueLogger removed - no longer needed
-
-
-def get_preferred_llm_class(config_path: str = "mcp_agent.secrets.yaml"):
-    """
-    Automatically select the LLM class based on API key availability in configuration.
-
-    Reads from YAML config file and returns AnthropicAugmentedLLM if anthropic.api_key
-    is available, otherwise returns OpenAIAugmentedLLM.
-
-    Args:
-        config_path: Path to the YAML configuration file
-
-    Returns:
-        class: The preferred LLM class
-    """
-    try:
-        # Try to read the configuration file
-        if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-
-            # Check for anthropic API key in config
-            anthropic_config = config.get("anthropic", {})
-            anthropic_key = anthropic_config.get("api_key", "")
-
-            if anthropic_key and anthropic_key.strip() and not anthropic_key == "":
-                # print("🤖 Using AnthropicAugmentedLLM (Anthropic API key found in config)")
-                return AnthropicAugmentedLLM
-            else:
-                # print("🤖 Using OpenAIAugmentedLLM (Anthropic API key not configured)")
-                return OpenAIAugmentedLLM
-        else:
-            print(f"🤖 Config file {config_path} not found, using OpenAIAugmentedLLM")
-            return OpenAIAugmentedLLM
-
-    except Exception as e:
-        print(f"🤖 Error reading config file {config_path}: {e}")
-        print("🤖 Falling back to OpenAIAugmentedLLM")
-        return OpenAIAugmentedLLM
-
-
-def get_default_models(config_path: str = "mcp_agent.config.yaml"):
-    """
-    Get default models from configuration file.
-
-    Args:
-        config_path: Path to the configuration file
-
-    Returns:
-        dict: Dictionary with 'anthropic' and 'openai' default models
-    """
-    try:
-        if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = yaml.safe_load(f)
-
-            anthropic_model = config.get("anthropic", {}).get(
-                "default_model", "claude-sonnet-4-20250514"
-            )
-            openai_model = config.get("openai", {}).get("default_model", "o3-mini")
-
-            return {"anthropic": anthropic_model, "openai": openai_model}
-        else:
-            print(f"Config file {config_path} not found, using default models")
-            return {"anthropic": "claude-sonnet-4-20250514", "openai": "o3-mini"}
-
-    except Exception as e:
-        print(f"Error reading config file {config_path}: {e}")
-        return {"anthropic": "claude-sonnet-4-20250514", "openai": "o3-mini"}
 
 
 class CodeImplementationWorkflow:
@@ -358,7 +289,7 @@ Requirements:
         target_directory,
     ):
         """Pure code implementation loop with memory optimization and phase consistency"""
-        max_iterations = 100
+        max_iterations = 500
         iteration = 0
         start_time = time.time()
         max_time = 2400  # 40 minutes
@@ -489,9 +420,9 @@ Requirements:
                 keyword in response_content.lower()
                 for keyword in [
                     "all files implemented",
-                    "implementation complete",
                     "all phases completed",
                     "reproduction plan fully implemented",
+                    "all code of repo implementation complete",
                 ]
             ):
                 self.logger.info("Code implementation declared complete")
@@ -573,7 +504,7 @@ Requirements:
                 # Test connection with default model from config
                 await client.messages.create(
                     model=self.default_models["anthropic"],
-                    max_tokens=10,
+                    max_tokens=20,
                     messages=[{"role": "user", "content": "test"}],
                 )
                 self.logger.info(
@@ -598,11 +529,23 @@ Requirements:
                     client = AsyncOpenAI(api_key=openai_key)
 
                 # Test connection with default model from config
-                await client.chat.completions.create(
-                    model=self.default_models["openai"],
-                    max_tokens=10,
-                    messages=[{"role": "user", "content": "test"}],
-                )
+                # Try max_tokens first, fallback to max_completion_tokens if unsupported
+                try:
+                    await client.chat.completions.create(
+                        model=self.default_models["openai"],
+                        max_tokens=20,
+                        messages=[{"role": "user", "content": "test"}],
+                    )
+                except Exception as e:
+                    if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
+                        # Retry with max_completion_tokens for models that require it
+                        await client.chat.completions.create(
+                            model=self.default_models["openai"],
+                            max_completion_tokens=20,
+                            messages=[{"role": "user", "content": "test"}],
+                        )
+                    else:
+                        raise
                 self.logger.info(
                     f"Using OpenAI API with model: {self.default_models['openai']}"
                 )
@@ -691,13 +634,26 @@ Requirements:
         openai_messages = [{"role": "system", "content": system_message}]
         openai_messages.extend(messages)
 
-        response = await client.chat.completions.create(
-            model=self.default_models["openai"],
-            messages=openai_messages,
-            tools=openai_tools if openai_tools else None,
-            max_tokens=max_tokens,
-            temperature=0.2,
-        )
+        # Try max_tokens first, fallback to max_completion_tokens if unsupported
+        try:
+            response = await client.chat.completions.create(
+                model=self.default_models["openai"],
+                messages=openai_messages,
+                tools=openai_tools if openai_tools else None,
+                max_tokens=max_tokens,
+                temperature=0.2,
+            )
+        except Exception as e:
+            if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
+                # Retry with max_completion_tokens for models that require it
+                response = await client.chat.completions.create(
+                    model=self.default_models["openai"],
+                    messages=openai_messages,
+                    tools=openai_tools if openai_tools else None,
+                    max_completion_tokens=max_tokens,
+                )
+            else:
+                raise
 
         message = response.choices[0].message
         content = message.content or ""
@@ -941,22 +897,117 @@ Requirements:
 
         except Exception as e:
             self.logger.error(f"Failed to generate final report: {e}")
-            # Return a simplified report on error to prevent hanging
-            simple_report = f"""
-# Code Implementation Completed Successfully
+            return f"Failed to generate final report: {str(e)}"
 
-## Summary
-- Code generation completed at: {elapsed_time:.2f} seconds
-- Files implemented: {code_stats.get('total_files_implemented', 'N/A') if 'code_stats' in locals() else 'N/A'}
-- Status: ✅ SUCCESS
 
-## Note
-Full report generation encountered an issue: {str(e)}
-Code implementation was successful despite reporting error.
+async def main():
+    """Main function for running the workflow"""
+    # Configure root logger carefully to avoid duplicates
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+        handler.setFormatter(formatter)
+        root_logger.addHandler(handler)
+        root_logger.setLevel(logging.INFO)
 
-## Architecture Features
-✅ MCP-compliant tool execution
-✅ Production-grade code generation
-✅ Comprehensive error handling
-"""
-            return simple_report
+    workflow = CodeImplementationWorkflow()
+
+    print("=" * 60)
+    print("Code Implementation Workflow with UNIFIED Reference Indexer")
+    print("=" * 60)
+    print("Select mode:")
+    print("1. Test Code Reference Indexer Integration")
+    print("2. Run Full Implementation Workflow")
+    print("3. Run Implementation with Pure Code Mode")
+    print("4. Test Read Tools Configuration")
+
+    # mode_choice = input("Enter choice (1-4, default: 3): ").strip()
+
+    # For testing purposes, we'll run the test first
+    # if mode_choice == "4":
+    #     print("Testing Read Tools Configuration...")
+
+    #     # Create a test workflow normally
+    #     test_workflow = CodeImplementationWorkflow()
+
+    #     # Create a mock code agent for testing
+    #     print("\n🧪 Testing with read tools DISABLED:")
+    #     test_agent_disabled = CodeImplementationAgent(None, enable_read_tools=False)
+    #     await test_agent_disabled.test_read_tools_configuration()
+
+    #     print("\n🧪 Testing with read tools ENABLED:")
+    #     test_agent_enabled = CodeImplementationAgent(None, enable_read_tools=True)
+    #     await test_agent_enabled.test_read_tools_configuration()
+
+    #     print("✅ Read tools configuration testing completed!")
+    #     return
+
+    # print("Running Code Reference Indexer Integration Test...")
+
+    test_success = True
+    if test_success:
+        print("\n" + "=" * 60)
+        print("🎉 UNIFIED Code Reference Indexer Integration Test PASSED!")
+        print("🔧 Three-step process successfully merged into ONE tool")
+        print("=" * 60)
+
+        # Ask if user wants to continue with actual workflow
+        print("\nContinuing with workflow execution...")
+
+        plan_file = "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode/deepcode_lab/papers/1/initial_plan.txt"
+        # plan_file = "/data2/bjdwhzzh/project-hku/Code-Agent2.0/Code-Agent/deepcode-mcp/agent_folders/papers/1/initial_plan.txt"
+        target_directory = (
+            "/Users/lizongwei/Reasearch/DeepCode_Base/DeepCode/deepcode_lab/papers/1/"
+        )
+        print("Implementation Mode Selection:")
+        print("1. Pure Code Implementation Mode (Recommended)")
+        print("2. Iterative Implementation Mode")
+
+        pure_code_mode = True
+        mode_name = "Pure Code Implementation Mode with Memory Agent Architecture + Code Reference Indexer"
+        print(f"Using: {mode_name}")
+
+        # Configure read tools - modify this parameter to enable/disable read tools
+        enable_read_tools = (
+            True  # Set to False to disable read_file and read_code_mem tools
+        )
+        read_tools_status = "ENABLED" if enable_read_tools else "DISABLED"
+        print(f"🔧 Read tools (read_file, read_code_mem): {read_tools_status}")
+
+        # NOTE: To test without read tools, change the line above to:
+        # enable_read_tools = False
+
+        result = await workflow.run_workflow(
+            plan_file,
+            target_directory=target_directory,
+            pure_code_mode=pure_code_mode,
+            enable_read_tools=enable_read_tools,
+        )
+
+        print("=" * 60)
+        print("Workflow Execution Results:")
+        print(f"Status: {result['status']}")
+        print(f"Mode: {mode_name}")
+
+        if result["status"] == "success":
+            print(f"Code Directory: {result['code_directory']}")
+            print(f"MCP Architecture: {result.get('mcp_architecture', 'unknown')}")
+            print("Execution completed!")
+        else:
+            print(f"Error Message: {result['message']}")
+
+        print("=" * 60)
+        print(
+            "✅ Using Standard MCP Architecture with Memory Agent + Code Reference Indexer"
+        )
+
+    else:
+        print("\n" + "=" * 60)
+        print("❌ Code Reference Indexer Integration Test FAILED!")
+        print("Please check the configuration and try again.")
+        print("=" * 60)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

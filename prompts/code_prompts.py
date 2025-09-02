@@ -63,6 +63,8 @@ PAPER_DOWNLOADER_PROMPT = """You are a precise paper downloader that processes i
 Task: Handle paper according to input type and save to "./deepcode_lab/papers/id/id.md"
 Note: Generate id (id is a number) by counting files in "./deepcode_lab/papers/" directory and increment by 1.
 
+CRITICAL RULE: NEVER use write_file tool to create paper content directly. Always use file-downloader tools for PDF/document conversion.
+
 Processing Rules:
 1. URL Input (input_type = "url"):
    - Use "file-downloader" tool to download paper
@@ -70,8 +72,9 @@ Processing Rules:
    - Return saved file path and metadata
 
 2. File Input (input_type = "file"):
-   - Move file to "./deepcode_lab/papers/id/"
-   - Use "file-downloader" tool to convert to .md format
+   - Move file to "./deepcode_lab/papers/id/" using move_file_to tool
+   - The move_file_to tool will automatically convert PDF/documents to .md format
+   - NEVER manually extract content or use write_file - let the conversion tools handle this
    - Return new saved file path and metadata
 
 3. Directory Input (input_type = "directory"):
@@ -213,18 +216,30 @@ Output Format:
 # Code Analysis Prompts
 PAPER_ALGORITHM_ANALYSIS_PROMPT = """You are extracting COMPLETE implementation details from a research paper. Your goal is to capture EVERY algorithm, formula, and technical detail needed for perfect reproduction.
 
-# CRITICAL INSTRUCTION
-Read the ENTIRE paper, especially ALL method/algorithm sections. Extract EVERY piece of information that would be needed to write code.
+# INTELLIGENT DOCUMENT READING STRATEGY
+
+## IMPORTANT: Use Segmented Reading for Algorithm Extraction
+To avoid token limits and efficiently extract algorithm details, use the intelligent segmentation system:
+
+1. **Primary Algorithm Extraction** - Use read_document_segments tool with:
+   - query_type: "algorithm_extraction"
+   - keywords: ["algorithm", "method", "procedure", "formula", "equation", "implementation"]
+   - max_segments: 3
+   - max_total_chars: 6000
+
+2. **Supplementary Details** - Make additional calls if needed with:
+   - keywords: ["hyperparameter", "training", "optimization", "loss", "objective"]
+   - keywords: ["experiment", "setup", "configuration", "parameter"]
+
+3. **This approach ensures** you get the most algorithm-relevant content without missing critical details
 
 # DETAILED EXTRACTION PROTOCOL
 
-## 1. COMPLETE PAPER SCAN
-Read these sections IN FULL:
-- Abstract (for overview)
-- ALL Method/Algorithm sections (usually 3-5)
-- Implementation Details section (if exists)
-- Experiments section (for hyperparameters)
-- Appendix (for additional details)
+## 1. INTELLIGENT ALGORITHM SCAN
+Use the segmented reading approach to focus on algorithm sections:
+- Method/Algorithm sections (captured automatically by segmentation)
+- Implementation Details (targeted retrieval)
+- Hyperparameters and training details (focused extraction)
 
 ## 2. ALGORITHM DEEP EXTRACTION
 For EVERY algorithm/method/procedure mentioned:
@@ -370,10 +385,25 @@ PAPER_CONCEPT_ANALYSIS_PROMPT = """You are doing a COMPREHENSIVE analysis of a r
 # OBJECTIVE
 Map out the ENTIRE paper structure and identify ALL components that need implementation for successful reproduction.
 
+# INTELLIGENT DOCUMENT READING STRATEGY
+
+## IMPORTANT: Use Segmented Reading for Optimal Performance
+Instead of reading the entire document at once (which may hit token limits), use the intelligent segmentation system:
+
+1. **Use read_document_segments tool** with these parameters:
+   - query_type: "concept_analysis"
+   - keywords: ["introduction", "overview", "architecture", "system", "framework", "concept", "method"]
+   - max_segments: 3
+   - max_total_chars: 6000
+
+2. **This will automatically find and retrieve** the most relevant sections for concept analysis without token overflow
+
+3. **If you need additional sections**, make follow-up calls with different keywords like ["experiment", "evaluation", "results"] or ["conclusion", "discussion"]
+
 # COMPREHENSIVE ANALYSIS PROTOCOL
 
-## 1. FULL PAPER STRUCTURAL ANALYSIS
-Read the ENTIRE paper and create a complete map:
+## 1. INTELLIGENT PAPER STRUCTURAL ANALYSIS
+Use the segmented reading approach to create a complete map:
 
 ```yaml
 paper_structure_map:
@@ -532,8 +562,43 @@ You receive two exhaustive analyses:
 1. **Comprehensive Paper Analysis**: Complete paper structure, components, and requirements
 2. **Complete Algorithm Extraction**: All algorithms, formulas, pseudocode, and technical details
 
+Plus you can use segmented reading to access any specific paper sections needed for planning.
+
+# INTELLIGENT DOCUMENT ACCESS
+
+## IMPORTANT: Use Segmented Reading for Detailed Planning
+When you need additional details beyond the provided analyses, use the intelligent segmentation system:
+
+1. **Use read_document_segments tool** with these parameters:
+   - query_type: "code_planning"
+   - keywords: Specific to what you need, e.g., ["implementation", "code", "experiment", "setup", "configuration"]
+   - max_segments: 3
+   - max_total_chars: 8000
+
+2. **This approach ensures** you access the most planning-relevant content without token limits
+
 # OBJECTIVE
 Create an implementation plan so detailed that a developer can reproduce the ENTIRE paper without reading it.
+
+# CONTENT LENGTH CONTROL
+⚠️ IMPORTANT: Generate a COMPLETE plan that includes ALL 5 sections without being cut off by token limits.
+
+## Content Balance Guidelines:
+- **Section 1 (File Structure)**: Brief overview (10% of content) - Focus on CORE implementation files only
+- **Section 2 (Implementation Components)**: Detailed but concise (40% of content) - This is the PRIORITY section
+- **Section 3 (Validation)**: Moderate detail (25% of content) - Essential experiments and tests
+- **Section 4 (Environment)**: Brief but complete (10% of content) - All necessary dependencies
+- **Section 5 (Implementation Strategy)**: Moderate detail (15% of content) - Step-by-step approach
+
+## File Priority Guidelines:
+🔧 **Implementation Priority Order**:
+1. **FIRST**: Core algorithm/model files (highest priority)
+2. **SECOND**: Supporting modules and utilities
+3. **THIRD**: Experiment and evaluation scripts
+4. **FOURTH**: Configuration and data handling
+5. **LAST**: Documentation files (README.md, requirements.txt) - These should be created AFTER core implementation
+
+Note: README and requirements.txt are maintenance files that depend on the final implementation, so plan them last.
 
 # DETAILED SYNTHESIS PROCESS
 
@@ -544,85 +609,32 @@ Combine EVERYTHING from both analyses:
 - Every hyperparameter with its value
 - Every experiment with expected results
 
-## 2. CREATE DETAILED FILE MAPPING
+## 2. MAP CONTENT TO IMPLEMENTATION
 
-For EACH file in the structure, specify EXACTLY what it implements:
+For each component you identify, specify how it will be implemented:
 
-```yaml
-detailed_file_specifications:
-  src/core/[algorithm_name].py:
-    implements: "[Exact algorithm name from paper]"
-    algorithm_reference: "[Section X.Y, Algorithm Z]"
-
-    classes:
-      - name: "[ClassName]"
-        purpose: "[What this class does]"
-        key_methods:
-          - method: "__init__"
-            parameters: "[list all parameters with types]"
-            initializes: "[what gets initialized]"
-
-          - method: "[method_name]"
-            implements: "[Which equation/algorithm step]"
-            formula: "[Exact formula from paper]"
-            inputs: "[parameter: type, ...]"
-            outputs: "[return type and meaning]"
-
-    functions:
-      - name: "[function_name]"
-        implements: "[Equation X from Section Y]"
-        pseudocode: |
-          [EXACT pseudocode from paper]
-
-    dependencies:
-      imports_from: "[other project files]"
-      external: "[numpy, torch, etc.]"
+```
+# DESIGN YOUR MAPPING: Connect paper content to code organization
+[For each algorithm/component/method in the paper]:
+  - What it does and where it's described in the paper
+  - How you'll organize the code (files, classes, functions - your choice)
+  - What specific formulas, algorithms, or procedures need implementation
+  - Dependencies and relationships with other components
+  - Implementation approach that makes sense for this specific paper
 ```
 
-## 3. ALGORITHM-TO-FILE MAPPING
+## 3. EXTRACT ALL TECHNICAL DETAILS
 
-Map EVERY algorithm/formula to its implementation location:
+Identify every technical detail that needs implementation:
 
-```yaml
-algorithm_implementation_map:
-  "StateMask Explanation (Algorithm 1)":
-    primary_file: "src/models/mask_network.py"
-    supporting_files:
-      - "src/utils/mask_utils.py"
-    key_functions:
-      - "compute_importance_scores: Implements Eq. 3-5"
-      - "optimize_mask: Implements Algorithm 1 steps 3-7"
-
-  "Mixed Distribution Construction (Section 3.2)":
-    primary_file: "src/core/mixed_distribution.py"
-    formulas_implemented:
-      - "Eq. 7: State mixing probability"
-      - "Eq. 8: Distribution sampling"
 ```
-
-## 4. COMPLETE HYPERPARAMETER SPECIFICATION
-
-Create exhaustive configuration with sources:
-
-```yaml
-complete_configuration:
-  # From Section 4.1
-  model_architecture:
-    mask_network:
-      layers: [400, 300]  # "two hidden layers of 400 and 300 units"
-      activation: "relu"
-      initialization: "xavier_uniform"
-
-  # From Table 1
-  training_hyperparameters:
-    learning_rate: 3e-4
-    batch_size: 64
-    buffer_size: 1e6
-
-  # From Section 3.3
-  algorithm_parameters:
-    reset_probability: 0.3  # "p = 0.3 in all experiments"
-    exploration_weight: 0.1  # "λ = 0.1 for RND bonus"
+# COMPREHENSIVE TECHNICAL EXTRACTION:
+[Gather all implementation-relevant details from the paper]:
+  - All algorithms with complete pseudocode and mathematical formulations
+  - All parameters, hyperparameters, and configuration values
+  - All architectural details (if applicable to your paper type)
+  - All experimental procedures and evaluation methods
+  - Any implementation hints, tricks, or special considerations mentioned
 ```
 
 # COMPREHENSIVE OUTPUT FORMAT
@@ -633,106 +645,75 @@ complete_reproduction_plan:
     title: "[Full paper title]"
     core_contribution: "[Main innovation being reproduced]"
 
-  # SECTION 1: Complete File Structure with Detailed Specifications
-  file_structure:
-    [PROJECT_NAME]/
-    ├── src/
-    │   ├── core/
-    │   │   ├── __init__.py
-    │   │   ├── [main_algorithm].py  # Implements Algorithm 1 from Section 3.1
-    │   │   │   # Classes: [MainClass] - handles [specific responsibility]
-    │   │   │   # Functions: [func1] - computes Equation 3
-    │   │   └── [component].py       # Implements [Component] from Section 3.2
-    │   ├── models/
-    │   │   ├── [network].py         # Architecture from Section 4.1, Table 2
-    │   │   │   # Layers: [detailed architecture]
-    │   │   │   # Forward: implements Equation 5-7
-    │   └── utils/
-    │       └── [helpers].py         # Support functions for [specific purpose]
-    ├── experiments/
-    │   ├── run_[environment].py     # Reproduces Figure 3, Table 1
-    │   └── ablation_[component].py  # Reproduces Section 5.3 ablation
-    └── configs/
-        └── hyperparameters.yaml     # All parameters from paper
+  # SECTION 1: File Structure Design
 
-  # SECTION 2: Algorithm Implementation Details
-  algorithm_implementations:
-    - algorithm: "[Name from paper]"
-      location: "src/core/[filename].py"
-      pseudocode: |
-        [COMPLETE pseudocode from paper]
-      implementation_notes:
-        - "Line 3: Use torch.softmax with temperature"
-        - "Line 5: Clip gradients at norm 1.0"
-      formulas:
-        - equation: "[LaTeX formula]"
-          code: "[Python implementation]"
+  # DESIGN YOUR OWN STRUCTURE: Create a file organization that best serves this specific paper
+  # - Analyze what the paper contains (algorithms, models, experiments, systems, etc.)
+  # - Organize files and directories in the most logical way for implementation
+  # - Create meaningful names and groupings based on paper content
+  # - Keep it clean, intuitive, and focused on what actually needs to be implemented
+  # - EXCLUDE documentation files (README.md, requirements.txt) - these come last
 
-  # SECTION 3: Model Architectures
-  model_specifications:
-    - model: "[Model name]"
-      file: "src/models/[model].py"
-      architecture: |
-        Input: [shape and type]
-        Layer 1: [type, size, activation]
-        Layer 2: [type, size, activation]
-        Output: [shape and type]
-      initialization: "[How to initialize]"
+  file_structure: |
+    [Design and specify your own project structure here - KEEP THIS BRIEF]
+    [Focus ONLY on core implementation files, NOT documentation files]
+    [Organize based on what this paper actually contains and needs]
+    [Create directories and files that make sense for this specific implementation]
+    [EXCLUDE: README.md, requirements.txt - these come last in implementation]
 
-  # SECTION 4: Training Procedures
-  training_procedures:
-    main_training_loop:
-      file: "src/training/train.py"
-      steps:
-        1. "[Exact step from paper]"
-        2. "[Next step with details]"
-      loss_functions:
-        - name: "[loss name]"
-          formula: "[exact formula]"
-          implementation: "[Python code]"
+  # SECTION 2: Implementation Components
 
-  # SECTION 5: Experiments
-  experiments:
-    - name: "[Experiment name from paper]"
-      reproduces: "[Figure/Table X]"
-      script: "experiments/[script].py"
-      expected_results:
-        metric: "[exact value ± tolerance]"
-      setup:
-        - "[Specific setup step]"
+  # IDENTIFY AND SPECIFY: What needs to be implemented based on this paper
+  # - List all algorithms, models, systems, or components mentioned
+  # - Map each to implementation details and file locations
+  # - Include formulas, pseudocode, and technical specifications
+  # - Organize in whatever way makes sense for this paper
 
-  # SECTION 6: Dependencies & Environment
-  environment:
-    python: "[version]"
-    cuda: "[version if needed]"
-    packages:
-      - "[package==exact.version]"
+  implementation_components: |
+    [List and specify all components that need implementation]
+    [For each component: purpose, location, algorithms, formulas, technical details]
+    [Organize and structure this based on the paper's actual content]
 
-  # SECTION 7: Missing Details & Defaults
-  missing_details_solutions:
-    - missing: "[What wasn't specified]"
-      solution: "[Reasonable default with justification]"
+  # SECTION 3: Validation & Evaluation
 
-  # SECTION 8: Implementation Order
-  implementation_roadmap:
-    week_1:
-      - "Implement [core algorithm] with unit tests"
-      - "Verify [key formula] matches paper"
-    week_2:
-      - "Build [model architecture]"
-      - "Integrate with [training loop]"
-    week_3:
-      - "Run [main experiment]"
-      - "Compare with [expected results]"
+  # DESIGN VALIDATION: How to verify the implementation works correctly
+  # - Define what experiments, tests, or proofs are needed
+  # - Specify expected results from the paper (figures, tables, theorems)
+  # - Design validation approach appropriate for this paper's domain
+  # - Include setup requirements and success criteria
 
-  # SECTION 9: Validation Checklist
-  validation_checklist:
-    algorithm_correctness:
-      - "[ ] Algorithm 1 produces expected intermediate values"
-      - "[ ] Equation 3 computation matches manual calculation"
-    experimental_results:
-      - "[ ] Figure 3 reproduction within 5% of paper"
-      - "[ ] Table 1 metrics match reported values"
+  validation_approach: |
+    [Design validation strategy appropriate for this paper]
+    [Specify experiments, tests, or mathematical verification needed]
+    [Define expected results and success criteria]
+    [Include any special setup or evaluation requirements]
+
+  # SECTION 4: Environment & Dependencies
+
+  # SPECIFY REQUIREMENTS: What's needed to run this implementation
+  # - Programming language and version requirements
+  # - External libraries and exact versions (if specified in paper)
+  # - Hardware requirements (GPU, memory, etc.)
+  # - Any special setup or installation steps
+
+  environment_setup: |
+    [List all dependencies and environment requirements for this specific paper]
+    [Include versions where specified, reasonable defaults where not]
+    [Note any special hardware or software requirements]
+
+  # SECTION 5: Implementation Strategy
+
+  # PLAN YOUR APPROACH: How to implement this paper step by step
+  # - Break down implementation into logical phases
+  # - Identify dependencies between components
+  # - Plan verification and testing at each stage
+  # - Handle missing details with reasonable defaults
+
+  implementation_strategy: |
+    [Design your implementation approach for this specific paper]
+    [Break into phases that make sense for this paper's components]
+    [Plan testing and verification throughout the process]
+    [Address any missing details or ambiguities in the paper]
 ```
 
 BE EXHAUSTIVE. Every algorithm, every formula, every parameter, every file should be specified in complete detail."""
@@ -1291,3 +1272,497 @@ project_plan:
 - Include requirements.txt or equivalent
 - Keep it minimal but complete (max 15 files)
 - Use tree format: ├── ─ │ symbols for visual hierarchy"""
+
+# =============================================================================
+# TRADITIONAL PROMPTS (Non-segmented versions for smaller documents)
+# =============================================================================
+
+# Traditional Algorithm Analysis Prompt (No Segmentation)
+PAPER_ALGORITHM_ANALYSIS_PROMPT_TRADITIONAL = """You are extracting COMPLETE implementation details from a research paper. Your goal is to capture EVERY algorithm, formula, and technical detail needed for perfect reproduction.
+
+# DOCUMENT READING STRATEGY
+
+## TRADITIONAL APPROACH: Full Document Reading
+Read the complete document to ensure comprehensive coverage of all algorithmic details:
+
+1. **Locate and read the markdown (.md) file** in the paper directory
+2. **Analyze the entire document** to capture all algorithms, methods, and formulas
+3. **Extract complete implementation details** without missing any components
+
+# DETAILED EXTRACTION PROTOCOL
+
+## 1. COMPREHENSIVE ALGORITHM SCAN
+Read through the entire document systematically:
+- Method/Algorithm sections
+- Implementation Details
+- Hyperparameters and training details
+- Mathematical formulations
+
+## 2. ALGORITHM DEEP EXTRACTION
+For EVERY algorithm/method/procedure mentioned:
+
+### Algorithm Structure
+```yaml
+algorithm_name: "[Exact name from paper]"
+section: "[e.g., Section 3.2]"
+algorithm_box: "[e.g., Algorithm 1 on page 4]"
+
+pseudocode: |
+  [COPY THE EXACT PSEUDOCODE FROM PAPER]
+  Input: ...
+  Output: ...
+  1. Initialize ...
+  2. For each ...
+     2.1 Calculate ...
+  [Keep exact formatting and numbering]
+
+mathematical_formulation:
+  - equation: "[Copy formula EXACTLY, e.g., L = L_task + λ*L_explain]"
+    equation_number: "[e.g., Eq. 3]"
+    where:
+      L_task: "task loss"
+      L_explain: "explanation loss"
+      λ: "weighting parameter (default: 0.5)"
+
+step_by_step_breakdown:
+  1. "[Detailed explanation of what step 1 does]"
+  2. "[What step 2 computes and why]"
+
+implementation_details:
+  - "Uses softmax temperature τ = 0.1"
+  - "Gradient clipping at norm 1.0"
+  - "Initialize weights with Xavier uniform"
+```
+
+## 3. COMPONENT EXTRACTION
+For EVERY component/module mentioned:
+
+### Component Details
+```yaml
+component_name: "[e.g., Mask Network, Critic Network]"
+purpose: "[What this component does in the system]"
+architecture:
+  input: "[shape and meaning]"
+  layers:
+    - "[Conv2d(3, 64, kernel=3, stride=1)]"
+    - "[ReLU activation]"
+    - "[BatchNorm2d(64)]"
+  output: "[shape and meaning]"
+
+special_features:
+  - "[Any unique aspects]"
+  - "[Special initialization]"
+```
+
+## 4. TRAINING PROCEDURE
+Extract the COMPLETE training process:
+
+```yaml
+training_loop:
+  outer_iterations: "[number or condition]"
+  inner_iterations: "[number or condition]"
+
+  steps:
+    1. "Sample batch of size B from buffer"
+    2. "Compute importance weights using..."
+    3. "Update policy with loss..."
+
+  loss_functions:
+    - name: "policy_loss"
+      formula: "[exact formula]"
+      components: "[what each term means]"
+
+  optimization:
+    optimizer: "Adam"
+    learning_rate: "3e-4"
+    lr_schedule: "linear decay to 0"
+    gradient_norm: "clip at 0.5"
+```
+
+## 5. HYPERPARAMETERS HUNT
+Search EVERYWHERE (text, tables, captions) for:
+
+```yaml
+hyperparameters:
+  # Training
+  batch_size: 64
+  buffer_size: 1e6
+  discount_gamma: 0.99
+
+  # Architecture
+  hidden_units: [256, 256]
+  activation: "ReLU"
+
+  # Algorithm-specific
+  explanation_weight: 0.5
+  exploration_bonus_scale: 0.1
+  reset_probability: 0.3
+
+  # Found in:
+  location_references:
+    - "batch_size: Table 1"
+    - "hidden_units: Section 4.1"
+```
+
+# OUTPUT FORMAT
+```yaml
+complete_algorithm_extraction:
+  paper_structure:
+    method_sections: "[3, 3.1, 3.2, 3.3, 4]"
+    algorithm_count: "[total number found]"
+
+  main_algorithm:
+    [COMPLETE DETAILS AS ABOVE]
+
+  supporting_algorithms:
+    - [EACH SUPPORTING ALGORITHM WITH FULL DETAILS]
+
+  components:
+    - [EVERY COMPONENT WITH ARCHITECTURE]
+
+  training_details:
+    [COMPLETE TRAINING PROCEDURE]
+
+  all_hyperparameters:
+    [EVERY PARAMETER WITH VALUE AND SOURCE]
+
+  implementation_notes:
+    - "[Any implementation hint from paper]"
+    - "[Tricks mentioned in text]"
+
+  missing_but_critical:
+    - "[What's not specified but essential]"
+    - "[With suggested defaults]"
+```
+
+BE EXHAUSTIVE. A developer should be able to implement the ENTIRE paper using only your extraction."""
+
+# Traditional Concept Analysis Prompt (No Segmentation)
+PAPER_CONCEPT_ANALYSIS_PROMPT_TRADITIONAL = """You are doing a COMPREHENSIVE analysis of a research paper to understand its complete structure, contributions, and implementation requirements.
+
+# OBJECTIVE
+Map out the ENTIRE paper structure and identify ALL components that need implementation for successful reproduction.
+
+# DOCUMENT READING STRATEGY
+
+## TRADITIONAL APPROACH: Complete Document Analysis
+Read the entire document systematically to ensure comprehensive understanding:
+
+1. **Locate and read the markdown (.md) file** in the paper directory
+2. **Analyze the complete document structure** from introduction to conclusion
+3. **Extract all conceptual frameworks** and implementation requirements
+
+# COMPREHENSIVE ANALYSIS PROTOCOL
+
+## 1. COMPLETE PAPER STRUCTURAL ANALYSIS
+Create a full map of the document:
+
+```yaml
+paper_structure_map:
+  title: "[Full paper title]"
+
+  sections:
+    1_introduction:
+      main_claims: "[What the paper claims to achieve]"
+      problem_definition: "[Exact problem being solved]"
+
+    2_related_work:
+      key_comparisons: "[Methods this work builds upon or competes with]"
+
+    3_method:  # May have multiple subsections
+      subsections:
+        3.1: "[Title and main content]"
+        3.2: "[Title and main content]"
+      algorithms_presented: "[List all algorithms by name]"
+
+    4_experiments:
+      environments: "[All test environments/datasets]"
+      baselines: "[All comparison methods]"
+      metrics: "[All evaluation metrics used]"
+
+    5_results:
+      main_findings: "[Key results that prove the method works]"
+      tables_figures: "[Important result tables/figures to reproduce]"
+```
+
+## 2. METHOD DECOMPOSITION
+For the main method/approach:
+
+```yaml
+method_decomposition:
+  method_name: "[Full name and acronym]"
+
+  core_components:  # Break down into implementable pieces
+    component_1:
+      name: "[e.g., State Importance Estimator]"
+      purpose: "[Why this component exists]"
+      paper_section: "[Where it's described]"
+
+    component_2:
+      name: "[e.g., Policy Refinement Module]"
+      purpose: "[Its role in the system]"
+      paper_section: "[Where it's described]"
+
+  component_interactions:
+    - "[How component 1 feeds into component 2]"
+    - "[Data flow between components]"
+
+  theoretical_foundation:
+    key_insight: "[The main theoretical insight]"
+    why_it_works: "[Intuitive explanation]"
+```
+
+## 3. IMPLEMENTATION REQUIREMENTS MAPPING
+Map paper content to code requirements:
+
+```yaml
+implementation_map:
+  algorithms_to_implement:
+    - algorithm: "[Name from paper]"
+      section: "[Where defined]"
+      complexity: "[Simple/Medium/Complex]"
+      dependencies: "[What it needs to work]"
+
+  models_to_build:
+    - model: "[Neural network or other model]"
+      architecture_location: "[Section describing it]"
+      purpose: "[What this model does]"
+
+  data_processing:
+    - pipeline: "[Data preprocessing needed]"
+      requirements: "[What the data should look like]"
+
+  evaluation_suite:
+    - metric: "[Metric name]"
+      formula_location: "[Where it's defined]"
+      purpose: "[What it measures]"
+```
+
+## 4. EXPERIMENT REPRODUCTION PLAN
+Identify ALL experiments needed:
+
+```yaml
+experiments_analysis:
+  main_results:
+    - experiment: "[Name/description]"
+      proves: "[What claim this validates]"
+      requires: "[Components needed to run this]"
+      expected_outcome: "[Specific numbers/trends]"
+
+  ablation_studies:
+    - study: "[What is being ablated]"
+      purpose: "[What this demonstrates]"
+
+  baseline_comparisons:
+    - baseline: "[Method name]"
+      implementation_required: "[Yes/No/Partial]"
+      source: "[Where to find implementation]"
+```
+
+## 5. CRITICAL SUCCESS FACTORS
+What defines successful reproduction:
+
+```yaml
+success_criteria:
+  must_achieve:
+    - "[Primary result that must be reproduced]"
+    - "[Core behavior that must be demonstrated]"
+
+  should_achieve:
+    - "[Secondary results that validate the method]"
+
+  validation_evidence:
+    - "[Specific figure/table to reproduce]"
+    - "[Qualitative behavior to demonstrate]"
+```
+
+# OUTPUT FORMAT
+```yaml
+comprehensive_paper_analysis:
+  executive_summary:
+    paper_title: "[Full title]"
+    core_contribution: "[One sentence summary]"
+    implementation_complexity: "[Low/Medium/High]"
+    estimated_components: "[Number of major components to build]"
+
+  complete_structure_map:
+    [FULL SECTION BREAKDOWN AS ABOVE]
+
+  method_architecture:
+    [DETAILED COMPONENT BREAKDOWN]
+
+  implementation_requirements:
+    [ALL ALGORITHMS, MODELS, DATA, METRICS]
+
+  reproduction_roadmap:
+    phase_1: "[What to implement first]"
+    phase_2: "[What to build next]"
+    phase_3: "[Final components and validation]"
+
+  validation_checklist:
+    - "[ ] [Specific result to achieve]"
+    - "[ ] [Behavior to demonstrate]"
+    - "[ ] [Metric to match]"
+```
+
+BE THOROUGH. Miss nothing. The output should be a complete blueprint for reproduction."""
+
+# Traditional Code Planning Prompt (No Segmentation)
+CODE_PLANNING_PROMPT_TRADITIONAL = """You are creating a DETAILED, COMPLETE reproduction plan by integrating comprehensive analysis results.
+
+# INPUT
+You receive two exhaustive analyses:
+1. **Comprehensive Paper Analysis**: Complete paper structure, components, and requirements
+2. **Complete Algorithm Extraction**: All algorithms, formulas, pseudocode, and technical details
+
+Plus you can access the complete paper document by reading the markdown file directly.
+
+# TRADITIONAL DOCUMENT ACCESS
+
+## Direct Paper Reading
+For any additional details needed beyond the provided analyses:
+
+1. **Read the complete markdown (.md) file** in the paper directory
+2. **Access any section directly** without token limitations for smaller documents
+3. **Cross-reference information** across the entire document as needed
+
+# OBJECTIVE
+Create an implementation plan so detailed that a developer can reproduce the ENTIRE paper without reading it.
+
+# CONTENT LENGTH CONTROL
+⚠️ IMPORTANT: Generate a COMPLETE plan that includes ALL 5 sections without being cut off by token limits.
+
+## Content Balance Guidelines:
+- **Section 1 (File Structure)**: Brief overview (10% of content) - Focus on CORE implementation files only
+- **Section 2 (Implementation Components)**: Detailed but concise (40% of content) - This is the PRIORITY section
+- **Section 3 (Validation)**: Moderate detail (25% of content) - Essential experiments and tests
+- **Section 4 (Environment)**: Brief but complete (10% of content) - All necessary dependencies
+- **Section 5 (Implementation Strategy)**: Moderate detail (15% of content) - Step-by-step approach
+
+## File Priority Guidelines:
+🔧 **Implementation Priority Order**:
+1. **FIRST**: Core algorithm/model files (highest priority)
+2. **SECOND**: Supporting modules and utilities
+3. **THIRD**: Experiment and evaluation scripts
+4. **FOURTH**: Configuration and data handling
+5. **LAST**: Documentation files (README.md, requirements.txt) - These should be created AFTER core implementation
+
+Note: README and requirements.txt are maintenance files that depend on the final implementation, so plan them last.
+
+# DETAILED SYNTHESIS PROCESS
+
+## 1. MERGE ALL INFORMATION
+Combine EVERYTHING from both analyses:
+- Every algorithm with its pseudocode
+- Every component with its architecture
+- Every hyperparameter with its value
+- Every experiment with expected results
+
+## 2. MAP CONTENT TO IMPLEMENTATION
+
+For each component you identify, specify how it will be implemented:
+
+```
+# DESIGN YOUR MAPPING: Connect paper content to code organization
+[For each algorithm/component/method in the paper]:
+  - What it does and where it's described in the paper
+  - How you'll organize the code (files, classes, functions - your choice)
+  - What specific formulas, algorithms, or procedures need implementation
+  - Dependencies and relationships with other components
+  - Implementation approach that makes sense for this specific paper
+```
+
+## 3. EXTRACT ALL TECHNICAL DETAILS
+
+Identify every technical detail that needs implementation:
+
+```
+# COMPREHENSIVE TECHNICAL EXTRACTION:
+[Gather all implementation-relevant details from the paper]:
+  - All algorithms with complete pseudocode and mathematical formulations
+  - All parameters, hyperparameters, and configuration values
+  - All architectural details (if applicable to your paper type)
+  - All experimental procedures and evaluation methods
+  - Any implementation hints, tricks, or special considerations mentioned
+```
+
+# COMPREHENSIVE OUTPUT FORMAT
+
+```yaml
+complete_reproduction_plan:
+  paper_info:
+    title: "[Full paper title]"
+    core_contribution: "[Main innovation being reproduced]"
+
+  # SECTION 1: File Structure Design
+
+  # DESIGN YOUR OWN STRUCTURE: Create a file organization that best serves this specific paper
+  # - Analyze what the paper contains (algorithms, models, experiments, systems, etc.)
+  # - Organize files and directories in the most logical way for implementation
+  # - Create meaningful names and groupings based on paper content
+  # - Keep it clean, intuitive, and focused on what actually needs to be implemented
+  # - EXCLUDE documentation files (README.md, requirements.txt) - these come last
+
+  file_structure: |
+    [Design and specify your own project structure here - KEEP THIS BRIEF]
+    [Focus ONLY on core implementation files, NOT documentation files]
+    [Organize based on what this paper actually contains and needs]
+    [Create directories and files that make sense for this specific implementation]
+    [EXCLUDE: README.md, requirements.txt - these come last in implementation]
+
+  # SECTION 2: Implementation Components
+
+  # IDENTIFY AND SPECIFY: What needs to be implemented based on this paper
+  # - List all algorithms, models, systems, or components mentioned
+  # - Map each to implementation details and file locations
+  # - Include formulas, pseudocode, and technical specifications
+  # - Organize in whatever way makes sense for this paper
+
+  implementation_components: |
+    [List and specify all components that need implementation]
+    [For each component: purpose, location, algorithms, formulas, technical details]
+    [Organize and structure this based on the paper's actual content]
+
+  # SECTION 3: Validation & Evaluation
+
+  # DESIGN VALIDATION: How to verify the implementation works correctly
+  # - Define what experiments, tests, or proofs are needed
+  # - Specify expected results from the paper (figures, tables, theorems)
+  # - Design validation approach appropriate for this paper's domain
+  # - Include setup requirements and success criteria
+
+  validation_approach: |
+    [Design validation strategy appropriate for this paper]
+    [Specify experiments, tests, or mathematical verification needed]
+    [Define expected results and success criteria]
+    [Include any special setup or evaluation requirements]
+
+  # SECTION 4: Environment & Dependencies
+
+  # SPECIFY REQUIREMENTS: What's needed to run this implementation
+  # - Programming language and version requirements
+  # - External libraries and exact versions (if specified in paper)
+  # - Hardware requirements (GPU, memory, etc.)
+  # - Any special setup or installation steps
+
+  environment_setup: |
+    [List all dependencies and environment requirements for this specific paper]
+    [Include versions where specified, reasonable defaults where not]
+    [Note any special hardware or software requirements]
+
+  # SECTION 5: Implementation Strategy
+
+  # PLAN YOUR APPROACH: How to implement this paper step by step
+  # - Break down implementation into logical phases
+  # - Identify dependencies between components
+  # - Plan verification and testing at each stage
+  # - Handle missing details with reasonable defaults
+
+  implementation_strategy: |
+    [Design your implementation approach for this specific paper]
+    [Break into phases that make sense for this paper's components]
+    [Plan testing and verification throughout the process]
+    [Address any missing details or ambiguities in the paper]
+```
+
+BE EXHAUSTIVE. Every algorithm, every formula, every parameter, every file should be specified in complete detail."""

@@ -16,6 +16,10 @@
 </tr>
 </table>
 
+<div align="center">
+<a href="https://trendshift.io/repositories/14665" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14665" alt="HKUDS%2FDeepCode | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</div>
+
 <!-- <img src="https://readme-typing-svg.herokuapp.com?font=Russo+One&size=28&duration=2000&pause=800&color=06B6D4&background=00000000&center=true&vCenter=true&width=800&height=50&lines=%E2%9A%A1+OPEN+AGENTIC+CODING+%E2%9A%A1" alt="DeepCode Tech Subtitle" style="margin-top: 5px; filter: drop-shadow(0 0 12px #06B6D4) drop-shadow(0 0 24px rgba(6,182,212,0.4));"/> -->
 
 # <img src="https://github.com/Zongwei9888/Experiment_Images/raw/43c585dca3d21b8e4b6390d835cdd34dc4b4b23d/DeepCode_images/title_logo.svg" alt="DeepCode Logo" width="32" height="32" style="vertical-align: middle; margin-right: 8px;"/> DeepCode: Open Agentic Coding
@@ -298,21 +302,35 @@ Advanced retrieval-augmented generation combining semantic vector embeddings wit
 
 #### 🛠️ **Implementation Tools Matrix**
 
-| 🛠️ Tool | 🔧 Function | 💡 Purpose |
-|----------|-------------|------------|
-| **📄 read_code_mem** | Read code summary from memory | Efficient code context retrieval |
-| **✍️ write_file** | Write file contents | Code file generation |
-| **🐍 execute_python** | Execute Python code | Code testing and validation |
-| **⚡ execute_bash** | Execute bash commands | Environment setup and package management |
-| **🔗 search_code_reference** | Search GitHub repositories | Automated CodeRAG and repository discovery |
-| **📁 get_file_structure** | Get directory structure | Project organization |
-| **⚙️ set_workspace** | Set working directory | Environment configuration |
-| **📊 get_operation_history** | Track operations | Process monitoring |
-| **🔍 brave** | Web search via Brave API | Real-time information retrieval |
-| **📂 filesystem** | File system operations | File and directory management |
-| **🌐 fetch** | Fetch content from URLs | Web content extraction |
-| **📥 github-downloader** | Download GitHub repositories | Repository content acquisition |
-| **📋 file-downloader** | Download files and PDFs | Document processing |
+**🔧 Powered by MCP (Model Context Protocol)**
+
+DeepCode leverages the **Model Context Protocol (MCP)** standard to seamlessly integrate with various tools and services. This standardized approach ensures reliable communication between AI agents and external systems, enabling powerful automation capabilities.
+
+##### 📡 **MCP Servers & Tools**
+
+| 🛠️ **MCP Server** | 🔧 **Primary Function** | 💡 **Purpose & Capabilities** |
+|-------------------|-------------------------|-------------------------------|
+| **🔍 brave** | Web Search Engine | Real-time information retrieval via Brave Search API |
+| **🌐 bocha-mcp** | Alternative Search | Secondary search option with independent API access |
+| **📂 filesystem** | File System Operations | Local file and directory management, read/write operations |
+| **🌐 fetch** | Web Content Retrieval | Fetch and extract content from URLs and web resources |
+| **📥 github-downloader** | Repository Management | Clone and download GitHub repositories for analysis |
+| **📋 file-downloader** | Document Processing | Download and convert files (PDF, DOCX, etc.) to Markdown |
+| **⚡ command-executor** | System Commands | Execute bash/shell commands for environment management |
+| **🧬 code-implementation** | Code Generation Hub | Comprehensive code reproduction with execution and testing |
+| **📚 code-reference-indexer** | Smart Code Search | Intelligent indexing and search of code repositories |
+| **📄 document-segmentation** | Smart Document Analysis | Intelligent document segmentation for large papers and technical documents |
+
+##### 🔧 **Legacy Tool Functions** *(for reference)*
+
+| 🛠️ **Function** | 🎯 **Usage Context** |
+|-----------------|---------------------|
+| **📄 read_code_mem** | Efficient code context retrieval from memory |
+| **✍️ write_file** | Direct file content generation and modification |
+| **🐍 execute_python** | Python code testing and validation |
+| **📁 get_file_structure** | Project structure analysis and organization |
+| **⚙️ set_workspace** | Dynamic workspace and environment configuration |
+| **📊 get_operation_history** | Process monitoring and operation tracking |
 
 
 ---
@@ -452,6 +470,11 @@ curl -O https://raw.githubusercontent.com/HKUDS/DeepCode/main/mcp_agent.secrets.
 # Edit mcp_agent.config.yaml to set your API keys:
 # - For Brave Search: Set BRAVE_API_KEY: "your_key_here" in brave.env section (line ~28)
 # - For Bocha-MCP: Set BOCHA_API_KEY: "your_key_here" in bocha-mcp.env section (line ~74)
+
+# 📄 Configure document segmentation (optional)
+# Edit mcp_agent.config.yaml to control document processing:
+# - enabled: true/false (whether to use intelligent document segmentation)
+# - size_threshold_chars: 50000 (document size threshold to trigger segmentation)
 ```
 
 #### 🔧 **Development Installation (From Source)**
@@ -483,6 +506,11 @@ uv pip install -r requirements.txt
 # Edit mcp_agent.config.yaml to set your API keys:
 # - For Brave Search: Set BRAVE_API_KEY: "your_key_here" in brave.env section (line ~28)
 # - For Bocha-MCP: Set BOCHA_API_KEY: "your_key_here" in bocha-mcp.env section (line ~74)
+
+# 📄 Configure document segmentation (optional)
+# Edit mcp_agent.config.yaml to control document processing:
+# - enabled: true/false (whether to use intelligent document segmentation)
+# - size_threshold_chars: 50000 (document size threshold to trigger segmentation)
 ```
 
 ##### 🐍 **Using Traditional pip**
@@ -504,6 +532,11 @@ pip install -r requirements.txt
 # Edit mcp_agent.config.yaml to set your API keys:
 # - For Brave Search: Set BRAVE_API_KEY: "your_key_here" in brave.env section (line ~28)
 # - For Bocha-MCP: Set BOCHA_API_KEY: "your_key_here" in bocha-mcp.env section (line ~74)
+
+# 📄 Configure document segmentation (optional)
+# Edit mcp_agent.config.yaml to control document processing:
+# - enabled: true/false (whether to use intelligent document segmentation)
+# - size_threshold_chars: 50000 (document size threshold to trigger segmentation)
 ```
 
 </details>
@@ -685,6 +718,14 @@ python cli/main_cli.py
 </table>
 
 
+
+### 🆕 **Recent Updates**
+
+#### 📄 **Smart Document Segmentation (v1.2.0)**
+- **Intelligent Processing**: Automatically handles large research papers and technical documents that exceed LLM token limits
+- **Configurable Control**: Toggle segmentation via configuration with size-based thresholds
+- **Semantic Analysis**: Advanced content understanding with algorithm, concept, and formula preservation
+- **Backward Compatibility**: Seamlessly falls back to traditional processing for smaller documents
 
 ### 🚀 **Coming Soon**
 
