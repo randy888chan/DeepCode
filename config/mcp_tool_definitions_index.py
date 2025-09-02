@@ -82,7 +82,7 @@ class MCPToolDefinitions:
                 "required": ["file_path"],
             },
         }
-    
+
     @staticmethod
     def _get_read_multiple_files_tool() -> Dict[str, Any]:
         """批量读取多个文件工具定义"""
@@ -94,7 +94,7 @@ class MCPToolDefinitions:
                 "properties": {
                     "file_requests": {
                         "type": "string",
-                        "description": "JSON string with file requests, e.g., '{\"file1.py\": {}, \"file2.py\": {\"start_line\": 1, \"end_line\": 10}}' or simple array '[\"file1.py\", \"file2.py\"]'",
+                        "description": 'JSON string with file requests, e.g., \'{"file1.py": {}, "file2.py": {"start_line": 1, "end_line": 10}}\' or simple array \'["file1.py", "file2.py"]\'',
                     },
                     "max_files": {
                         "type": "integer",
@@ -170,7 +170,7 @@ class MCPToolDefinitions:
                 "properties": {
                     "file_implementations": {
                         "type": "string",
-                        "description": "JSON string mapping file paths to content, e.g., '{\"file1.py\": \"content1\", \"file2.py\": \"content2\"}'",
+                        "description": 'JSON string mapping file paths to content, e.g., \'{"file1.py": "content1", "file2.py": "content2"}\'',
                     },
                     "create_dirs": {
                         "type": "boolean",
@@ -405,10 +405,13 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository to analyze"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository to analyze",
+                    }
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -419,10 +422,13 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository",
+                    }
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -433,10 +439,13 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository",
+                    }
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -447,11 +456,17 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository"},
-                    "docs_path": {"type": "string", "description": "Optional path to external documentation"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository",
+                    },
+                    "docs_path": {
+                        "type": "string",
+                        "description": "Optional path to external documentation",
+                    },
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -462,11 +477,17 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository"},
-                    "docs_path": {"type": "string", "description": "Optional path to reproduction documentation"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository",
+                    },
+                    "docs_path": {
+                        "type": "string",
+                        "description": "Optional path to reproduction documentation",
+                    },
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -477,11 +498,17 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository"},
-                    "docs_path": {"type": "string", "description": "Optional path to reproduction documentation"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository",
+                    },
+                    "docs_path": {
+                        "type": "string",
+                        "description": "Optional path to reproduction documentation",
+                    },
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -492,10 +519,13 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository to analyze"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository to analyze",
+                    }
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -506,10 +536,13 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository to analyze"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository to analyze",
+                    }
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
@@ -520,11 +553,17 @@ class MCPToolDefinitions:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "repo_path": {"type": "string", "description": "Path to the repository to analyze"},
-                    "docs_path": {"type": "string", "description": "Optional path to documentation"}
+                    "repo_path": {
+                        "type": "string",
+                        "description": "Path to the repository to analyze",
+                    },
+                    "docs_path": {
+                        "type": "string",
+                        "description": "Optional path to documentation",
+                    },
                 },
-                "required": ["repo_path"]
-            }
+                "required": ["repo_path"],
+            },
         }
 
     @staticmethod
